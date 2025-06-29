@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- 
+数据字段映射说明：
+bug.id = 问题ID
+bug.title = 问题标题
+bug.status = 当前状态
+bug.created_at = 创建时间
+bug.creator = 提交人
+bug.assignee = 负责人
+-->
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">分配问题 #{{ bug.id }} <!-- 问题ID --></h2>
+        <div class="d-flex align-items-center gap-3">
+            <div class="text-end">
+                <div class="fw-bold">{{ session.username }}</div>
+                <div class="text-muted small">{{ session.role }}{% if session.team %} | {{ session.team }}{% endif %}</div>
+            </div>
+            <a href="/logout" class="btn btn-danger">退出登录</a>
+        </div>
+    </div>
+    
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">{{ bug.title }} <!-- 问题标题 --></h5>
+        <div class="card-text">
+            <div>提交人: {{ bug.creator }} <!-- 提交人 --></div>
+            <div>创建时间: {{ bug.created_at }} <!-- 创建时间 --></div>
+            <div>当前状态: <span class="badge bg-secondary">{{ bug.status }} <!-- 状态 --></span></div>
+            {% if bug.assignee %}<div>当前负责人: {{ bug.assignee }} <!-- 负责人 --></div>{% endif %}
+        </div>
+    </div>
+</div>
+
+    {% if session.role == '负责人' or session.role == '管理员' %}
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title mb-4">分配问题</h5>
+        <form id="assignForm" action="/bug/assign/{{ bug.id }}" method="POST">
+            <div class="mb-3">
+                <label for="assigned_to" class="form-label">指派给</label>
+                <select class="form-select" id="assigned_to" name="assigned_to" required>
+                    {% for member in team_members %}
+                    <option value="{{ member.id }}">{{ member.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <button type="submit" class="btn btn-primary me-md-2">确认指派</button>
+                <a href="/bug/{{ bug.id }}" class="btn btn-outline-secondary">返回详情</a>
+            </div>
+        </form>
+        <script>
+            document.getElementById('assignForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                fetch(this.action, {
+                    method: 'POST',
+                    body: new FormData(this)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if(data.success) {
+                        alert('已完成指派！');
+                        window.location.href = data.redirect;
+                    }
+                });
+            });
+        </script>
+    </div>
+    {% else %}
+    <a href="/bug/{{ bug.id }}" class="btn btn-secondary" style="margin-top: 20px; display: inline-block;">← 返回问题详情</a>
+    {% endif %}
+</div>
+{% endblock %}

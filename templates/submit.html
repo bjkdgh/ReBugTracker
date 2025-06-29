@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 12px 20px; background: #f8f9fa; border-radius: 8px;">
+    <h1 style="font-size: 24px; margin: 0; color: #2c3e50;">提交新问题需求</h1>
+    <div style="display: flex; align-items: center; gap: 20px;">
+        <div style="text-align: right;">
+            <div style="font-weight: 600; font-size: 16px; color: #2c3e50;">{{ session.username }}</div>
+            <div style="font-size: 0.8em; color: #7f8c8d;">{{ session.role }}{% if session.team %} | {{ session.team }}{% endif %}</div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <a href="/" class="btn" style="background-color: #4a86e8; color: white; padding: 8px 16px; border-radius: 4px;">返回首页</a>
+            <a href="/logout" class="btn btn-danger" style="padding: 8px 16px; border-radius: 4px;">退出登录</a>
+        </div>
+    </div>
+</div>
+
+{% if request.args.get('message') %}
+<div class="alert alert-success" style="padding:10px; background:#dff0d8; color:#3c763d; border-radius:4px; margin-bottom:15px;">
+    {{ request.args.get('message') }}
+</div>
+{% endif %}
+
+<div class="bug-item">
+    <form id="bugForm" method="POST" enctype="multipart/form-data">
+        <!-- 表单内容 -->
+        <div class="form-group">
+            <label for="project">所属项目<span class="required">*</span></label>
+            <input type="text" id="project" name="project" required>
+            <div class="validation-message"></div>
+        </div>
+
+        <div class="form-group">
+            <label for="manager">指派给负责人<span class="required">*</span></label>
+            <select id="manager" name="manager" required>
+                {% for manager in managers %}
+                <option value="{{ manager }}">{{ manager }}</option>
+                {% endfor %}
+            </select>
+            <div class="validation-message"></div>
+        </div>
+
+        <div class="form-group">
+            <label for="title">需求/Bug标题<span class="required">*</span></label>
+            <input type="text" id="title" name="title" required>
+            <div class="validation-message"></div>
+        </div>
+
+        <div class="form-group">
+            <label for="description">详细描述<span class="required">*</span></label>
+            <textarea id="description" name="description" rows="4" required></textarea>
+            <div class="validation-message"></div>
+        </div>
+
+        <div class="form-group file-upload">
+            <label for="image">问题截图（可选）</label>
+            <input type="file" id="image" name="image" accept="image/*">
+            <div class="image-preview" id="preview"></div>
+        </div>
+
+        <!-- 表单操作 -->
+        <div class="form-actions">
+            <button type="submit" class="btn" style="background-color: #4a86e8; color: white; padding: 8px 16px; border-radius: 4px;">
+                <span class="submit-text">提交问题</span>
+                <div class="loading-spinner"></div>
+            </button>
+            <a href="/" class="btn" style="background-color: #e0e0e0; color: #333; padding: 8px 16px; border-radius: 4px;">返回首页</a>
+        </div>
+    </form>
+</div>
+
+<!-- 成功提示Modal -->
+<div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#e8f5e9; border-bottom:none;">
+                <h5 class="modal-title">✅ 提交成功！</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="text-align:center;">
+                <p>您的问题已成功提交，系统将尽快处理。</p>
+            </div>
+            <div class="modal-footer" style="justify-content:center; border-top:none;">
+                <a href="/" class="btn" style="background-color: #4a86e8; color: white; padding: 8px 16px; border-radius: 4px; margin-right:10px;">返回首页</a>
+                <a href="/submit" class="btn" style="background-color: #2ecc71; color: white; padding: 8px 16px; border-radius: 4px;">继续提交</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-group {
+    margin-bottom: 18px;
+    position: relative;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 14px;
+}
+
+.form-group label .required {
+    color: #e74c3c;
+    margin-left: 3px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-color: #4a86e8;
+    box-shadow: 0 0 8px rgba(74,134,232,0.2);
+    outline: none;
+}
+
+.form-group input:invalid,
+.form-group select:invalid,
+.form-group textarea:invalid {
+    border-color: #e74c3c;
+}
+
+.validation-message {
+    color: #e74c3c;
+    font-size: 13px;
+    margin-top: 5px;
+    height: 18px;
+}
+
+.file-upload {
+    border: 2px dashed #bdc3c7;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    transition: border-color 0.3s;
+}
+
+.file-upload:hover {
+    border-color: #4a86e8;
+}
+
+.image-preview img {
+    max-width: 100%;
+    border-radius: 6px;
+    border: 2px solid #eee;
+    margin-top: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.bug-item { 
+    border: 1px solid #e0e0e0; 
+    border-radius: 8px; 
+    padding: 16px; 
+    margin-bottom: 16px; 
+    background: #ffffff; 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.loading-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    display: none;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.success-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+</style>
+
+<script>
+const imageInput = document.getElementById('image');
+const previewDiv = document.getElementById('preview');
+const form = document.getElementById('bugForm');
+const submitBtn = form.querySelector('button[type="submit"]');
+const loadingSpinner = submitBtn.querySelector('.loading-spinner');
+const submitText = submitBtn.querySelector('.submit-text');
+
+// 图片预览功能
+imageInput.addEventListener('change', function() {
+    if (this.files && this.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            previewDiv.innerHTML = `
+                <div class="preview-container">
+                    <img src="${e.target.result}" 
+                         alt="预览图" 
+                         class="preview-image"
+                         onclick="this.classList.toggle('zoomed')">
+                    <button class="remove-image" onclick="previewDiv.innerHTML=''">
+                        ×
+                    </button>
+                </div>
+            `;
+        };
+        reader.readAsDataURL(this.files[0]);
+    }
+});
+
+// 表单提交处理
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    // 显示加载状态
+    submitText.textContent = '提交中...';
+    loadingSpinner.style.display = 'block';
+    submitBtn.disabled = true;
+
+    try {
+        const formData = new FormData(form);
+        const response = await fetch('/bugsubmit', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) throw new Error('Network error');
+        const data = await response.json();
+
+        if (data.success) {
+            // 显示成功Modal
+            const modal = new bootstrap.Modal(document.getElementById('successModal'));
+            modal.show();
+            
+            // 3秒后自动跳转
+            setTimeout(() => {
+                window.location.href = data.redirect || '/';
+            }, 3000);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('提交失败，请稍后重试');
+    } finally {
+        // 恢复按钮状态
+        submitText.textContent = '提交问题';
+        loadingSpinner.style.display = 'none';
+        submitBtn.disabled = false;
+    }
+});
+
+// 实时表单验证
+form.querySelectorAll('input, select, textarea').forEach(element => {
+    element.addEventListener('input', () => {
+        const validationMsg = element.closest('.form-group').querySelector('.validation-message');
+        if (element.validity.valid) {
+            validationMsg.textContent = '';
+            element.style.borderColor = '#4a86e8';
+        } else {
+            validationMsg.textContent = element.validationMessage;
+            element.style.borderColor = '#e74c3c';
+        }
+    });
+});
+</script>
+{% endblock %}

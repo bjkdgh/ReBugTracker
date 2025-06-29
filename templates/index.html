@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- 
+数据字段映射说明：
+bug.id = 问题ID (数据库字段: id)
+bug.title = 问题标题 (数据库字段: title)
+bug.description = 问题描述 (数据库字段: description)
+bug.status = 当前状态 (数据库字段: status)
+bug.project = 所属项目 (数据库字段: project)
+bug.created_at = 创建时间 (数据库字段: created_at)
+bug.creator_name = 提交人姓名 (通过creator_id关联users表获取)
+bug.assignee_name = 负责人姓名 (通过assignee_id关联users表获取)
+-->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 12px 20px; background: #f8f9fa; border-radius: 8px;">
+    <h1 style="font-size: 24px; margin: 0; color: #2c3e50;">问题列表 ({{ bugs|length }})</h1>
+    <div style="display: flex; align-items: center; gap: 20px;">
+        <div style="text-align: right;">
+            <div style="font-weight: 600; font-size: 16px; color: #2c3e50;">{{ session.username }}</div>
+            <div style="font-size: 0.8em; color: #7f8c8d;">{{ session.role }}{% if session.team %} | {{ session.team }}{% endif %}</div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            {% if session.role == '实施组' %}
+            <a href="/submit" class="btn" style="background-color: #4a86e8; color: white; padding: 8px 16px; border-radius: 4px;">提交新问题</a>
+            {% endif %}
+            <a href="/logout" class="btn btn-danger" style="padding: 8px 16px; border-radius: 4px;">退出登录</a>
+        </div>
+    </div>
+</div>
+    
+    {% if request.args.get('message') %}
+    <div class="alert alert-success" style="padding:10px; background:#dff0d8; color:#3c763d; border-radius:4px; margin-bottom:15px;">
+        {{ request.args.get('message') }}
+    </div>
+    {% endif %}
+    <div class="bug-list">
+        
+<style>
+.bug-list .bug-item { 
+    border: 1px solid #e0e0e0; 
+    border-radius: 8px; 
+    padding: 16px; 
+    margin-bottom: 16px; 
+    background: #ffffff; 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.bug-list .bug-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+.bug-list .bug-title {
+    font-weight: bold; 
+    font-size: 16px; 
+    color: #2c3e50;
+    flex: 1;
+    margin-right: 10px;
+}
+.bug-list .bug-status {
+    display: inline-block; 
+    padding: 4px 12px; 
+    border-radius: 16px; 
+    font-size: 18px; 
+    font-weight: bold;
+    color: rgb(0, 0, 0);
+}
+.bug-list .status-pending { background-color: #f39c12; }
+.bug-list .status-assigned { background-color: #3498db; }
+.bug-list .status-resolving { background-color: #2ecc71; }
+.bug-list .status-resolved { background-color: #9b59b6; }
+.bug-list .bug-meta {
+    font-size: 13px; 
+    color: #555; 
+    margin-bottom: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.bug-list .bug-description {
+    font-size: 14px; 
+    color: #333; 
+    margin-bottom: 12px; 
+    line-height: 1.4;
+}
+</style>
+
+        {% if bugs|length == 0 %}
+            <p>暂无问题，请提交新问题。</p> 
+        {% else %}
+            {% for bug in bugs %}
+
+            <div class="bug-item">
+                <div class="bug-header">
+                    <div class="bug-title">
+                        #{{ bug.id }} {{ bug.title }}
+                    </div>
+                    <span class="bug-status status-{{ bug.status.lower().replace(' ', '-') }}">
+                        {{ bug.status }}
+                    </span>
+                </div>
+                
+                <div class="bug-meta">
+                    <span>项目: {{ bug.project }}</span>
+                    <span>提出人: {{ bug.creator_name }}</span>
+                    <span>创建时间: {{ bug.created_at|datetimeformat }}</span>
+                    {% if bug.assignee_name %}<span>负责人: {{ bug.assignee_name }}</span>{% endif %}
+                </div>
+                
+                <div class="bug-description">
+                    {{ bug.description|truncate(100) }}
+                </div>
+                <div class="bug-actions">
+                    <a href="/bug/{{ bug.id }}" class="btn" style="background-color: #4a86e8; color: white;">查看详情</a>
+                    {% if bug.status == '待处理' and (session.role == '负责人' or session.role == '管理员') %}
+                        <a href="/bug/assign/{{ bug.id }}" class="btn btn-primary">指派</a>
+                    {% elif (bug.status == '已分配' or bug.status == '处理中') and session.role == '组内成员' %}
+                        <a href="/bug/resolve/{{ bug.id }}" class="btn">标记解决</a>
+                    {% endif %}
+                    {% if session.role == '管理员' or (session.user_id == bug.creator_id and session.role == '实施组') %}
+                        <button onclick="deleteBug('{{ bug.id }}')" class="btn btn-danger">删除</button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+<script>
+function deleteBug(bugId) {
+    if(confirm('确定要删除这个问题吗？')) {
+        fetch('/bug/delete/' + bugId, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(function(response) {
+            if (!response.ok) {
+                throw new Error('网络响应不正常');
+            }
+            return response.json();
+        })
+        .then(function(data) {
+            if(data.success) {
+                alert('删除成功！');
+                window.location.reload();
+            } else {
+                alert('删除失败: ' + data.message);
+            }
+        })
+        .catch(function(error) {
+            alert('删除请求失败: ' + error.message);
+        });
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- 
+数据字段映射说明：
+用户字段：
+user.id = 用户ID (数据库字段: id)
+user.username = 用户名 (数据库字段: username)
+user.role = 用户角色 (数据库字段: role)
+user.team = 所属团队 (数据库字段: team)
+
+问题字段：
+bug.id = 问题ID (数据库字段: id)
+bug.title = 问题标题 (数据库字段: title)
+bug.status = 当前状态 (数据库字段: status)
+bug.creator_name = 提交人姓名 (通过creator_id关联users表获取)
+bug.created_at = 创建时间 (数据库字段: created_at)
+-->
+<div class="container">
+    <h1>管理员控制面板</h1>
+    
+    <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <span style="font-weight: bold;">{{ session.username }}</span>
+            <span style="margin-left: 10px; color: #666;">(管理员)</span>
+        </div>
+        <a href="/logout" class="btn btn-danger">退出登录</a>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3>用户管理</h3>
+        </div>
+        <div class="card-body">
+            <button class="btn btn-success" onclick="showAddForm()">添加用户</button>
+            
+            <div id="addForm" style="display: none; margin-top: 20px; padding: 20px; background-color: #f8f9fa; border-radius: 5px;">
+                <h4>添加新用户</h4>
+                <form id="addUserForm">
+                    <div class="form-group">
+                        <label>用户名</label>
+                        <input type="text" name="username" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>密码</label>
+                        <input type="password" name="password" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>角色</label>
+                        <select name="role" class="form-control" required>
+                            <option value="管理员">管理员</option>
+                            <option value="负责人">负责人</option>
+                            <option value="实施组">实施组</option>
+                            <option value="组内成员">组内成员</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>团队</label>
+                        <input type="text" name="team" class="form-control">
+                    </div>
+                    <button type="submit" class="btn btn-primary">添加</button>
+                    <button type="button" class="btn btn-secondary" onclick="hideAddForm()">取消</button>
+                </form>
+            </div>
+
+            <table class="table table-striped mt-3">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>用户名</th>
+                        <th>角色</th>
+                        <th>团队</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="userTable">
+                    <!-- 用户数据将通过JavaScript动态加载 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header">
+            <h3>问题管理</h3>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>标题</th>
+                        <th>状态</th>
+                        <th>提交人</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="bugTable">
+                    <!-- 问题数据将通过JavaScript动态加载 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+// 加载问题数据
+async function loadBugs() {
+    const response = await fetch('/admin/bugs');
+    const bugs = await response.json();
+    const table = document.getElementById('bugTable');
+    table.innerHTML = '';
+
+    bugs.forEach(bug => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${bug.id}</td>
+            <td>${bug.title}</td>
+            <td>${bug.status}</td>
+            <td>${bug.creator_name}</td>
+            <td>${bug.created_at}</td>
+            <td>
+                <button class="btn btn-sm btn-danger" onclick="deleteBug(${bug.id})">删除</button>
+            </td>
+        `;
+        table.appendChild(row);
+    });
+}
+
+// 删除问题
+async function deleteBug(bugId) {
+    if (confirm('确定要删除这个问题吗？')) {
+        const response = await fetch(`/bug/delete/${bugId}`, {
+            method: 'POST'
+        });
+        const result = await response.json();
+        if (result.success) {
+            alert('问题删除成功');
+            loadBugs();
+        } else {
+            alert(result.message || '删除问题失败');
+        }
+    }
+}
+
+// 初始化加载问题数据
+loadBugs();
+    // 显示/隐藏添加表单
+    function showAddForm() {
+        document.getElementById('addForm').style.display = 'block';
+    }
+    function hideAddForm() {
+        document.getElementById('addForm').style.display = 'none';
+    }
+
+    // 加载用户数据
+    async function loadUsers() {
+        const response = await fetch('/admin/users');
+        const users = await response.json();
+        const table = document.getElementById('userTable');
+        table.innerHTML = '';
+
+        users.forEach(user => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${user.id}</td>
+                <td>${user.username}</td>
+                <td>${user.role}</td>
+                <td>${user.team || '-'}</td>
+                <td>
+                    ${user.role !== '管理员' ? 
+                        `<button class="btn btn-sm btn-primary" onclick="editUser(${user.id})">编辑</button>
+                         <button class="btn btn-sm btn-danger" onclick="deleteUser(${user.id})">删除</button>` : 
+                        '不可操作'}
+                </td>
+            `;
+            table.appendChild(row);
+        });
+    }
+
+    // 编辑用户
+    async function editUser(userId) {
+        const response = await fetch(`/admin/users`);
+        const users = await response.json();
+        const user = users.find(u => u.id === userId);
+        
+        if (!user) return;
+        
+        const form = document.getElementById('addForm');
+        form.style.display = 'block';
+        form.querySelector('h4').textContent = '编辑用户';
+        
+        const formEl = document.getElementById('addUserForm');
+        formEl.reset();
+        formEl.querySelector('[name="username"]').value = user.username;
+        formEl.querySelector('[name="role"]').value = user.role;
+        formEl.querySelector('[name="team"]').value = user.team || '';
+        
+        // 添加密码输入框
+        const passwordDiv = document.createElement('div');
+        passwordDiv.className = 'form-group';
+        passwordDiv.innerHTML = `
+            <label>新密码 (留空则不修改)</label>
+            <input type="password" name="password" class="form-control">
+        `;
+        formEl.insertBefore(passwordDiv, formEl.querySelector('.form-group:nth-child(3)'));
+        
+        formEl.onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(formEl);
+            
+            const response = await fetch(`/admin/users/${userId}`, {
+                method: 'PUT',
+                body: formData
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                alert('用户更新成功');
+                hideAddForm();
+                loadUsers();
+            } else {
+                alert(result.message || '更新用户失败');
+            }
+        };
+    }
+
+    // 删除用户
+    async function deleteUser(userId) {
+        if (confirm('确定要删除这个用户吗？')) {
+            const response = await fetch(`/admin/users/${userId}`, {
+                method: 'DELETE'
+            });
+            const result = await response.json();
+            if (result.success) {
+                alert('用户删除成功');
+                loadUsers();
+            } else {
+                alert(result.message || '删除用户失败');
+            }
+        }
+    }
+
+    // 添加用户表单提交
+    document.getElementById('addUserForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        
+        const response = await fetch('/admin/users', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            alert('用户添加成功');
+            hideAddForm();
+            loadUsers();
+        } else {
+            alert(result.message);
+        }
+    });
+
+    // 初始化加载用户数据
+    loadUsers();
+</script>
+{% endblock %}

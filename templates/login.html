@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户登录</title>
+    <style>
+        body { font-family: 'Arial', sans-serif; max-width: 500px; margin: 0 auto; padding: 20px; }
+        h1 { color: #333; text-align: center; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input { 
+            width: 100%; 
+            padding: 10px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            box-sizing: border-box;
+        }
+        .btn { 
+            width: 100%;
+            padding: 12px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .register-link { 
+            text-align: center; 
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>系统登录</h1>
+    <form id="loginForm">
+        <input type="hidden" name="next" value="{{ request.args.get('next', '') }}">
+        <div class="form-group">
+            <label for="username">用户名</label>
+            <input type="text" id="username" name="username" required>
+        </div>
+        <div class="form-group">
+            <label for="password">密码</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <button type="submit" class="btn">登录</button>
+    </form>
+    <div class="register-link">
+        没有账号？<a href="/register">立即注册</a>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const response = await fetch('/login', {
+                method: 'POST',
+                body: formData,
+                credentials: 'include'  // 确保发送和接收cookie
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                // 重新加载页面以应用cookie
+                window.location.href = result.redirect;
+            } else {
+                alert(result.message);
+            }
+        });
+
+        // 检查是否已登录
+        if (document.cookie.includes('user_id')) {
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>

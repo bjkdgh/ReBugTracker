@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+.badge.status-pending,
+.badge.status-待处理 {
+    background-color: #f39c12 !important;
+    color: #000 !important;
+    font-weight: bold !important;
+}
+
+.badge.status-assigned,
+.badge.status-已分配 {
+    background-color: #3498db !important;
+    color: #fff !important;
+}
+
+.badge.status-resolving,
+.badge.status-处理中 {
+    background-color: #2ecc71 !important;
+    color: #000 !important;
+}
+
+.badge.status-resolved,
+.badge.status-已解决 {
+    background-color: #9b59b6 !important;
+    color: #fff !important;
+}
+
+.badge.status-已确认 {
+    background-color: #27ae60 !important;
+    color: #fff !important;
+}
+
+.badge {
+    display: inline-block !important;
+    padding: 0.35em 0.65em !important;
+    font-size: 0.75em !important;
+    line-height: 1 !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    vertical-align: baseline !important;
+    border-radius: 0.25rem !important;
+    border: 1px solid rgba(0,0,0,0.1) !important;
+}
+</style>
+<!-- 
+数据字段映射说明：
+bug.id = 问题ID (数据库字段: id)
+bug.title = 问题标题 (数据库字段: title)
+bug.status = 当前状态 (数据库字段: status)
+bug.creator = 提交人 (数据库字段: creator_id关联users表)
+bug.assignee = 负责人 (数据库字段: assignee_id关联users表)
+bug.created_at = 创建时间 (数据库字段: created_at)
+-->
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">团队问题列表</h2>
+        <div class="d-flex align-items-center gap-3">
+            <div class="text-end">
+                <div class="fw-bold">{{ session.username }}</div>
+                <div class="text-muted small">{{ session.role }}{% if session.team %} | {{ session.team }}{% endif %}</div>
+            </div>
+            <a href="/logout" class="btn btn-danger">退出登录</a>
+        </div>
+    </div>
+    
+    {% if bugs %}
+        <div class="bugs-list">
+            {% for bug in bugs %}
+            <div class="bug-item card mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h5 class="card-title">
+                                <a href="/bug/{{ bug.id }}">{{ bug.title }} <!-- 问题标题 --></a>
+                            </h5>
+                            <div class="card-text">
+                                <div>状态: <span class="badge status-{{ bug.status.lower().replace(' ', '-') }}" style="display: inline-block; padding: 0.35em 0.65em; font-size: 0.75em; line-height: 1; text-align: center; white-space: nowrap; vertical-align: baseline; border-radius: 0.25rem;">{{ bug.status }}</span></div>
+                                <div>提交人: {{ bug.creator }} <!-- 提交人 --></div>
+                                <div>负责人: {{ bug.assignee }} <!-- 负责人 --></div>
+                                <div class="text-muted small">创建时间: {{ bug.created_at }} <!-- 创建时间 --></div>
+                            </div>
+                        </div>
+                        <div>
+                            <a href="/bug/{{ bug.id }}" class="btn btn-outline-primary btn-sm">查看详情</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info">当前没有团队问题</div>
+    {% endif %}
+</div>
+{% endblock %}
