@@ -3,105 +3,253 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- 
-    数据字段映射说明：
-    bug.id = 问题ID (数据库字段: id)
-    bug.title = 问题标题 (数据库字段: title)
-    bug.description = 问题描述 (数据库字段: description)
-    bug.status = 当前状态 (数据库字段: status)
-    bug.created_at = 创建时间 (数据库字段: created_at)
-    bug.resolved_at = 解决时间 (数据库字段: resolved_at)
-    bug.resolution = 解决方案 (数据库字段: resolution)
-    bug.screenshot_path = 截图路径 (数据库字段: screenshot_path)
-    bug.creator_name = 提交人姓名 (通过creator_id关联users表获取)
-    bug.assignee_name = 负责人姓名 (通过assignee_id关联users表获取)
-    -->
-    <title>问题详情 #{{ bug.id }}</title>
+    <title>问题详情 </title>
     <style>
-        body { font-family: 'Arial', sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-        h1 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        .bug-detail { margin-top: 20px; }
-        .bug-title { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
-        .bug-meta { font-size: 14px; color: #7f8c8d; margin-bottom: 20px; }
-        .bug-status { display: inline-block; padding: 5px 10px; border-radius: 15px; font-size: 18px; }
-        .status-pending { background-color: #f39c12; color: white; }
-        .status-assigned { background-color: #3498db; color: white; }
-        .status-resolving { background-color: #2ecc71; color: white; }
-        .status-resolved { background-color: #9b59b6; color: white; }
-        .bug-description { margin: 20px 0; line-height: 1.6; }
-        .bug-image { margin-top: 20px; max-width: 100%; }
-        .bug-resolution { margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 5px; }
-        .resolution-title { font-weight: bold; margin-bottom: 10px; }
-        .back-link { display: inline-block; margin-top: 20px; }
-        .btn { padding: 6px 12px; background-color: #3498db; color: white; border: none; border-radius: 4px; text-decoration: none; }
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            padding: 25px;
+            margin-top: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .bug-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        .bug-meta {
+            font-size: 14px;
+            color: #6c757d;
+            margin-bottom: 20px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 0.35em 0.65em;
+            font-size: 0.75em;
+            line-height: 1;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: baseline;
+            border-radius: 0.25rem;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+        .badge.status-pending, .badge.status-待处理 {
+            background-color: #f39c12 !important;
+            color: #000 !important;
+            font-weight: bold !important;
+        }
+        .badge.status-assigned, .badge.status-已分配 {
+            background-color: #3498db !important;
+            color: #fff !important;
+        }
+        .badge.status-resolving, .badge.status-处理中 {
+            background-color: #2ecc71 !important;
+            color: #000 !important;
+        }
+        .badge.status-resolved, .badge.status-已解决 {
+            background-color: #9b59b6 !important;
+            color: #fff !important;
+        }
+        .badge.status-已确认 {
+            background-color: #27ae60 !important;
+            color: #fff !important;
+        }
+        .badge.status-已完成 {
+            background-color: #27ae60 !important;
+            color: #fff !important;
+        }
+        .bug-description {
+            margin: 25px 0;
+            line-height: 1.6;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .section-title {
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        .bug-attachments {
+            margin: 25px 0;
+        }
+        .attachment-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+        .attachment-item {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            overflow: hidden;
+            text-align: center;
+        }
+        .attachment-item img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+        .attachment-item a {
+            display: block;
+            padding: 10px;
+            color: #3498db;
+            text-decoration: none;
+        }
+        .bug-resolution {
+            margin-top: 25px;
+            padding: 20px;
+            background-color: #e8f4fd;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+        }
+        .resolution-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #3498db;
+        }
+        .action-buttons {
+            margin-top: 25px;
+            display: flex;
+            gap: 10px;
+        }
+        .btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+        }
+        .btn-primary {
+            background-color: #4a86e8;
+            color: white;
+        }
+        .btn-success {
+            background-color: #2ecc71;
+            color: white;
+        }
+        .btn-danger {
+            background-color: #e74c3c;
+            color: white;
+        }
+        .alert {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .user-info {
+            text-align: right;
+        }
+        .user-name {
+            font-weight: bold;
+        }
+        .user-role {
+            font-size: 0.8em;
+            color: #666;
+        }
     </style>
 </head>
 <body>
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <div>
-            <a href="/" class="btn" style="background-color: #3498db;">← 返回问题列表</a>
-        </div>
-        <div style="display: flex; align-items: center; gap: 20px;">
-            <div style="text-align: right;">
-                <div style="font-weight: bold;">{{ session.username }}</div>
-                <div style="font-size: 0.8em; color: #666;">{{ session.role }}{% if session.team %} | {{ session.team }}{% endif %}</div>
+    <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 12px 20px; background: #f8f9fa; border-radius: 8px;">
+            <h1 style="font-size: 24px; margin: 0; color: #2c3e50;">问题详情</h1>
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <div style="text-align: right;">
+                    <div style="font-weight: 600; font-size: 16px; color: #2c3e50;">{{ user.username }}</div>
+                    <div style="font-size: 0.8em; color: #7f8c8d;">{{ user.role }}{% if user.team %} | {{ user.team }}{% endif %}</div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <a href="/" class="btn" style="background-color: #4a86e8; color: white; padding: 8px 16px; border-radius: 4px;">← 返回问题列表</a>
+                    <a href="/logout" class="btn btn-danger" style="padding: 8px 16px; border-radius: 4px;">退出登录</a>
+                </div>
             </div>
-            <a href="/logout" class="btn" style="background-color: #e74c3c; color: white; text-decoration: none;">退出登录</a>
         </div>
-    </div>
-    <div class="bug-detail">
-        <div class="bug-title">
-            #{{ bug.id }} - {{ bug.title }}
-            <span class="bug-status status-{{ bug.status.lower().replace(' ', '-') }}">{{ bug.status }}</span>
-        </div>
-        <div class="bug-meta">
-            提交人: {{ bug.creator_name }} | 创建时间: {{ bug.created_at }}
-            {% if bug.assignee_name %} | 负责人: {{ bug.assignee_name }}{% endif %}
-            {% if bug.resolved_at %} | 解决时间: {{ bug.resolved_at }}{% endif %}
-        </div>
-        <div class="bug-description">
-            {{ bug.description|replace('\n', '<br>')|safe }}
-        </div>
-        {% if bug.image_path or bug.attachments %}
-        <div class="bug-attachments">
-            <h3>附件</h3>
-            {% if bug.image_path %}
-            <div class="attachment-item">
-                <img src="{{ bug.image_path }}" alt="问题截图" style="max-width: 100%; border: 1px solid #ddd;">
+
+        <div class="bug-content">
+            <div class="bug-title">
+                #{{ bug.id }} - {{ bug.title }}
+                <span class="badge status-{{ bug.status.lower().replace(' ', '-') }}">{{ bug.status }}</span>
             </div>
-            {% endif %}
-            {% if bug.attachments %}
-                {% for attachment in bug.attachments %}
-                <div class="attachment-item">
-                    {% if attachment.type == 'image' %}
-                        <img src="{{ attachment.path }}" alt="附件图片" style="max-width: 100%; border: 1px solid #ddd;">
-                    {% else %}
-                        <a href="{{ attachment.path }}" download>下载附件: {{ attachment.name }}</a>
+            
+            <div class="bug-meta">
+                提交人: {{ bug.creator_name }} | 创建时间: {{ bug.created_at }}
+                {% if bug.assignee_name %} | 负责人: {{ bug.assignee_name }}{% endif %}
+                {% if bug.resolved_at %} | 解决时间: {{ bug.resolved_at }}{% endif %}
+            </div>
+            
+            <div class="section-title">问题描述</div>
+            <div class="bug-description">
+                {{ bug.description|replace('\n', '<br>')|safe }}
+            </div>
+            
+            {% if bug.image_path or bug.attachments %}
+            <div class="section-title">附件</div>
+            <div class="bug-attachments">
+                <div class="attachment-grid">
+                    {% if bug.image_path %}
+                    <div class="attachment-item">
+                        <img src="{{ bug.image_path }}" alt="问题截图">
+                    </div>
+                    {% endif %}
+                    {% if bug.attachments %}
+                        {% for attachment in bug.attachments %}
+                        <div class="attachment-item">
+                            {% if attachment.type == 'image' %}
+                                <img src="{{ attachment.path }}" alt="附件图片">
+                            {% else %}
+                                <a href="{{ attachment.path }}" download>下载附件: {{ attachment.name }}</a>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
                     {% endif %}
                 </div>
-                {% endfor %}
+            </div>
+            {% endif %}
+            
+            {% if bug.resolution %}
+            <div class="section-title">解决方案</div>
+            <div class="bug-resolution">
+                <div class="resolution-title">解决方案详情</div>
+                <div>{{ bug.resolution|replace('\n', '<br>')|safe }}</div>
+            </div>
+            {% endif %}
+            
+            <div class="action-buttons">
+                {% if user.role == '负责人' %}
+                <a href="/bug/assign/{{ bug.id }}" class="btn btn-success">指派</a>
+                {% endif %}
+                
+                {% if user.role == '管理员' or (user.role == '实施组' and user.id == created_by) %}
+                <button onclick="deleteBug('{{ bug.id }}')" class="btn btn-danger">删除</button>
+                {% endif %}
+            </div>
+            
+            {% if message %}
+            <div class="alert">
+                {{ message }}
+            </div>
             {% endif %}
         </div>
-        {% endif %}
-        {% if bug.resolution %}
-        <div class="bug-resolution">
-            <div class="resolution-title">解决方案</div>
-            <div>{{ bug.resolution|replace('\n', '<br>')|safe }}</div>
-        </div>
-        {% endif %}
-        
-        
-        {% if session.role == '负责人' or session.role == '管理员' %}
-        <div style="margin-top: 20px;">
-            <a href="/bug/assign/{{ bug.id }}" class="btn" style="background-color: #2ecc71;">指派</a>
-        </div>
-        {% endif %}
-        
-        {% if message %}
-        <div class="alert alert-success" role="alert" style="margin-top: 20px; padding: 15px; border-radius: 4px; background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb;">
-            {{ message }}
-        </div>
-        {% endif %}
     </div>
     
     <script>

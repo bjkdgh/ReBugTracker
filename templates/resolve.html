@@ -1,58 +1,124 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<!-- 
-数据字段映射说明：
-bug.id = 问题ID (数据库字段: id)
-bug.title = 问题标题 (数据库字段: title)
-bug.description = 问题描述 (数据库字段: description)
-bug.status = 当前状态 (数据库字段: status)
-bug.created_at = 创建时间 (数据库字段: created_at)
-bug.creator_name = 提交人姓名 (通过creator_id关联users表获取)
-bug.assignee_name = 负责人姓名 (通过assignee_id关联users表获取)
--->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>解决问题 #{{ bug.id }}</title>
+    <title>填写处理详情 </title>
     <style>
-        body { font-family: 'Arial', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
-        h1 { color: #333; }
-        .bug-info { margin-bottom: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 5px; }
-        .bug-title { font-weight: bold; margin-bottom: 5px; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        textarea { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 4px; min-height: 150px; }
-        .btn { padding: 10px 15px; background-color: #2ecc71; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        .back-link { display: inline-block; margin-top: 20px; }
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            padding: 25px;
+            margin-top: 20px;
+        }
+        .bug-info {
+            margin-bottom: 25px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .bug-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        textarea {
+            width: 100%;
+            padding: 12px;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            min-height: 200px;
+            font-family: 'Arial', sans-serif;
+            font-size: 14px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+        }
+        .btn-success {
+            background-color: #2ecc71;
+            color: white;
+        }
+        .btn-danger {
+            background-color: #e74c3c;
+            color: white;
+        }
     </style>
 </head>
 <body>
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h1>解决问题 #{{ bug.id }}</h1>
-        <div style="display: flex; align-items: center; gap: 20px;">
-            <div style="text-align: right;">
-                <div style="font-weight: bold;">{{ session.username }}</div>
-                <div style="font-size: 0.8em; color: #666;">{{ session.role }}{% if session.team %} | {{ session.team }}{% endif %}</div>
+    <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 12px 20px; background: #f8f9fa; border-radius: 8px;">
+            <h1 style="font-size: 24px; margin: 0; color: #2c3e50;">填写处理详情 </h1>
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <div style="text-align: right;">
+                    <div style="font-weight: 600; font-size: 16px; color: #2c3e50;">{{ user.username }}</div>
+                    <div style="font-size: 0.8em; color: #7f8c8d;">{{ user.role }}{% if user.team %} | {{ user.team }}{% endif %}</div>
+                </div>
+                <a href="/logout" class="btn btn-danger">退出登录</a>
             </div>
-            <a href="/logout" class="btn" style="background-color: #e74c3c; color: white; text-decoration: none;">退出登录</a>
         </div>
-    </div>
-    
-    <div class="bug-info">
-        <div class="bug-title">{{ bug.title }}</div>
-        <div>提交人: {{ bug.creator_name }} | 创建时间: {{ bug.created_at }}</div>
-        <div>当前状态: {{ bug.status }}</div>
-        {% if bug.assignee_name %}<div>负责人: {{ bug.assignee_name }}</div>{% endif %}
-    </div>
-
-    <form action="/bug/resolve/{{ bug.id }}" method="POST">
-        <div class="form-group">
-            <label for="resolution">解决方案</label>
-            <textarea id="resolution" name="resolution" placeholder="详细描述问题是如何解决的..." required></textarea>
+        
+        <div class="bug-info">
+            <div class="bug-title">{{ bug.title }}</div>
+            <div>提交人: {{ bug.creator_name }} | 创建时间: {{ bug.created_at }}</div>
+            <div>当前状态: {{ bug.status }}</div>
+            {% if bug.assignee_name %}<div>负责人: {{ bug.assignee_name }}</div>{% endif %}
         </div>
-        <button type="submit" class="btn">标记为已解决</button>
-    </form>
 
-    <a href="/bug/{{ bug.id }}" class="back-link">← 返回问题详情</a>
+        <form action="/bug/complete_and_save/{{ bug.id }}" method="POST" onsubmit="return handleSubmit()">
+            <div class="form-group">
+                <label for="resolution">处理详情</label>
+                <textarea id="resolution" name="resolution" placeholder="详细描述问题处理过程和结果..." required></textarea>
+            </div>
+            <button type="submit" class="btn btn-success">提交</button>
+        </form>
+    </div>
+    <script>
+        function handleSubmit() {
+            // 阻止表单默认提交行为
+            event.preventDefault();
+            
+            // 提交表单数据
+            fetch(event.target.action, {
+                method: 'POST',
+                body: new FormData(event.target)
+            })
+            .then(response => {
+                if(response.ok) {
+                    // 显示弹窗
+                    if(confirm('处理详情已提交，点击确定返回首页')) {
+                        window.location.href = '/';
+                    }
+                    // 2秒后自动跳转
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 2000);
+                }
+            });
+            return false;
+        }
+    </script>
 </body>
 </html>

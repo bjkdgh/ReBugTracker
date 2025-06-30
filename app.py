@@ -107,7 +107,8 @@ def init_db():
         INSERT OR IGNORE INTO roles (id, en_name, cn_name) VALUES
         (1, 'product_member', '组内成员'),
         (2, 'manager', '负责人'),
-        (3, 'admin', '管理员')
+        (3, 'admin', '管理员'),
+        (4, 'requester', '实施组')
     ''')
 
     c.execute('''
@@ -137,19 +138,19 @@ def init_db():
     ''')
 
     c.execute('''
-        CREATE TABLE IF NOT EXISTS bugs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            description TEXT,
-            status TEXT DEFAULT '待处理',  -- 待处理/已分配/处理中/已解决/已确认
-            assigned_to INTEGER,         -- 负责人ID
-            created_by INTEGER,          -- 提交人ID
-            project TEXT,               -- 所属项目名称
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            resolved_at TIMESTAMP,
-            resolution TEXT,            -- 解决方案
-            image_path TEXT             -- 图片路径
-        )
+            CREATE TABLE IF NOT EXISTS bugs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                description TEXT,
+                status TEXT DEFAULT '待处理',  -- 待处理/已分配/处理中/已解决/已确认
+                assigned_to INTEGER,         -- 负责人ID
+                created_by INTEGER,          -- 提交人ID
+                project TEXT,               -- 所属项目名称
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                resolved_at TIMESTAMP,
+                resolution TEXT,            -- 处理详情
+                image_path TEXT             -- 图片路径
+            )
     ''')
     conn.commit()
     conn.close()
@@ -166,6 +167,7 @@ def index():
         return redirect('/team-issues')
     elif user['role'] == '管理员':
         return redirect('/admin')
+    # 实施组和负责人等角色继续执行后面的代码（渲染首页）
     
     conn = sqlite3.connect('bugtracker.db')
     conn.row_factory = sqlite3.Row
@@ -195,7 +197,7 @@ def index():
     
     bugs = c.fetchall()
     conn.close()
-    return render_template('index.html', bugs=bugs)
+    return render_template('index.html', bugs=bugs, user=user)
 
 # 组内成员问题列表
 @app.route('/team-issues')
@@ -207,6 +209,7 @@ def team_issues():
         return redirect('/login')
         
     conn = sqlite3.connect('bugtracker.db')
+    conn.row_factory = sqlite3.Row  # 启用行工厂转换为字典式对象
     c = conn.cursor()
     c.execute('''
         SELECT b.id, b.title, b.description, b.status, b.assigned_to, b.created_by, b.project, 
@@ -226,12 +229,16 @@ def team_issues():
     ''', (user['id'], user['team']))
     bugs = c.fetchall()
     conn.close()
-    return render_template('team_issues.html', bugs=bugs)
+    return render_template('team_issues.html', bugs=bugs, user=user)
 
 # 提交问题页面
 @app.route('/submit')
 @login_required
 def submit_page():
+    user = get_current_user()
+    if not user:
+        return redirect('/login')
+        
     conn = sqlite3.connect('bugtracker.db')
     c = conn.cursor()
     try:
@@ -241,7 +248,7 @@ def submit_page():
         c.execute('SELECT id, name FROM projects ORDER BY name')
         projects = c.fetchall()
         
-        return render_template('submit.html', managers=managers, projects=projects)
+        return render_template('submit.html', managers=managers, projects=projects, user=user)
     finally:
         conn.close()
 
@@ -312,7 +319,8 @@ def bug_detail(bug_id):
         return "问题不存在", 404
     
     message = request.args.get('message')
-    return render_template('bug_detail.html', bug=bug, message=message)
+    # 将创建者ID传递给模板
+    return render_template('bug_detail.html', bug=bug, message=message, created_by=bug['created_by'], user=user)
 
 # 分配问题页面
 @app.route('/bug/assign/<int:bug_id>')
@@ -345,7 +353,7 @@ def assign_page(bug_id):
     conn.close()
     if not bug:
         return "问题不存在", 404
-    return render_template('assign.html', bug=bug, team_members=team_members)
+    return render_template('assign.html', bug=bug, team_members=team_members, user=user)
 
 # 分配问题API
 @app.route('/bug/assign/<int:bug_id>', methods=['POST'])
@@ -398,7 +406,7 @@ def resolve_page(bug_id):
     conn.close()
     if not bug:
         return "问题不存在", 404
-    return render_template('resolve.html', bug=bug)
+    return render_template('resolve.html', bug=bug, user=user)
 
 # 解决问题API
 @app.route('/bug/delete/<int:bug_id>', methods=['POST'])
@@ -442,55 +450,80 @@ def confirm_bug(bug_id):
     c = conn.cursor()
     c.execute('''
         UPDATE bugs 
-        SET status = '已确认'
+        SET status = '处理中'
         WHERE id = ? AND assigned_to = ?
     ''', (bug_id, user['id']))
     conn.commit()
     conn.close()
-    return jsonify({'success': True})
+    return jsonify({'success': True, 'redirect': f'/bug/{bug_id}'})
 
-@app.route('/bug/complete/<int:bug_id>')
+# 保存处理详情API
+@app.route('/bug/save_resolution/<int:bug_id>', methods=['POST'])
 @login_required
 @role_required('组内成员')
-def complete_bug(bug_id):
-    user = get_current_user()
-    if not user:
-        return redirect('/login')
-        
-    conn = sqlite3.connect('bugtracker.db')
-    c = conn.cursor()
-    c.execute('''
-        SELECT b.*, u1.username as creator_name, u2.username as assignee_name
-        FROM bugs b
-        LEFT JOIN users u1 ON b.created_by = u1.id
-        LEFT JOIN users u2 ON b.assigned_to = u2.id
-        WHERE b.id = ? AND b.assigned_to = ?
-    ''', (bug_id, user['id']))
-    bug = c.fetchone()
-    conn.close()
-    if not bug:
-        abort(404)
-    return redirect(f'/bug/resolve/{bug_id}')
-
-@app.route('/bug/resolve/<int:bug_id>', methods=['POST'])
-@login_required
-@role_required('组内成员')
-def resolve_bug(bug_id):
+def save_resolution(bug_id):
     user = get_current_user()
     if not user:
         return jsonify({'success': False, 'message': '用户未登录'})
         
     resolution = request.form.get('resolution')
     if not resolution:
-        return jsonify({'success': False, 'message': '解决方案不能为空'})
+        return jsonify({'success': False, 'message': '处理详情不能为空'})
     
     conn = sqlite3.connect('bugtracker.db')
     c = conn.cursor()
+    # 只保存处理详情，不改变状态
     c.execute('''
         UPDATE bugs 
-        SET status = '已解决', resolved_at = ?, resolution = ?
+        SET resolution = ?
         WHERE id = ? AND assigned_to = ?
-    ''', (datetime.datetime.now(), resolution, bug_id, user['id']))
+    ''', (resolution, bug_id, user['id']))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True, 'redirect': f'/bug/{bug_id}'})
+
+# 保存处理详情并标记为已完成API
+@app.route('/bug/complete_and_save/<int:bug_id>', methods=['POST'])
+@login_required
+@role_required('组内成员')
+def complete_and_save(bug_id):
+    user = get_current_user()
+    if not user:
+        return jsonify({'success': False, 'message': '用户未登录'})
+        
+    resolution = request.form.get('resolution')
+    if not resolution:
+        return jsonify({'success': False, 'message': '处理详情不能为空'})
+    
+    conn = sqlite3.connect('bugtracker.db')
+    c = conn.cursor()
+    # 保存处理详情，同时标记为已完成，并设置解决时间
+    c.execute('''
+        UPDATE bugs 
+        SET resolution = ?, status = '已完成', resolved_at = datetime('now', 'localtime')
+        WHERE id = ? AND assigned_to = ?
+    ''', (resolution, bug_id, user['id']))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True, 'redirect': f'/bug/{bug_id}'})
+
+# 标记问题为已完成API
+@app.route('/bug/complete/<int:bug_id>', methods=['POST'])
+@login_required
+@role_required('组内成员')
+def complete_bug(bug_id):
+    user = get_current_user()
+    if not user:
+        return jsonify({'success': False, 'message': '用户未登录'})
+        
+    conn = sqlite3.connect('bugtracker.db')
+    c = conn.cursor()
+    # 更新状态为已完成，并设置解决时间
+    c.execute('''
+        UPDATE bugs 
+        SET status = '已完成', resolved_at = datetime('now', 'localtime')
+        WHERE id = ? AND assigned_to = ?
+    ''', (bug_id, user['id']))
     conn.commit()
     conn.close()
     return jsonify({'success': True, 'redirect': f'/bug/{bug_id}'})
@@ -499,6 +532,11 @@ def resolve_bug(bug_id):
 @app.route('/uploads/<path:filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+# 处理网站图标请求
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(app.config['UPLOAD_FOLDER'], 'faq.ico')
 
 # 用户登录
 @app.route('/login', methods=['GET', 'POST'])
@@ -530,9 +568,19 @@ def login():
                 return jsonify({'success': False, 'message': '用户名或密码错误'})
                 
             # 创建响应并设置cookie
+            # 根据角色设置重定向路径
+            if user['role'] == '管理员':
+                redirect_url = '/admin'
+            elif user['role'] == '组内成员':
+                redirect_url = '/team-issues'
+            elif user['role'] == '实施组':
+                redirect_url = '/'
+            else:
+                redirect_url = '/'
+
             resp = make_response(jsonify({
                 'success': True,
-                'redirect': '/admin' if user['role'] == '管理员' else '/team-issues' if user['role'] == '组内成员' else '/'
+                'redirect': redirect_url
             }))
             
             # 设置cookie - 确保能被前端JavaScript读取
@@ -602,7 +650,7 @@ def admin_page():
     user = get_current_user()
     if not user or user['role'] != '管理员':
         abort(403)
-    return render_template('admin.html')
+    return render_template('admin.html', user=user)
 
 # 获取用户列表API
 @app.route('/admin/bugs')

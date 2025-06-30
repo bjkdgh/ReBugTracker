@@ -12,11 +12,11 @@ bug.assignee = 负责人
 -->
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0">分配问题 #{{ bug.id }} <!-- 问题ID --></h2>
+        <h2 class="mb-0">分配问题  <!-- 问题ID --></h2>
         <div class="d-flex align-items-center gap-3">
             <div class="text-end">
-                <div class="fw-bold">{{ session.username }}</div>
-                <div class="text-muted small">{{ session.role }}{% if session.team %} | {{ session.team }}{% endif %}</div>
+                <div class="fw-bold">{{ user.username }}</div>
+                <div class="text-muted small">{{ user.role }}{% if user.team %} | {{ user.team }}{% endif %}</div>
             </div>
             <a href="/logout" class="btn btn-danger">退出登录</a>
         </div>
@@ -24,17 +24,31 @@ bug.assignee = 负责人
     
 <div class="card mb-4">
     <div class="card-body">
-        <h5 class="card-title">{{ bug.title }} <!-- 问题标题 --></h5>
+        <h5 class="card-title">{{ bug.title }}</h5>
         <div class="card-text">
-            <div>提交人: {{ bug.creator }} <!-- 提交人 --></div>
-            <div>创建时间: {{ bug.created_at }} <!-- 创建时间 --></div>
-            <div>当前状态: <span class="badge bg-secondary">{{ bug.status }} <!-- 状态 --></span></div>
-            {% if bug.assignee %}<div>当前负责人: {{ bug.assignee }} <!-- 负责人 --></div>{% endif %}
+            <div class="row">
+                <div class="col-md-6">
+                    <div><strong>提交人:</strong> {{ bug.creator_name }}</div>
+                    <div><strong>创建时间:</strong> {{ bug.created_at }}</div>
+                    <div><strong>项目:</strong> {{ bug.project }}</div>
+                </div>
+                <div class="col-md-6">
+                    <div><strong>状态:</strong> <span class="badge bg-secondary">{{ bug.status }}</span></div>
+                    {% if bug.assignee %}<div><strong>负责人:</strong> {{ bug.assignee }}</div>{% endif %}
+                </div>
+            </div>
+            
+            <div class="mt-3">
+                <h6>问题描述:</h6>
+                <div class="bg-light p-3 rounded">{{ bug.description }}</div>
+            </div>
+            
+           
         </div>
     </div>
 </div>
 
-    {% if session.role == '负责人' or session.role == '管理员' %}
+    {% if user.role == '负责人' %}
 <div class="card">
     <div class="card-body">
         <h5 class="card-title mb-4">分配问题</h5>

@@ -12,41 +12,26 @@
             <a class="navbar-brand" href="/">需求/Bug跟踪系统</a>
             <div class="navbar-collapse">
                 <ul class="navbar-nav me-auto">
-                    <script>
-                        function getCookie(name) {
-                            const value = `; ${document.cookie}`;
-                            const parts = value.split(`; ${name}=`);
-                            if (parts.length === 2) return parts.pop().split(';').shift();
-                        }
-                        
-                        const username = getCookie('username');
-                        const role = getCookie('role');
-                        
-                        if (username) {
-                            document.write(`
-                                <li class="nav-item">
-                                    <span class="nav-link">欢迎, ${username}</span>
-                                </li>
-                                ${role === '管理员' ? `
-                                <li class="nav-item">
-                                    <a class="nav-link" href="/admin">管理员面板</a>
-                                </li>
-                                ` : ''}
-                                <li class="nav-item">
-                                    <a class="nav-link" href="/logout">退出</a>
-                                </li>
-                            `);
-                        } else {
-                            document.write(`
-                                <li class="nav-item">
-                                    <a class="nav-link" href="/login">登录</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" href="/register">注册</a>
-                                </li>
-                            `);
-                        }
-                    </script>
+                    {% if user %}
+                    <li class="nav-item">
+                        <span class="nav-link">欢迎, {{ user.username }}</span>
+                    </li>
+                    {% if user.role == '管理员' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin">管理员面板</a>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="/logout">退出</a>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="/login">登录</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/register">注册</a>
+                    </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>

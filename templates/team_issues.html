@@ -32,6 +32,11 @@
     color: #fff !important;
 }
 
+.badge.status-已完成 {
+    background-color: #27ae60 !important; /* 更改为绿色表示已完成 */
+    color: #fff !important;
+}
+
 .badge {
     display: inline-block !important;
     padding: 0.35em 0.65em !important;
@@ -55,11 +60,11 @@ bug.created_at = 创建时间 (数据库字段: created_at)
 -->
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0">团队问题列表</h2>
+        <h2 class="mb-0">我的问题列表</h2>
         <div class="d-flex align-items-center gap-3">
             <div class="text-end">
-                <div class="fw-bold">{{ session.username }}</div>
-                <div class="text-muted small">{{ session.role }}{% if session.team %} | {{ session.team }}{% endif %}</div>
+                <div class="fw-bold">{{ user.username }}</div>
+                <div class="text-muted small">{{ user.role }}{% if user.team %} | {{ user.team }}{% endif %}</div>
             </div>
             <a href="/logout" class="btn btn-danger">退出登录</a>
         </div>
@@ -76,15 +81,27 @@ bug.created_at = 创建时间 (数据库字段: created_at)
                                 <a href="/bug/{{ bug.id }}">{{ bug.title }} <!-- 问题标题 --></a>
                             </h5>
                             <div class="card-text">
-                                <div>状态: <span class="badge status-{{ bug.status.lower().replace(' ', '-') }}" style="display: inline-block; padding: 0.35em 0.65em; font-size: 0.75em; line-height: 1; text-align: center; white-space: nowrap; vertical-align: baseline; border-radius: 0.25rem;">{{ bug.status }}</span></div>
-                                <div>提交人: {{ bug.creator }} <!-- 提交人 --></div>
-                                <div>负责人: {{ bug.assignee }} <!-- 负责人 --></div>
-                                <div class="text-muted small">创建时间: {{ bug.created_at }} <!-- 创建时间 --></div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <div>
+                                        <span class="badge status-{{ bug.status.lower().replace(' ', '-') }}">{{ bug.status }}</span>
+                                    </div>
+                                </div>
+                                {% if bug.description %}
+                                <div class="mb-2">
+                                    <strong>详细描述：</strong> {{ bug.description }}
+                                </div>
+                                {% endif %}
                             </div>
                         </div>
-                        <div>
-                            <a href="/bug/{{ bug.id }}" class="btn btn-outline-primary btn-sm">查看详情</a>
-                        </div>
+                    <div class="d-flex gap-1">
+                        <a href="/bug/{{ bug.id }}" class="btn btn-sm" style="background-color: #4a86e8; color: white;">查看详情</a>
+{% if bug.status == '已分配' and user.role == '组内成员' %}
+<button onclick="confirmReceive('{{ bug.id }}', this)" class="btn btn-success btn-sm">确认接收</button>
+{% endif %}
+                        {% if bug.status == '处理中' and user.role == '组内成员' %}
+                        <a href="/bug/resolve/{{ bug.id }}" class="btn btn-sm" style="background-color: #4a86e8; color: white;">填写处理详情</a>
+                        {% endif %}
+                    </div>
                     </div>
                 </div>
             </div>
@@ -94,4 +111,43 @@ bug.created_at = 创建时间 (数据库字段: created_at)
         <div class="alert alert-info">当前没有团队问题</div>
     {% endif %}
 </div>
+<script>
+function confirmReceive(bugId, buttonElement) {
+    // 禁用按钮防止重复提交
+    buttonElement.disabled = true;
+    buttonElement.textContent = '处理中...';
+    
+    fetch(`/bug/confirm/${bugId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 修改按钮样式和状态
+            buttonElement.style.backgroundColor = '#4a86e8';
+            buttonElement.textContent = '已接收';
+            buttonElement.disabled = true;
+            
+            // 1秒后刷新页面
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        } else {
+            alert('操作失败: ' + data.message);
+            buttonElement.disabled = false;
+            buttonElement.textContent = '确认接收';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('请求失败，请重试');
+        buttonElement.disabled = false;
+        buttonElement.textContent = '确认接收';
+    });
+}
+</script>
 {% endblock %}
