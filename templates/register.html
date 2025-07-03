@@ -47,13 +47,13 @@
             <label for="role">角色</label>
             <select id="role" name="role" required>
                 <option value="">请选择角色</option>
-                <option value="实施组">实施组人员</option>
-                <option value="负责人">负责人</option>
-                <option value="组内成员">组内成员</option>
+                <option value="ssz">实施组人员</option>
+                <option value="fzr">负责人</option>
+                <option value="zny">组内成员</option>
             </select>
         </div>
         <div class="form-group">
-            <label for="team">团队/部门</label>
+            <label for="team">产品线(如:网络分析，产品线名称一致的人才能流转业务)</label>
             <input type="text" id="team" name="team">
         </div>
         <button type="submit" class="btn">注册</button>
@@ -74,7 +74,10 @@
             
             const result = await response.json();
             if (result.success) {
-                window.location.href = result.redirect;
+                alert('注册成功！即将跳转到登录页面');
+                setTimeout(() => {
+                    window.location.href = result.redirect;
+                }, 1500);
             } else {
                 alert(result.message);
             }

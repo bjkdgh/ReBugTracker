@@ -176,7 +176,7 @@
             <div style="display: flex; align-items: center; gap: 20px;">
                 <div style="text-align: right;">
                     <div style="font-weight: 600; font-size: 16px; color: #2c3e50;">{{ user.username }}</div>
-                    <div style="font-size: 0.8em; color: #7f8c8d;">{{ user.role }}{% if user.team %} | {{ user.team }}{% endif %}</div>
+                    <div style="font-size: 0.8em; color: #7f8c8d;"> {{ user.team }}</div>
                 </div>
                 <div style="display: flex; gap: 10px;">
                     <a href="/" class="btn" style="background-color: #4a86e8; color: white; padding: 8px 16px; border-radius: 4px;">← 返回问题列表</a>
@@ -235,11 +235,11 @@
             {% endif %}
             
             <div class="action-buttons">
-                {% if user.role == '负责人' %}
+                {% if user.role == 'fzr' %}
                 <a href="/bug/assign/{{ bug.id }}" class="btn btn-success">指派</a>
                 {% endif %}
                 
-                {% if user.role == '管理员' or (user.role == '实施组' and user.id == created_by) %}
+                {% if user.role == 'gly' or (user.role == 'ssz' and user.id == created_by) %}
                 <button onclick="deleteBug('{{ bug.id }}')" class="btn btn-danger">删除</button>
                 {% endif %}
             </div>

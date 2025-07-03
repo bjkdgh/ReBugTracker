@@ -65,6 +65,10 @@
             background-color: #e74c3c;
             color: white;
         }
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -87,38 +91,39 @@
             {% if bug.assignee_name %}<div>负责人: {{ bug.assignee_name }}</div>{% endif %}
         </div>
 
-        <form action="/bug/complete_and_save/{{ bug.id }}" method="POST" onsubmit="return handleSubmit()">
+        <form action="/bug/resolve/{{ bug.id }}" method="POST" id="resolveForm">
             <div class="form-group">
                 <label for="resolution">处理详情</label>
                 <textarea id="resolution" name="resolution" placeholder="详细描述问题处理过程和结果..." required></textarea>
             </div>
-            <button type="submit" class="btn btn-success">提交</button>
-        </form>
-    </div>
-    <script>
-        function handleSubmit() {
-            // 阻止表单默认提交行为
-            event.preventDefault();
             
-            // 提交表单数据
-            fetch(event.target.action, {
-                method: 'POST',
-                body: new FormData(event.target)
-            })
-            .then(response => {
-                if(response.ok) {
-                    // 显示弹窗
-                    if(confirm('处理详情已提交，点击确定返回首页')) {
-                        window.location.href = '/';
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button type="submit" class="btn btn-success">提交</button>
+            </div>
+        </form>
+
+        <script>
+            function handleSubmit() {
+                event.preventDefault();
+                fetch(event.target.action, {
+                    method: 'POST',
+                    body: new FormData(event.target)
+                })
+                .then(response => {
+                    if(response.ok) {
+                        if(confirm('处理详情已提交，点击确定返回首页')) {
+                            window.location.href = '/';
+                        }
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 2000);
                     }
-                    // 2秒后自动跳转
-                    setTimeout(() => {
-                        window.location.href = '/';
-                    }, 2000);
-                }
-            });
-            return false;
-        }
-    </script>
+                });
+                return false;
+            }
+            
+            document.getElementById('resolveForm').onsubmit = handleSubmit;
+        </script>
+    </div>
 </body>
 </html>

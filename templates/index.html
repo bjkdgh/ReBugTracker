@@ -15,19 +15,46 @@ bug.assignee_name = 负责人姓名 (通过assignee_id关联users表获取)
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 12px 20px; background: #f8f9fa; border-radius: 8px;">
         <h1 style="font-size: 24px; margin: 0; color: #2c3e50;">问题列表 ({{ bugs|length }})</h1>
         <div style="display: flex; align-items: center; gap: 20px;">
-            <div style="text-align: right;">
-                <div style="font-weight: 600; font-size: 16px; color: #2c3e50;">{{ user.username }}</div>
-                <div style="font-size: 0.8em; color: #7f8c8d;">{{ user.role }}{% if user.team %} | {{ user.team }}{% endif %}</div>
-            </div>
+                <div style="text-align: right;">
+                    <div style="font-weight: 600; font-size: 16px; color: #2c3e50;">{{ user.username }}</div>
+                    {% if user.team %}
+                    <div style="font-size: 0.8em; color: #7f8c8d; background: #f0f0f0; padding: 2px 8px; border-radius: 4px; display: inline-block;">
+                        {{ user.team }}
+                    </div>
+                    {% endif %}
+                </div>
             <div style="display: flex; gap: 10px;">
-                {% if user.role == '实施组' %}
+                {% if user.role == 'ssz' %}
                 <a href="/submit" class="btn" style="background-color: #4a86e8; color: white; padding: 8px 16px; border-radius: 4px;">提交新问题</a>
                 {% endif %}
                 <a href="/logout" class="btn btn-danger" style="padding: 8px 16px; border-radius: 4px;">退出登录</a>
             </div>
         </div>
     </div>
-    
+
+    <!-- 状态筛选器 -->
+    <div class="status-filter" style="margin-bottom: 20px; padding: 12px 20px; background: #f8f9fa; border-radius: 8px;">
+        <div style="display: flex; gap: 15px; align-items: center;">
+            <span style="font-weight: 600;">筛选状态：</span>
+            <label style="display: flex; align-items: center; gap: 5px;">
+                <input type="checkbox" class="status-checkbox" value="待处理" checked> 
+                <span class="bug-status status-待处理" style="padding: 3px 8px;">待处理</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 5px;">
+                <input type="checkbox" class="status-checkbox" value="已分配" checked> 
+                <span class="bug-status status-已分配" style="padding: 3px 8px;">已分配</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 5px;">
+                <input type="checkbox" class="status-checkbox" value="处理中" checked> 
+                <span class="bug-status status-处理中" style="padding: 3px 8px;">处理中</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 5px;">
+                <input type="checkbox" class="status-checkbox" value="已完成" checked> 
+                <span class="bug-status status-已完成" style="padding: 3px 8px;">已完成</span>
+            </label>
+        </div>
+    </div>
+
     {% if request.args.get('message') %}
     <div class="alert alert-success" style="padding:10px; background:#dff0d8; color:#3c763d; border-radius:4px; margin-bottom:15px;">
         {{ request.args.get('message') }}
@@ -51,22 +78,15 @@ bug.assignee_name = 负责人姓名 (通过assignee_id关联users表获取)
     margin-bottom: 8px;
 }
 .bug-list .bug-title {
-    font-weight: bold; 
-    font-size: 16px; 
+    font-weight: bold;
+    font-size: 18px;
     color: #2c3e50;
     flex: 1;
     margin-right: 10px;
-}
-.bug-status {
-    display: inline-block !important;
-    padding: 0.35em 0.65em !important;
-    font-size: 0.75em !important;
-    line-height: 1 !important;
-    text-align: center !important;
-    white-space: nowrap !important;
-    vertical-align: baseline !important;
-    border-radius: 0.25rem !important;
-    border: 1px solid rgba(0,0,0,0.1) !important;
+    text-align: left;
+    white-space: normal;
+    line-height: 1.5;
+    padding: 4px 8px;
 }
 .bug-status.status-pending,
 .bug-status.status-待处理 {
@@ -85,14 +105,6 @@ bug.assignee_name = 负责人姓名 (通过assignee_id关联users表获取)
     color: #000 !important;
 }
 .bug-status.status-resolved,
-.bug-status.status-已解决 {
-    background-color: #9b59b6 !important;
-    color: #fff !important;
-}
-.bug-status.status-已确认 {
-    background-color: #27ae60 !important;
-    color: #fff !important;
-}
 .bug-status.status-已完成 {
     background-color: #27ae60 !important;
     color: #fff !important;
@@ -132,7 +144,7 @@ bug.assignee_name = 负责人姓名 (通过assignee_id关联users表获取)
                     <span>项目: {{ bug.project }}</span>
                     <span>提出人: {{ bug.creator_name }}</span>
                     <span>创建时间: {{ bug.created_at|datetimeformat }}</span>
-                    {% if bug.assignee_name %}<span>负责人: {{ bug.assignee_name }}</span>{% endif %}
+                    {% if bug.assignee_name %}<span>负责人: {{ bug.assignee_name.replace('ssz', '实施组') }}</span>{% endif %}
                 </div>
                 
                 <div class="bug-description">
@@ -140,12 +152,12 @@ bug.assignee_name = 负责人姓名 (通过assignee_id关联users表获取)
                 </div>
                 <div class="bug-actions">
                     <a href="/bug/{{ bug.id }}" class="btn" style="background-color: #4a86e8; color: white;">查看详情</a>
-                    {% if  user.role == '负责人' %}
+                    {% if  user.role == 'fzr' %}
                         <a href="/bug/assign/{{ bug.id }}" class="btn btn-primary">指派</a>
-                    {% elif (bug.status == '已分配' or bug.status == '处理中') and user.role == '组内成员' %}
+                    {% elif (bug.status == '已分配' or bug.status == '处理中') and user.role == 'zny' %}
                         <a href="/bug/resolve/{{ bug.id }}" class="btn">标记解决</a>
                     {% endif %}
-                    {% if user.role == '管理员' or (user.id == bug.created_by and user.role == '实施组') %}
+                    {% if user.role == 'gly' or (user.id == bug.created_by and user.role == 'ssz') %}
                         <button onclick="deleteBug('{{ bug.id }}')" class="btn btn-danger">删除</button>
                     {% endif %}
                 </div>
@@ -182,5 +194,32 @@ function deleteBug(bugId) {
         });
     }
 }
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('.status-checkbox');
+    
+    function filterBugs() {
+        const selectedStatuses = Array.from(checkboxes)
+            .filter(checkbox => checkbox.checked)
+            .map(checkbox => checkbox.value.toLowerCase().replace(' ', '-'));
+            
+        document.querySelectorAll('.bug-item').forEach(item => {
+            const statusClass = Array.from(item.querySelector('.bug-status').classList)
+                .find(cls => cls.startsWith('status-'));
+            const status = statusClass ? statusClass.replace('status-', '') : '';
+            
+            item.style.display = selectedStatuses.includes(status) ? 'block' : 'none';
+        });
+    }
+
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', filterBugs);
+    });
+
+    // 初始过滤
+    filterBugs();
+});
 </script>
 {% endblock %}

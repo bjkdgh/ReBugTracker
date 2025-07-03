@@ -50,30 +50,64 @@
         没有账号？<a href="/register">立即注册</a>
     </div>
 
-    <script>
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const formData = new FormData(e.target);
-            const response = await fetch('/login', {
+
+<script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        let response;
+        try {
+            response = await fetch('/login', {
                 method: 'POST',
                 body: formData,
-                credentials: 'include'  // 确保发送和接收cookie
+                credentials: 'include'
+                // 不要加 headers
             });
-            
-            const result = await response.json();
-            if (result.success) {
-                // 重新加载页面以应用cookie
-                window.location.href = result.redirect;
-            } else {
-                alert(result.message);
-            }
-        });
-
-        // 检查是否已登录
-        if (document.cookie.includes('user_id')) {
-            window.location.href = '/';
+        } catch (fetchError) {
+            alert('网络连接错误: ' + fetchError.message);
+            console.error('Fetch error:', fetchError);
+            return;
         }
-    </script>
+        
+        try {
+            const result = await response.json();
+            console.log('Login response:', result);
+            
+            if (!response.ok) {
+                alert('服务器错误: ' + (result.message || '登录失败'));
+                throw new Error(result.message || '登录失败');
+            }
+
+            if (result.success) {
+                console.log('Setting cookies...');
+                document.cookie = `user_id=${result.user.id}; path=/; max-age=86400; SameSite=Lax`;
+                document.cookie = `username=${result.user.username}; path=/; max-age=86400; SameSite=Lax`;
+                document.cookie = `role=${result.user.role}; path=/; max-age=86400; SameSite=Lax`;
+                
+                // 检查cookie是否设置成功
+                setTimeout(() => {
+                    console.log('Current cookies:', document.cookie);
+                    if (document.cookie.includes('user_id')) {
+                        window.location.href = result.redirect + '?t=' + Date.now();
+                    } else {
+                        alert('Cookie设置失败，请检查浏览器设置');
+                    }
+                }, 100);
+            } else {
+                alert(result.message || '登录失败，请检查用户名和密码');
+            }
+        } catch (error) {
+            console.error('登录处理错误:', error);
+            alert('登录处理出错: ' + error.message);
+        }
+    });
+
+    // 检查是否已登录
+    if (document.cookie.includes('user_id')) {
+        window.location.href = '/';
+    }
+</script>
+
 </body>
 </html>

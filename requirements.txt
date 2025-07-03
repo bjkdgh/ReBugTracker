@@ -1,2 +1,4 @@
 flask==2.3.3
 Werkzeug==2.3.7
+psycopg2-binary==2.9.9
+gunicorn==21.2.0

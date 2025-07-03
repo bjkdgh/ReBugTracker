@@ -64,9 +64,28 @@ bug.created_at = 创建时间 (数据库字段: created_at)
         <div class="d-flex align-items-center gap-3">
             <div class="text-end">
                 <div class="fw-bold">{{ user.username }}</div>
-                <div class="text-muted small">{{ user.role }}{% if user.team %} | {{ user.team }}{% endif %}</div>
+                <div class="text-muted small">{{ user.team }}</div>
             </div>
             <a href="/logout" class="btn btn-danger">退出登录</a>
+        </div>
+    </div>
+
+    <!-- 状态筛选器 -->
+    <div class="status-filter" style="margin-bottom: 20px; padding: 12px 20px; background: #f8f9fa; border-radius: 8px;">
+        <div style="display: flex; gap: 15px; align-items: center;">
+            <span style="font-weight: 600;">筛选状态：</span>
+            <label style="display: flex; align-items: center; gap: 5px;">
+                <input type="checkbox" class="status-checkbox" value="已分配" checked> 
+                <span class="badge status-已分配" style="padding: 3px 8px;">已分配</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 5px;">
+                <input type="checkbox" class="status-checkbox" value="处理中" checked> 
+                <span class="badge status-处理中" style="padding: 3px 8px;">处理中</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 5px;">
+                <input type="checkbox" class="status-checkbox" value="已完成"> 
+                <span class="badge status-已完成" style="padding: 3px 8px;">已完成</span>
+            </label>
         </div>
     </div>
     
@@ -95,10 +114,10 @@ bug.created_at = 创建时间 (数据库字段: created_at)
                         </div>
                     <div class="d-flex gap-1">
                         <a href="/bug/{{ bug.id }}" class="btn btn-sm" style="background-color: #4a86e8; color: white;">查看详情</a>
-{% if bug.status == '已分配' and user.role == '组内成员' %}
+{% if bug.status == '已分配' and user.role == 'zncy' %}
 <button onclick="confirmReceive('{{ bug.id }}', this)" class="btn btn-success btn-sm">确认接收</button>
 {% endif %}
-                        {% if bug.status == '处理中' and user.role == '组内成员' %}
+                        {% if bug.status == '处理中' and user.role == 'zncy' %}
                         <a href="/bug/resolve/{{ bug.id }}" class="btn btn-sm" style="background-color: #4a86e8; color: white;">填写处理详情</a>
                         {% endif %}
                     </div>
@@ -149,5 +168,32 @@ function confirmReceive(bugId, buttonElement) {
         buttonElement.textContent = '确认接收';
     });
 }
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('.status-checkbox');
+    
+    function filterBugs() {
+        const selectedStatuses = Array.from(checkboxes)
+            .filter(checkbox => checkbox.checked)
+            .map(checkbox => checkbox.value.toLowerCase().replace(' ', '-'));
+            
+        document.querySelectorAll('.bug-item').forEach(item => {
+            const statusClass = Array.from(item.querySelector('.badge').classList)
+                .find(cls => cls.startsWith('status-'));
+            const status = statusClass ? statusClass.replace('status-', '') : '';
+            
+            item.style.display = selectedStatuses.includes(status) ? 'block' : 'none';
+        });
+    }
+
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', filterBugs);
+    });
+
+    // 初始过滤
+    filterBugs();
+});
 </script>
 {% endblock %}
