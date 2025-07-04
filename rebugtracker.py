@@ -8,7 +8,7 @@ from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta
 from config import DB_CONFIG
 
-app = Flask(__name__, static_folder='uploads', static_url_path='/uploads', template_folder='templates')
+app = Flask(__name__, static_folder='static', static_url_path='/static', template_folder='templates')
 
 # 确保默认字符集为UTF-8
 app.config.update(
