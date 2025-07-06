@@ -1,0 +1,62 @@
+# docker-compose.yml
+
+# 使用推荐的 Compose 文件版本
+version: '3.8'
+
+services:
+  # 1. 定义你的 Python/Flask 应用服务
+  app:
+    # build 指令告诉 Compose 如何构建这个服务的镜像
+    build:
+      # context: . 表示使用当前目录作为构建上下文
+      context: .
+      # dockerfile: Dockerfile 指定了 Dockerfile 的文件名
+      dockerfile: Dockerfile
+    # 给容器起一个易于识别的名字
+    container_name: rebugtracker_app
+    # 将主机的 80 端口映射到容器的 5000 端口
+    # 这样你就可以通过 http://localhost 访问你的应用了
+    ports:
+      - "80:5000"
+    # [开发时很有用] 将本地代码挂载到容器中，修改代码后 gunicorn 会自动重载
+    # 在生产环境中，可以注释掉这一行，因为代码已经通过 Dockerfile COPY 进去了
+    # volumes:
+    #  - .:/app
+    # 设置环境变量
+    environment:
+      - FLASK_ENV=production
+      # [关键] 数据库连接字符串。这里的 'db' 就是下面定义的数据库服务名。
+      # 用户名、密码和数据库名必须和 db 服务的环境变量保持一致。
+      - SQLALCHEMY_DATABASE_URI=postgresql://rebug_user:mysecretpassword@db/rebug_db
+    # depends_on 确保 db 服务在 app 服务启动之前已经就绪
+    depends_on:
+      - db
+    # [可选] 配置容器重启策略，例如在退出时总是重启
+    restart: unless-stopped
+
+  # 2. 定义 PostgreSQL 数据库服务
+  db:
+    # 直接使用官方的 PostgreSQL 镜像，推荐使用 alpine 版本以减小体积
+    image: postgres:13-alpine
+    # 给容器起一个名字
+    container_name: rebugtracker_db
+    # 设置数据库所需的环境变量
+    environment:
+      - POSTGRES_USER=rebug_user          # 数据库用户名
+      - POSTGRES_PASSWORD=mysecretpassword  # 数据库密码
+      - POSTGRES_DB=rebug_db              # 要创建的数据库名称
+    # 将数据库的数据持久化到具名数据卷中
+    # 这样即使容器被删除和重建，数据也不会丢失
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # [可选] 不将数据库端口暴露到主机，以提高安全性
+    # 只有在同一个 Docker 网络中的 'app' 服务可以访问它
+    # ports:
+    #  - "5432:5432" # 如果你需要从外部工具连接数据库，可以取消此行注释
+    restart: unless-stopped
+
+# [关键] 定义具名数据卷，用于持久化 PostgreSQL 的数据
+volumes:
+  postgres_data:
+    # driver: local 表示使用本地驱动，这是默认值
+    driver: local

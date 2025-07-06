@@ -906,7 +906,7 @@ def resolve_bug(bug_id):
 @app.route('/favicon.ico')
 def favicon():
     return send_from_directory(os.path.join(app.root_path, 'static'),
-                              'RBT.ico', mimetype='image/vnd.microsoft.icon')
+                              'rbt_title.ico', mimetype='image/vnd.microsoft.icon')
 
 @app.route('/.well-known/appspecific/com.chrome.devtools.json')
 def handle_chrome_devtools():
