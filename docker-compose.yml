@@ -3,6 +3,11 @@
 # 使用推荐的 Compose 文件版本
 version: '3.8'
 
+# 定义共享网络
+networks:
+  rebug_network:
+    driver: bridge
+
 services:
   # 1. 定义你的 Python/Flask 应用服务
   app:
@@ -17,7 +22,7 @@ services:
     # 将主机的 80 端口映射到容器的 5000 端口
     # 这样你就可以通过 http://localhost 访问你的应用了
     ports:
-      - "80:5000"
+      - "5000:5000"
     # [开发时很有用] 将本地代码挂载到容器中，修改代码后 gunicorn 会自动重载
     # 在生产环境中，可以注释掉这一行，因为代码已经通过 Dockerfile COPY 进去了
     # volumes:
@@ -27,7 +32,7 @@ services:
       - FLASK_ENV=production
       # [关键] 数据库连接字符串。这里的 'db' 就是下面定义的数据库服务名。
       # 用户名、密码和数据库名必须和 db 服务的环境变量保持一致。
-      - SQLALCHEMY_DATABASE_URI=postgresql://rebug_user:mysecretpassword@db/rebug_db
+      - SQLALCHEMY_DATABASE_URI=postgresql://postgres:${POSTGRES_PASSWORD}@db/postgres
     # depends_on 确保 db 服务在 app 服务启动之前已经就绪
     depends_on:
       - db
@@ -42,9 +47,9 @@ services:
     container_name: rebugtracker_db
     # 设置数据库所需的环境变量
     environment:
-      - POSTGRES_USER=rebug_user          # 数据库用户名
-      - POSTGRES_PASSWORD=mysecretpassword  # 数据库密码
-      - POSTGRES_DB=rebug_db              # 要创建的数据库名称
+      - POSTGRES_USER=postgres            # 数据库用户名
+      - POSTGRES_PASSWORD='$RFV5tgb'    # 统一使用单引号包裹密码
+      - POSTGRES_DB=postgres              # 要创建的数据库名称
     # 将数据库的数据持久化到具名数据卷中
     # 这样即使容器被删除和重建，数据也不会丢失
     volumes:
