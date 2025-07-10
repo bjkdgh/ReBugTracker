@@ -108,6 +108,7 @@ bug.created_at = 创建时间 (数据库字段: created_at)
                         <th>状态</th>
                         <th>提交人</th>
                         <th>创建时间</th>
+                        <th>解决时间</th>
                         <th>操作</th>
                     </tr>
                 </thead>
@@ -135,8 +136,12 @@ async function loadBugs() {
             <td>${bug.status}</td>
             <td>${bug.creator_name}</td>
             <td>${bug.created_at}</td>
+            <td>${bug.resolved_at}</td>
             <td>
                 <button class="btn btn-sm btn-danger" onclick="deleteBug(${bug.id})">删除</button>
+                {% if user.role == 'gly' or user.role == 'ssz' %}
+                    ${bug.status === '已解决' ? `<button class="btn btn-sm btn-success" onclick="completeBug(${bug.id})">确认闭环</button>` : ''}
+                {% endif %}
             </td>
         `;
         table.appendChild(row);
@@ -155,6 +160,22 @@ async function deleteBug(bugId) {
             loadBugs();
         } else {
             alert(result.message || '删除问题失败');
+        }
+    }
+}
+
+// 确认闭环问题
+async function completeBug(bugId) {
+    if (confirm('确定要闭环这个问题吗？')) {
+        const response = await fetch(`/bug/complete/${bugId}`, {
+            method: 'POST'
+        });
+        const result = await response.json();
+        if (result.success) {
+            alert('问题已成功闭环');
+            loadBugs();
+        } else {
+            alert(result.message || '闭环问题失败');
         }
     }
 }
@@ -189,7 +210,7 @@ loadBugs();
             
             row.innerHTML = `
                 <td>${user.id}</td>
-                <td>${user.username}</td>
+                <td>${user.chinese_name || user.username}</td>
                 <td>${roleDisplay}</td>
                 <td>${user.team || '-'}</td>
                 <td>

@@ -235,7 +235,7 @@ form.addEventListener('submit', async (e) => {
 
     try {
         const formData = new FormData(form);
-        const response = await fetch('/bugsubmit', {
+        const response = await fetch('/bug/submit', {
             method: 'POST',
             body: formData
         });

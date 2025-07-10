@@ -1,10 +1,12 @@
 import sqlite3
 import psycopg2
 from psycopg2 import sql
-from config import Config
+import os
 
 # SQLite连接
-sqlite_conn = sqlite3.connect('bugtracker.db')
+script_dir = os.path.dirname(os.path.abspath(__file__))
+db_path = os.path.join(script_dir, 'bugtracker.db')
+sqlite_conn = sqlite3.connect(db_path)
 
 # PostgreSQL连接
 pg_conn = psycopg2.connect(
@@ -22,6 +24,7 @@ pg_cursor.execute("""
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     username TEXT NOT NULL,
+    chinese_name TEXT NOT NULL,
     password TEXT NOT NULL,
     role TEXT NOT NULL,
     team TEXT
@@ -53,7 +56,7 @@ pg_cursor.execute("TRUNCATE TABLE bugs CASCADE")
 sqlite_cursor = sqlite_conn.execute("SELECT * FROM users")
 for row in sqlite_cursor:
     pg_cursor.execute(
-        "INSERT INTO users (username, password, role, team) VALUES (%s, %s, %s, %s)",
+        "INSERT INTO users (username, chinese_name, password, role, team) VALUES (%s, %s, %s, %s, %s)",
         row[1:]  # 跳过ID字段
     )
 

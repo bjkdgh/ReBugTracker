@@ -15,6 +15,7 @@ def main():
         # 添加role_en和team_en列
         c.execute('ALTER TABLE users ADD COLUMN IF NOT EXISTS role_en TEXT')
         c.execute('ALTER TABLE users ADD COLUMN IF NOT EXISTS team_en TEXT')
+        c.execute('ALTER TABLE users ADD COLUMN IF NOT EXISTS chinese_name TEXT')
         
         # 更新现有数据
         c.execute('''UPDATE users SET 

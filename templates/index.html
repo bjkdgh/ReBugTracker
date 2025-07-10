@@ -49,6 +49,10 @@ bug.assignee_name = 负责人姓名 (通过assignee_id关联users表获取)
                 <span class="bug-status status-处理中" style="padding: 3px 8px;">处理中</span>
             </label>
             <label style="display: flex; align-items: center; gap: 5px;">
+                <input type="checkbox" class="status-checkbox" value="已解决" checked> 
+                <span class="bug-status status-已解决" style="padding: 3px 8px;">已解决</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 5px;">
                 <input type="checkbox" class="status-checkbox" value="已完成" checked> 
                 <span class="bug-status status-已完成" style="padding: 3px 8px;">已完成</span>
             </label>
@@ -105,6 +109,11 @@ bug.assignee_name = 负责人姓名 (通过assignee_id关联users表获取)
     color: #000 !important;
 }
 .bug-status.status-resolved,
+.bug-status.status-已解决 {
+    background-color: #9b59b6 !important;
+    color: #fff !important;
+}
+.bug-status.status-completed,
 .bug-status.status-已完成 {
     background-color: #27ae60 !important;
     color: #fff !important;
@@ -154,8 +163,12 @@ bug.assignee_name = 负责人姓名 (通过assignee_id关联users表获取)
                     <a href="/bug/{{ bug.id }}" class="btn" style="background-color: #4a86e8; color: white;">查看详情</a>
                     {% if  user.role == 'fzr' %}
                         <a href="/bug/assign/{{ bug.id }}" class="btn btn-primary">指派</a>
-                    {% elif (bug.status == '已分配' or bug.status == '处理中') and user.role == 'zny' %}
+                    {% elif bug.status == '处理中' and user.role == 'zncy' %}
                         <a href="/bug/resolve/{{ bug.id }}" class="btn">标记解决</a>
+                    {% elif bug.status == '已解决' and user.role == 'zncy' %}
+                        <span class="btn btn-secondary disabled">已解决</span>
+                    {% elif bug.status == '已解决' and user.role == 'ssz' %}
+                        <button onclick="completeBug('{{ bug.id }}', this)" class="btn btn-success">确认闭环</button>
                     {% endif %}
                     {% if user.role == 'gly' or (user.id == bug.created_by and user.role == 'ssz') %}
                         <button onclick="deleteBug('{{ bug.id }}')" class="btn btn-danger">删除</button>
@@ -193,6 +206,38 @@ function deleteBug(bugId) {
             alert('删除请求失败: ' + error.message);
         });
     }
+}
+
+function completeBug(bugId, buttonElement) {
+    // 禁用按钮防止重复提交
+    buttonElement.disabled = true;
+    buttonElement.textContent = '闭环中...';
+    
+    fetch(`/bug/complete/${bugId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('问题已成功闭环！');
+            // 刷新页面以更新状态
+            location.reload();
+        } else {
+            alert('操作失败: ' + data.message);
+            buttonElement.disabled = false;
+            buttonElement.textContent = '确认闭环';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('请求失败，请重试');
+        buttonElement.disabled = false;
+        buttonElement.textContent = '确认闭环';
+    });
 }
 </script>
 

@@ -12,9 +12,9 @@ app = Flask(__name__, static_folder='static', static_url_path='/static', templat
 
 # 确保默认字符集为UTF-8
 app.config.update(
-    DEBUG=True,
-    PROPAGATE_EXCEPTIONS=True,
-    TRAP_HTTP_EXCEPTIONS=True,
+    DEBUG=False,  # 关闭调试模式避免调试器资源问题
+    PROPAGATE_EXCEPTIONS=False,
+    TRAP_HTTP_EXCEPTIONS=False,
     UPLOAD_FOLDER='uploads',
     ALLOWED_EXTENSIONS={'png', 'jpg', 'jpeg', 'gif'},
     JSON_AS_ASCII=False,  # 确保JSON响应不使用ASCII编码
@@ -58,17 +58,19 @@ def get_current_user():
         username = request.cookies.get('username')
         role_en = request.cookies.get('role_en')
         team = request.cookies.get('team')
+        chinese_name = request.cookies.get('chinese_name')
         
         if not all([user_id, username, role_en]):
             app.logger.debug(f"获取用户信息失败 - 缺少必要cookie: user_id={user_id}, username={username}, role_en={role_en}")
             return None
         
         # 添加调试信息
-        app.logger.debug(f"当前用户cookie - user_id: {user_id}, username: {username}, role_en: {role_en}, team: {team}")
+        app.logger.debug(f"当前用户cookie - user_id: {user_id}, username: {username}, role_en: {role_en}, team: {team}, chinese_name: {chinese_name}")
         
         return {
             'id': int(user_id),
             'username': username,
+            'chinese_name': chinese_name,
             'role': role_en.lower() if role_en else None,
             'team': team.lower() if team else None
         }
@@ -141,7 +143,8 @@ def init_db():
             id SERIAL PRIMARY KEY,
             username TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL,
-            role TEXT NOT NULL,
+            chinese_name TEXT,
+            role TEXT NOT NULL DEFAULT 'user',
             role_en TEXT,
             team TEXT,
             team_en TEXT
@@ -152,6 +155,7 @@ def init_db():
     try:
         c.execute('ALTER TABLE users ADD COLUMN role_en TEXT')
         c.execute('ALTER TABLE users ADD COLUMN team_en TEXT')
+        c.execute('ALTER TABLE users ADD COLUMN chinese_name TEXT')
     except psycopg2.Error:
         conn.rollback()
     
@@ -198,7 +202,7 @@ def init_db():
                 id SERIAL PRIMARY KEY,
                 title TEXT NOT NULL,
                 description TEXT,
-                status TEXT DEFAULT '待处理',  -- 待处理/已分配/处理中/已解决/已确认
+                status TEXT DEFAULT '待处理',  -- 待处理/已分配/处理中/已解决/已完成
                 assigned_to INTEGER,         -- 负责人ID
                 created_by INTEGER,          -- 提交人ID
                 project TEXT,               -- 所属项目名称
@@ -210,6 +214,41 @@ def init_db():
     ''')
     conn.commit()
     conn.close()
+
+@app.route('/bug/complete/<int:bug_id>', methods=['POST'])
+@login_required
+@role_required('ssz')
+def complete_bug(bug_id):
+    """确认闭环问题"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'success': False, 'message': '用户未登录'})
+    
+    conn = psycopg2.connect(**DB_CONFIG)
+    c = conn.cursor(cursor_factory=DictCursor)
+    
+    try:
+        # 检查问题是否存在且状态为'已解决'
+        c.execute('SELECT status FROM bugs WHERE id = %s', (bug_id,))
+        bug = c.fetchone()
+        if not bug:
+            return jsonify({'success': False, 'message': '问题不存在'}), 404
+        if bug['status'] != '已解决':
+            return jsonify({'success': False, 'message': '问题状态不是已解决，无法闭环'}), 400
+        
+        # 更新问题状态为"已完成"
+        c.execute('''
+            UPDATE bugs 
+            SET status = '已完成'
+            WHERE id = %s
+        ''', (bug_id,))
+        conn.commit()
+        return jsonify({'success': True, 'message': '问题已成功闭环'})
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        conn.close()
 
 # 登录路由
 @app.route('/logout')
@@ -232,6 +271,7 @@ def register():
         return render_template('register.html')
         
     # 处理注册请求
+    chinese_name = request.form.get('chinese_name')
     username = request.form.get('username')
     password = request.form.get('password')
     role = request.form.get('role')
@@ -252,16 +292,16 @@ def register():
     # 简单处理team_en
     team_en = team if team else None
     
-    conn = psycopg2.connect(**DB_CONFIG)
+    conn = psycopg2.connect(**db_config)
     c = conn.cursor(cursor_factory=DictCursor)
     
     try:
         hashed_password = generate_password_hash(password)
         c.execute('''
-            INSERT INTO users (username, password, role, role_en, team, team_en)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO users (chinese_name, username, password, role, role_en, team, team_en)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
             RETURNING id
-        ''', (username, hashed_password, role_cn, role_en, team, team_en))
+        ''', (chinese_name, username, hashed_password, role_cn, role_en, team, team_en))
         user_id = c.fetchone()['id']
         conn.commit()
         return jsonify({
@@ -281,7 +321,9 @@ def login():
         username = request.form.get('username')
         password = request.form.get('password')
         
-        conn = psycopg2.connect(**DB_CONFIG)
+        db_config = DB_CONFIG.copy()
+        db_config['client_encoding'] = 'utf8'
+        conn = psycopg2.connect(**db_config)
         c = conn.cursor(cursor_factory=DictCursor)
         c.execute('SELECT * FROM users WHERE username = %s', (username,))
         user = c.fetchone()
@@ -306,6 +348,7 @@ def login():
             }))
             resp.set_cookie('user_id', str(user['id']))
             resp.set_cookie('username', user['username'])
+            resp.set_cookie('chinese_name', user['chinese_name'] if user.get('chinese_name') else '')
             resp.set_cookie('role_en', role_en)
             if user.get('team'):
                 resp.set_cookie('team', user['team'])
@@ -338,7 +381,7 @@ def index():
         # 负责人看到自己团队的所有问题和待分配问题
         c.execute('''
             SELECT b.*, u1.username as creator_name, u2.username as assignee_name,
-                   b.created_at as local_created_at
+                   b.created_at as local_created_at, b.resolved_at as local_resolved_at
             FROM bugs b
             LEFT JOIN users u1 ON b.created_by = u1.id
             LEFT JOIN users u2 ON b.assigned_to = u2.id
@@ -348,8 +391,8 @@ def index():
     else:
         # 其他角色看到所有问题
         c.execute('''
-            SELECT b.*, u1.username as creator_name, u2.username as assignee_name,
-                   b.created_at as local_created_at
+            SELECT b.*, COALESCE(u1.chinese_name, u1.username) as creator_name, COALESCE(u2.chinese_name, u2.username) as assignee_name,
+                   b.created_at as local_created_at, b.resolved_at as local_resolved_at
             FROM bugs b
             LEFT JOIN users u1 ON b.created_by = u1.id
             LEFT JOIN users u2 ON b.assigned_to = u2.id
@@ -357,6 +400,20 @@ def index():
         ''')
     
     bugs = c.fetchall()
+    
+    # 格式化问题创建时间和解决时间
+    formatted_bugs = []
+    for bug in bugs:
+        bug_dict = dict(bug)
+        if bug_dict['local_created_at']:
+            bug_dict['local_created_at'] = bug_dict['local_created_at'].strftime('%Y-%m-%d %H:%M')
+        else:
+            bug_dict['local_created_at'] = '--'
+        if bug_dict['local_resolved_at']:
+            bug_dict['local_resolved_at'] = bug_dict['local_resolved_at'].strftime('%Y-%m-%d %H:%M')
+        else:
+            bug_dict['local_resolved_at'] = '--'
+        formatted_bugs.append(bug_dict)
     conn.close()
     return render_template('index.html', bugs=bugs, user=user)
 
@@ -371,7 +428,7 @@ def admin_users():
     
     if request.method == 'GET':
         # 获取所有用户
-        c.execute('SELECT id, username, role, team FROM users ORDER BY id')
+        c.execute('SELECT id, username, chinese_name, role, team FROM users ORDER BY id')
         users = [dict(row) for row in c.fetchall()]
         conn.close()
         return jsonify(users)
@@ -466,6 +523,7 @@ def user_detail(user_id):
     role = data.get('role')
     team = data.get('team')
     role_en = data.get('role_en')
+    chinese_name = data.get('chinese_name')
     
     # 生成团队英文编码(中文取首字母拼音大写)
     team_en = None
@@ -497,15 +555,15 @@ def user_detail(user_id):
             hashed_password = generate_password_hash(password)
             c.execute('''
                 UPDATE users 
-                SET username=%s, password=%s, role=%s, role_en=%s, team=%s, team_en=%s
+                SET username=%s, password=%s, role=%s, role_en=%s, team=%s, team_en=%s, chinese_name=%s
                 WHERE id=%s
-            ''', (username, hashed_password, role, role_en, team, team_en, user_id))
+            ''', (username, hashed_password, role, role_en, team, team_en, chinese_name, user_id))
         else:
             c.execute('''
                 UPDATE users 
-                SET username=%s, role=%s, role_en=%s, team=%s, team_en=%s
+                SET username=%s, role=%s, role_en=%s, team=%s, team_en=%s, chinese_name=%s
                 WHERE id=%s
-            ''', (username, role, role_en, team, team_en, user_id))
+            ''', (username, role, role_en, team, team_en, chinese_name, user_id))
             
         conn.commit()
         return jsonify({'success': True})
@@ -552,12 +610,23 @@ def admin_bugs():
     conn = psycopg2.connect(**DB_CONFIG)
     c = conn.cursor(cursor_factory=DictCursor)
     c.execute('''
-        SELECT b.id, b.title, b.status, b.created_at, u.username as creator_name
+        SELECT b.id, b.title, b.status, b.created_at, b.resolved_at, COALESCE(u.chinese_name, u.username) as creator_name
         FROM bugs b
         JOIN users u ON b.created_by = u.id
         ORDER BY b.created_at DESC
     ''')
-    bugs = [dict(row) for row in c.fetchall()]
+    bugs = []
+    for row in c.fetchall():
+        bug = dict(row)
+        if bug['created_at']:
+            bug['created_at'] = bug['created_at'].strftime('%Y-%m-%d %H:%M')
+        else:
+            bug['created_at'] = '--'
+        if bug['resolved_at']:
+            bug['resolved_at'] = bug['resolved_at'].strftime('%Y-%m-%d %H:%M')
+        else:
+            bug['resolved_at'] = '--'
+        bugs.append(bug)
     conn.close()
     return jsonify(bugs)
 
@@ -573,20 +642,34 @@ def admin():
     # 获取所有用户
     conn = psycopg2.connect(**DB_CONFIG)
     c = conn.cursor(cursor_factory=DictCursor)
-    c.execute('SELECT id, username, role, team FROM users ORDER BY id')
+    c.execute('SELECT id, username, chinese_name, role, team FROM users ORDER BY id')
     users = c.fetchall()
     
     # 获取所有问题
     c.execute('''
-        SELECT b.id, b.title, b.status, b.created_at, u.username as creator_name
+        SELECT b.id, b.title, b.status, b.created_at, b.resolved_at, COALESCE(u.chinese_name, u.username) as creator_name
         FROM bugs b
         JOIN users u ON b.created_by = u.id
         ORDER BY b.created_at DESC
     ''')
     bugs = c.fetchall()
+    
+    # 格式化问题创建时间和解决时间
+    formatted_bugs = []
+    for bug in bugs:
+        bug_dict = dict(bug)
+        if bug_dict['created_at']:
+            bug_dict['created_at'] = bug_dict['created_at'].strftime('%Y-%m-%d %H:%M')
+        else:
+            bug_dict['created_at'] = '--'
+        if bug_dict['resolved_at']:
+            bug_dict['resolved_at'] = bug_dict['resolved_at'].strftime('%Y-%m-%d %H:%M')
+        else:
+            bug_dict['resolved_at'] = '--'
+        formatted_bugs.append(bug_dict)
     conn.close()
     
-    return render_template('admin.html', users=users, bugs=bugs, user=user)
+    return render_template('admin.html', users=users, bugs=formatted_bugs, user=user)
 
 @app.route('/team-issues')
 @login_required
@@ -605,7 +688,7 @@ def team_issues():
                b.created_at as local_created_at, 
                b.resolved_at as local_resolved_at,
                b.resolution, b.image_path,
-               u1.username as creator_name, u2.username as assignee_name
+               COALESCE(u1.chinese_name, u1.username) as creator_name, COALESCE(u2.chinese_name, u2.username) as assignee_name
         FROM bugs b
         LEFT JOIN users u1 ON b.created_by = u1.id
         LEFT JOIN users u2 ON b.assigned_to = u2.id
@@ -613,12 +696,29 @@ def team_issues():
             (b.assigned_to = %s) 
             OR 
             (b.status = '待处理' AND b.assigned_to IS NULL AND u1.team = %s)
+            OR
+            (b.status = '已解决' AND b.assigned_to = %s)
         )
         ORDER BY b.created_at DESC
-    ''', (user['id'], user['team']))
+    ''', (user['id'], user['team'], user['id']))
     bugs = c.fetchall()
+    
+    # 格式化问题创建时间和解决时间
+    formatted_bugs = []
+    for bug in bugs:
+        bug_dict = dict(bug)
+        if bug_dict['local_created_at']:
+            bug_dict['local_created_at'] = bug_dict['local_created_at'].strftime('%Y-%m-%d %H:%M')
+        else:
+            bug_dict['local_created_at'] = '--'
+        if bug_dict['local_resolved_at']:
+            bug_dict['local_resolved_at'] = bug_dict['local_resolved_at'].strftime('%Y-%m-%d %H:%M')
+        else:
+            bug_dict['local_resolved_at'] = '--'
+        formatted_bugs.append(bug_dict)
     conn.close()
-    return render_template('team_issues.html', bugs=bugs, user=user)
+    app.logger.debug(f"Rendering team_issues.html with user role: {user['role']} and bugs: {formatted_bugs}")
+    return render_template('team_issues.html', bugs=formatted_bugs, user=user)
 
 # 提交问题页面
 @app.route('/submit')
@@ -633,59 +733,95 @@ def submit_page():
     conn = psycopg2.connect(**db_config)
     c = conn.cursor(cursor_factory=DictCursor)
     try:
-        c.execute('SELECT username FROM users WHERE role = %s', ('负责人',))
-        managers = [row['username'] for row in c.fetchall()]
+        c.execute('SELECT chinese_name FROM users WHERE role = %s', ('负责人',))
+        managers = [row['chinese_name'] for row in c.fetchall() if row['chinese_name']]
         
         return render_template('submit.html', managers=managers, projects=[], user=user)
     finally:
         conn.close()
 
 # 提交问题API
-@app.route('/bugsubmit', methods=['POST'])
+@app.route('/bug/submit', methods=['POST'])
 @login_required
 def submit_bug():
+    app.logger.debug(f"收到问题提交请求，表单数据: {request.form}")
     user = get_current_user()
     if not user:
-        return jsonify({'success': False, 'message': '用户未登录'})
+        app.logger.warning("提交问题失败: 用户未登录")
+        return jsonify({'success': False, 'message': '用户未登录'}), 401
         
     title = request.form.get('title')
     description = request.form.get('description')
     created_by = user['id']
+    app.logger.debug(f"提交用户ID: {created_by}, 标题: {title}, 描述: {description}")
+    
+    if not title or not description:
+        return jsonify({'success': False, 'message': '标题和描述不能为空'}), 400
     
     # 处理图片上传
     image_path = None
     if 'image' in request.files:
         file = request.files['image']
-        if file.filename != '':
+        if file and file.filename != '':
+            upload_dir = app.config['UPLOAD_FOLDER']
+            if not os.path.exists(upload_dir):
+                os.makedirs(upload_dir, mode=0o777, exist_ok=True)
             filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            filepath = os.path.join(upload_dir, filename)
+            file.save(filepath)
             image_path = f'/uploads/{filename}'
+            app.logger.debug(f"文件保存成功: {filepath}")
     
     # 存入数据库
     db_config = DB_CONFIG.copy()
     db_config['client_encoding'] = 'utf8'
     conn = psycopg2.connect(**db_config)
     c = conn.cursor(cursor_factory=DictCursor)
-    project_id = request.form.get('project')
-    manager_name = request.form.get('manager')
     
-    # 获取负责人ID（大小写不敏感查询）
-    c.execute('SELECT id FROM users WHERE LOWER(username) = LOWER(%s)', (manager_name,))
-    manager = c.fetchone()
-    if not manager:
-        return jsonify({'success': False, 'message': '指定的负责人不存在'})
-    manager_id = manager['id']
-    
-    c.execute('''
-        INSERT INTO bugs (title, description, created_by, project, image_path, assigned_to, status, created_at)
-        VALUES (%s, %s, %s, %s, %s, %s, '待处理', CURRENT_TIMESTAMP)
-        RETURNING id
-    ''', (title, description, created_by, project_id, image_path, manager_id))
-    bug_id = c.fetchone()['id']
-    conn.commit()
-    conn.close()
-    
-    return jsonify({'success': True, 'bug_id': bug_id, 'redirect': f'/bug/{bug_id}'})
+    try:
+        manager_name = request.form.get('manager')
+        if not manager_name:
+            return jsonify({'success': False, 'message': '请选择负责人'}), 400
+        
+        # 获取负责人ID（使用中文名查询）
+        c.execute('SELECT id FROM users WHERE chinese_name = %s', (manager_name,))
+        manager = c.fetchone()
+        if not manager:
+            return jsonify({'success': False, 'message': '指定的负责人不存在'}), 404
+        
+        manager_id = manager['id']
+        project_id = request.form.get('project', '')
+        
+        c.execute('''
+            INSERT INTO bugs (title, description, created_by, project, image_path, assigned_to, status, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, '待处理', CURRENT_TIMESTAMP)
+            RETURNING id
+        ''', (title, description, created_by, project_id, image_path, manager_id))
+        
+        bug_id = c.fetchone()['id']
+        conn.commit()
+        return jsonify({
+            'success': True, 
+            'bug_id': bug_id, 
+            'redirect': f'/bug/{bug_id}'
+        })
+    except psycopg2.OperationalError as e:
+        conn.rollback()
+        app.logger.error(f"数据库连接失败: {str(e)}")
+        return jsonify({'success': False, 'message': '数据库连接失败，请检查数据库服务'}), 503
+    except psycopg2.IntegrityError as e:
+        conn.rollback()
+        app.logger.error(f"数据完整性错误: {str(e)}")
+        return jsonify({'success': False, 'message': '数据验证失败，请检查输入'}), 400
+    except Exception as e:
+        conn.rollback()
+        app.logger.error(f"提交问题失败: {str(e)}", exc_info=True)
+        return jsonify({'success': False, 'message': f'系统错误: {str(e)}'}), 500
+    finally:
+        try:
+            conn.close()
+        except:
+            pass
 
 # 问题详情页
 @app.route('/bug/<int:bug_id>')
@@ -700,7 +836,7 @@ def bug_detail(bug_id):
     conn = psycopg2.connect(**db_config)
     c = conn.cursor(cursor_factory=DictCursor)
     c.execute('''
-        SELECT b.*, u1.username as creator_name, u2.username as assignee_name,
+        SELECT b.*, COALESCE(u1.chinese_name, u1.username) as creator_name, COALESCE(u2.chinese_name, u2.username) as assignee_name,
                b.created_at as local_created_at,
                b.resolved_at as local_resolved_at
         FROM bugs b
@@ -713,9 +849,20 @@ def bug_detail(bug_id):
     if not bug:
         return "问题不存在", 404
     
+    # 格式化时间
+    bug_dict = dict(bug)
+    if bug_dict['local_created_at']:
+        bug_dict['local_created_at'] = bug_dict['local_created_at'].strftime('%Y-%m-%d %H:%M')
+    else:
+        bug_dict['local_created_at'] = '--'
+    if bug_dict['local_resolved_at']:
+        bug_dict['local_resolved_at'] = bug_dict['local_resolved_at'].strftime('%Y-%m-%d %H:%M')
+    else:
+        bug_dict['local_resolved_at'] = '--'
+
     message = request.args.get('message')
     # 将创建者ID传递给模板
-    return render_template('bug_detail.html', bug=bug, message=message, created_by=bug['created_by'], user=user)
+    return render_template('bug_detail.html', bug=bug_dict, message=message, created_by=bug_dict['created_by'], user=user)
 
 # 分配问题页面
 @app.route('/bug/assign/<int:bug_id>')
@@ -731,7 +878,7 @@ def assign_page(bug_id):
     conn = psycopg2.connect(**db_config)
     c = conn.cursor(cursor_factory=DictCursor)
     c.execute('''
-        SELECT b.*, u1.username as creator_name, u2.username as assignee_name
+        SELECT b.*, COALESCE(u1.chinese_name, u1.username) as creator_name, COALESCE(u2.chinese_name, u2.username) as assignee_name
         FROM bugs b
         LEFT JOIN users u1 ON b.created_by = u1.id
         LEFT JOIN users u2 ON b.assigned_to = u2.id
@@ -741,7 +888,7 @@ def assign_page(bug_id):
     
     # 获取当前负责人的组内成员
     c.execute('''
-        SELECT id, username FROM users 
+        SELECT id, COALESCE(chinese_name, username) as username FROM users 
         WHERE team = %s AND (role = '组内成员' OR role = '负责人')
     ''', (user['team'],))
     team_members = [{'id': row['id'], 'username': row['username']} for row in c.fetchall()]
@@ -807,7 +954,7 @@ def resolve_page(bug_id):
     conn = psycopg2.connect(**DB_CONFIG)
     c = conn.cursor(cursor_factory=DictCursor)
     c.execute('''
-        SELECT b.*, u1.username as creator_name, u2.username as assignee_name
+        SELECT b.*, COALESCE(u1.chinese_name, u1.username) as creator_name, COALESCE(u2.chinese_name, u2.username) as assignee_name
         FROM bugs b
         LEFT JOIN users u1 ON b.created_by = u1.id
         LEFT JOIN users u2 ON b.assigned_to = u2.id
@@ -880,6 +1027,30 @@ def confirm_receive(bug_id):
     conn.close()
     return jsonify({'success': True})
 
+@app.route('/bug/resolve/<int:bug_id>', methods=['GET'])
+@login_required
+@role_required('zncy')
+def show_resolve_page(bug_id):
+    """解决问题页面"""
+    user = get_current_user()
+    if not user:
+        return redirect('/login')
+        
+    conn = psycopg2.connect(**DB_CONFIG)
+    c = conn.cursor(cursor_factory=DictCursor)
+    c.execute('''
+        SELECT b.*, COALESCE(u1.chinese_name, u1.username) as creator_name, COALESCE(u2.chinese_name, u2.username) as assignee_name
+        FROM bugs b
+        LEFT JOIN users u1 ON b.created_by = u1.id
+        LEFT JOIN users u2 ON b.assigned_to = u2.id
+        WHERE b.id = %s
+    ''', (bug_id,))
+    bug = c.fetchone()
+    conn.close()
+    if not bug:
+        return "问题不存在", 404
+    return render_template('resolve.html', bug=bug, user=user)
+
 @app.route('/bug/resolve/<int:bug_id>', methods=['POST'])
 @login_required
 @role_required('zncy')
@@ -907,6 +1078,11 @@ def resolve_bug(bug_id):
 def favicon():
     return send_from_directory(os.path.join(app.root_path, 'static'),
                               'rbt_title.ico', mimetype='image/vnd.microsoft.icon')
+
+# 添加上传文件访问路由
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 @app.route('/.well-known/appspecific/com.chrome.devtools.json')
 def handle_chrome_devtools():

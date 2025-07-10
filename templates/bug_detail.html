@@ -192,9 +192,9 @@
             </div>
             
             <div class="bug-meta">
-                提交人: {{ bug.creator_name }} | 创建时间: {{ bug.created_at }}
+                提交人: {{ bug.creator_name }} | 创建时间: {{ bug.local_created_at }}
                 {% if bug.assignee_name %} | 负责人: {{ bug.assignee_name }}{% endif %}
-                {% if bug.resolved_at %} | 解决时间: {{ bug.resolved_at }}{% endif %}
+                {% if bug.local_resolved_at %} | 解决时间: {{ bug.local_resolved_at }}{% endif %}
             </div>
             
             <div class="section-title">问题描述</div>

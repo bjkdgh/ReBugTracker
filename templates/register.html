@@ -35,14 +35,19 @@
 <body>
     <h1>用户注册</h1>
     <form id="registerForm">
+        
         <div class="form-group">
             <label for="username">用户名</label>
             <input type="text" id="username" name="username" required>
         </div>
         <div class="form-group">
-            <label for="password">密码</label>
-            <input type="password" id="password" name="password" required>
-        </div>
+                        <label for="password">密码</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="chinese_name">中文姓名</label>
+                        <input type="text" class="form-control" id="chinese_name" name="chinese_name">
+                    </div>
         <div class="form-group">
             <label for="role">角色</label>
             <select id="role" name="role" required>
@@ -53,7 +58,7 @@
             </select>
         </div>
         <div class="form-group">
-            <label for="team">产品线(如:网络分析，产品线名称一致的人才能流转业务)</label>
+            <label for="team">产品线</label>
             <input type="text" id="team" name="team">
         </div>
         <button type="submit" class="btn">注册</button>
