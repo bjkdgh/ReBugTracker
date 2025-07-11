@@ -83,7 +83,13 @@ def login_required(f):
     def decorated_function(*args, **kwargs):
         user = get_current_user()
         if not user:
-            return redirect('/login')
+            resp = make_response(redirect('/login'))
+            resp.delete_cookie('user_id')
+            resp.delete_cookie('username') 
+            resp.delete_cookie('role_en')
+            resp.delete_cookie('team')
+            resp.delete_cookie('chinese_name')
+            return resp
         return f(*args, **kwargs)
     return decorated_function
 
