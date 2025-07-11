@@ -3,15 +3,13 @@
 一个基于Flask和PostgreSQL的Bug跟踪系统
 
 ## 部署方式
-- 直接部署: 使用Gunicorn运行
-- Docker单容器部署
-- Docker Compose多服务部署
-(详见DEPLOYMENT.md)
+- Windows生产部署：使用Nginx+Waitress+PostgreSQL (详见DEPLOYMENT_GUIDE_WINDOWS_POSTGRES.md)
+- Linux容器化部署：Docker Compose多服务部署 (详见DEPLOYMENT.md)
 
 ## 功能特性
 - 用户角色管理(管理员/负责人/组内成员)
 - Bug提交与分配
-- Bug状态跟踪(待处理/已分配/处理中/已解决)
+- Bug状态跟踪(待处理/已分配/处理中/已解决/已完成)
 - 项目关联管理
 - 图片附件支持
 
@@ -39,5 +37,6 @@ ReBugTracker/
 ├── requirements.txt      # 依赖列表
 ├── static/               # 静态资源
 ├── templates/            # 模板文件
+├── logs/                 # 服务运行日志
 └── uploads/              # 上传文件存储
 ```
