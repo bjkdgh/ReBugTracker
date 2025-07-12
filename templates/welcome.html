@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}欢迎 - ReBugTracker{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4>欢迎，{{ user.chinese_name or user.username }}！</h4>
+                </div>
+                <div class="card-body">
+                    <p class="lead">欢迎使用 ReBugTracker 缺陷跟踪系统</p>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h5 class="card-title">我的任务</h5>
+                                    <p class="card-text">查看分配给我的问题和任务</p>
+                                    <a href="/team-issues" class="btn btn-primary">查看我的任务</a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h5 class="card-title">提交问题</h5>
+                                    <p class="card-text">报告新的缺陷或问题</p>
+                                    <a href="/submit" class="btn btn-success">提交问题</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="alert alert-info">
+                                <h6>用户信息</h6>
+                                <p><strong>用户名:</strong> {{ user.username }}</p>
+                                <p><strong>角色:</strong> {{ user.role }}</p>
+                                <p><strong>团队:</strong> {{ user.team or '未分配' }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

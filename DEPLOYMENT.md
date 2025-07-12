@@ -1,33 +1,131 @@
-# 部署指南
+# ReBugTracker 部署指南
 
-## 1. 开发环境运行
+## 🚀 快速部署
+
+### 方式一：Docker Compose (推荐)
+
+#### 1. 使用启动脚本 (最简单)
+
+**Linux/macOS:**
 ```bash
-# 安装依赖
+./start.sh
+```
+
+**Windows:**
+```cmd
+start.bat
+```
+
+#### 2. 手动部署
+
+**PostgreSQL模式:**
+```bash
+# 配置环境变量
+cp .env.example .env
+# 编辑 .env 设置 DB_TYPE=postgres
+
+# 启动服务
+docker-compose up -d
+
+# 查看状态
+docker-compose ps
+```
+
+**SQLite模式:**
+```bash
+# 启动SQLite模式
+docker-compose -f docker-compose.sqlite.yml up -d
+```
+
+### 方式二：本地开发环境
+
+```bash
+# 1. 安装依赖
 pip install -r requirements.txt
 
-# 运行开发服务器
+# 2. 配置数据库 (编辑 config.py)
+# 设置 DB_TYPE = 'sqlite' 或 'postgres'
+
+# 3. 启动开发服务器
 python rebugtracker.py
 ```
 
-## 2. 生产环境部署
+## 🔧 生产环境部署
 
-### 使用Gunicorn运行
+### 1. Docker 生产部署 (推荐)
 
+#### 环境准备
 ```bash
-gunicorn --bind 0.0.0.0:5000 --name ReBugTracker rebugtracker:app
+# 安装 Docker 和 Docker Compose
+curl -fsSL https://get.docker.com -o get-docker.sh
+sh get-docker.sh
+
+# 安装 Docker Compose
+sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
 ```
 
-参数说明：
-- `--name`：设置进程名称，系统中会显示为ReBugTracker
-- 第一个`rebugtracker`：Python模块文件名(不带.py后缀)，这里是rebugtracker.py
-- 第二个`app`：Flask应用实例变量名，在rebugtracker.py中通过`app = Flask(__name__)`创建
-- `--bind`：指定绑定的IP和端口，0.0.0.0表示监听所有网络接口
+#### 部署步骤
+```bash
+# 1. 克隆项目
+git clone <repository-url>
+cd ReBugTracker
 
-示例启动命令分解：
-1. 查找rebugtracker.py文件中的Flask应用实例
-2. 在5000端口启动WSGI服务器
-3. 设置进程名称为ReBugTracker
-4. 接收所有网络接口的请求
+# 2. 配置环境变量
+cp .env.example .env
+vim .env  # 编辑配置
+
+# 3. 启动服务
+docker-compose up -d
+
+# 4. 查看日志
+docker-compose logs -f app
+```
+
+### 2. 传统部署方式
+
+#### 使用 Gunicorn + Nginx
+
+**安装依赖:**
+```bash
+pip install -r requirements.txt
+pip install gunicorn
+```
+
+**启动 Gunicorn:**
+```bash
+gunicorn --bind 127.0.0.1:5000 \
+         --workers 4 \
+         --timeout 120 \
+         --name ReBugTracker \
+         rebugtracker:app
+```
+
+**Nginx 配置:**
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /static {
+        alias /path/to/ReBugTracker/static;
+        expires 30d;
+    }
+
+    location /uploads {
+        alias /path/to/ReBugTracker/uploads;
+        expires 7d;
+    }
+}
+```
 
 进程查看方法：
 ```bash

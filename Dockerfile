@@ -33,17 +33,26 @@ RUN addgroup --system app && adduser --system --ingroup app app
 # 设置工作目录
 WORKDIR /app
 
-# [可选] 安装 PostgreSQL 运行时依赖
-# 如果你的 requirements.txt 中用的是 psycopg2-binary，则此步骤可以省略。
-# 如果用的是 psycopg2 (源码包)，则需要安装 libpq5 这个运行时库。
-# RUN apt-get update && apt-get install -y --no-install-recommends libpq5 && rm -rf /var/lib/apt/lists/*
+# 安装运行时依赖：curl用于健康检查，tzdata用于时区设置
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    tzdata \
+    && rm -rf /var/lib/apt/lists/*
+
+# 设置容器时区（亚洲/上海）
+ENV TZ=Asia/Shanghai
+RUN ln -fs /usr/share/zoneinfo/${TZ} /etc/localtime && \
+    dpkg-reconfigure -f noninteractive tzdata
 
 # 从构建阶段复制已经安装好依赖的虚拟环境
 COPY --from=builder /opt/venv /opt/venv
 
+# 创建必要的目录
+RUN mkdir -p /app/uploads /app/logs && \
+    chown -R app:app /app/uploads /app/logs
+
 # 复制应用代码到工作目录
 # --chown=app:app 将文件所有者设置为我们创建的非 root 用户
-# 注意: 这需要 Docker BuildKit 支持 (现代 Docker 版本默认开启)
 COPY --chown=app:app . .
 
 # 将虚拟环境的 bin 目录添加到 PATH，这样可以直接运行 gunicorn 等命令
@@ -52,6 +61,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 # 设置非敏感的环境变量
 ENV FLASK_APP=rebugtracker.py
 ENV FLASK_ENV=production
+ENV PYTHONPATH=/app
 # [安全] 数据库连接字符串等敏感信息，不应硬编码在 Dockerfile 中。
 # 请在容器运行时通过环境变量 (-e) 注入。
 
@@ -66,12 +76,5 @@ EXPOSE 5000
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--timeout", "120", "rebugtracker:app"]
 
 # 添加健康检查
-HEALTHCHECK --interval=30s --timeout=3s \
-  CMD curl --fail http://localhost:5000/health || exit 1
-
-# 设置容器时区（亚洲/上海）
-ENV TZ=Asia/Shanghai
-RUN apt-get update && apt-get install -y tzdata && \
-    ln -fs /usr/share/zoneinfo/${TZ} /etc/localtime && \
-    dpkg-reconfigure -f noninteractive tzdata && \
-    rm -rf /var/lib/apt/lists/*
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD curl --fail http://localhost:5000/ || exit 1

@@ -235,11 +235,11 @@
             {% endif %}
             
             <div class="action-buttons">
-                {% if user.role == 'fzr' %}
+                {% if user.role_en == 'fzr' %}
                 <a href="/bug/assign/{{ bug.id }}" class="btn btn-success">指派</a>
                 {% endif %}
                 
-                {% if user.role == 'gly' or (user.role == 'ssz' and user.id == created_by) %}
+                {% if user.role_en == 'gly' or (user.role_en == 'ssz' and user.id == created_by) %}
                 <button onclick="deleteBug('{{ bug.id }}')" class="btn btn-danger">删除</button>
                 {% endif %}
             </div>

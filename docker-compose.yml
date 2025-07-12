@@ -1,6 +1,7 @@
 # docker-compose.yml
+# ReBugTracker - Bug跟踪系统 Docker Compose 配置
+# 支持PostgreSQL和SQLite两种数据库模式
 
-# 使用推荐的 Compose 文件版本
 version: '3.8'
 
 # 定义共享网络
@@ -9,59 +10,80 @@ networks:
     driver: bridge
 
 services:
-  # 1. 定义你的 Python/Flask 应用服务
+  # ReBugTracker 主应用服务
   app:
-    # build 指令告诉 Compose 如何构建这个服务的镜像
     build:
-      # context: . 表示使用当前目录作为构建上下文
       context: .
-      # dockerfile: Dockerfile 指定了 Dockerfile 的文件名
       dockerfile: Dockerfile
-    # 给容器起一个易于识别的名字
     container_name: rebugtracker_app
-    # 将主机的 80 端口映射到容器的 5000 端口
-    # 这样你就可以通过 http://localhost 访问你的应用了
     ports:
       - "5000:5000"
-    # [开发时很有用] 将本地代码挂载到容器中，修改代码后 gunicorn 会自动重载
-    # 在生产环境中，可以注释掉这一行，因为代码已经通过 Dockerfile COPY 进去了
-    # volumes:
-    #  - .:/app
-    # 设置环境变量
+    volumes:
+      # 持久化上传文件和日志
+      - app_uploads:/app/uploads
+      - app_logs:/app/logs
+      # SQLite数据库文件持久化（如果使用SQLite模式）
+      - app_data:/app/data
     environment:
       - FLASK_ENV=production
-      # [关键] 数据库连接字符串。这里的 'db' 就是下面定义的数据库服务名。
-      # 用户名、密码和数据库名必须和 db 服务的环境变量保持一致。
-      - SQLALCHEMY_DATABASE_URI=postgresql://postgres:${POSTGRES_PASSWORD}@db/postgres
-    # depends_on 确保 db 服务在 app 服务启动之前已经就绪
+      - DB_TYPE=${DB_TYPE:-postgres}  # 默认使用PostgreSQL，可设置为sqlite
+      # PostgreSQL配置（当DB_TYPE=postgres时使用）
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-ReBugTracker2024}
+      - POSTGRES_DB=rebugtracker
+      # SQLite配置（当DB_TYPE=sqlite时使用）
+      - SQLITE_PATH=/app/data/rebugtracker.db
     depends_on:
       - db
-    # [可选] 配置容器重启策略，例如在退出时总是重启
+    networks:
+      - rebug_network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
-  # 2. 定义 PostgreSQL 数据库服务
+  # PostgreSQL 数据库服务
   db:
-    # 直接使用官方的 PostgreSQL 镜像，推荐使用 alpine 版本以减小体积
-    image: postgres:13-alpine
-    # 给容器起一个名字
+    image: postgres:15-alpine
     container_name: rebugtracker_db
-    # 设置数据库所需的环境变量
     environment:
-      - POSTGRES_USER=postgres            # 数据库用户名
-      - POSTGRES_PASSWORD='$RFV5tgb'    # 统一使用单引号包裹密码
-      - POSTGRES_DB=postgres              # 要创建的数据库名称
-    # 将数据库的数据持久化到具名数据卷中
-    # 这样即使容器被删除和重建，数据也不会丢失
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-ReBugTracker2024}
+      - POSTGRES_DB=rebugtracker
+      - POSTGRES_INITDB_ARGS=--encoding=UTF8 --locale=C
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    # [可选] 不将数据库端口暴露到主机，以提高安全性
-    # 只有在同一个 Docker 网络中的 'app' 服务可以访问它
-    # ports:
-    #  - "5432:5432" # 如果你需要从外部工具连接数据库，可以取消此行注释
+      # 初始化脚本（如果需要）
+      # - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - rebug_network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d rebugtracker"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    # 可选：暴露端口用于外部连接
+    # ports:
+    #   - "5432:5432"
 
-# [关键] 定义具名数据卷，用于持久化 PostgreSQL 的数据
+# 定义数据卷用于数据持久化
 volumes:
+  # PostgreSQL数据持久化
   postgres_data:
-    # driver: local 表示使用本地驱动，这是默认值
+    driver: local
+  # 应用上传文件持久化
+  app_uploads:
+    driver: local
+  # 应用日志持久化
+  app_logs:
+    driver: local
+  # SQLite数据库文件持久化（SQLite模式使用）
+  app_data:
     driver: local

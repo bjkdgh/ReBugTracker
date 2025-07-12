@@ -24,7 +24,7 @@ bug.assignee_name = 负责人姓名 (通过assignee_id关联users表获取)
                     {% endif %}
                 </div>
             <div style="display: flex; gap: 10px;">
-                {% if user.role == 'ssz' %}
+                {% if user.role_en == 'ssz' %}
                 <a href="/submit" class="btn" style="background-color: #4a86e8; color: white; padding: 8px 16px; border-radius: 4px;">提交新问题</a>
                 {% endif %}
                 <a href="/logout" class="btn btn-danger" style="padding: 8px 16px; border-radius: 4px;">退出登录</a>
@@ -161,16 +161,16 @@ bug.assignee_name = 负责人姓名 (通过assignee_id关联users表获取)
                 </div>
                 <div class="bug-actions">
                     <a href="/bug/{{ bug.id }}" class="btn" style="background-color: #4a86e8; color: white;">查看详情</a>
-                    {% if  user.role == 'fzr' %}
+                    {% if  user.role_en == 'fzr' %}
                         <a href="/bug/assign/{{ bug.id }}" class="btn btn-primary">指派</a>
-                    {% elif bug.status == '处理中' and user.role == 'zncy' %}
+                    {% elif bug.status == '处理中' and user.role_en == 'zncy' %}
                         <a href="/bug/resolve/{{ bug.id }}" class="btn">标记解决</a>
-                    {% elif bug.status == '已解决' and user.role == 'zncy' %}
+                    {% elif bug.status == '已解决' and user.role_en == 'zncy' %}
                         <span class="btn btn-secondary disabled">已解决</span>
-                    {% elif bug.status == '已解决' and user.role == 'ssz' %}
+                    {% elif bug.status == '已解决' and user.role_en == 'ssz' %}
                         <button onclick="completeBug('{{ bug.id }}', this)" class="btn btn-success">确认闭环</button>
                     {% endif %}
-                    {% if user.role == 'gly' or (user.id == bug.created_by and user.role == 'ssz') %}
+                    {% if user.role_en == 'gly' or (user.id == bug.created_by and user.role_en == 'ssz') %}
                         <button onclick="deleteBug('{{ bug.id }}')" class="btn btn-danger">删除</button>
                     {% endif %}
                 </div>

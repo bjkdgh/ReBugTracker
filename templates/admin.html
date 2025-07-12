@@ -52,6 +52,10 @@ bug.created_at = 创建时间 (数据库字段: created_at)
                                     <input type="text" name="username" class="form-control" required>
                                 </div>
                                 <div class="form-group">
+                                    <label>中文姓名</label>
+                                    <input type="text" name="chinese_name" class="form-control" placeholder="请输入中文姓名">
+                                </div>
+                                <div class="form-group">
                                     <label>密码</label>
                                     <input type="password" name="password" class="form-control" placeholder="留空则不修改">
                                 </div>
@@ -83,6 +87,7 @@ bug.created_at = 创建时间 (数据库字段: created_at)
                     <tr>
                         <th>ID</th>
                         <th>用户名</th>
+                        <th>中文姓名</th>
                         <th>角色</th>
                         <th>团队</th>
                         <th>操作</th>
@@ -139,7 +144,7 @@ async function loadBugs() {
             <td>${bug.resolved_at}</td>
             <td>
                 <button class="btn btn-sm btn-danger" onclick="deleteBug(${bug.id})">删除</button>
-                {% if user.role == 'gly' or user.role == 'ssz' %}
+                {% if user.role_en == 'gly' or user.role_en == 'ssz' %}
                     ${bug.status === '已解决' ? `<button class="btn btn-sm btn-success" onclick="completeBug(${bug.id})">确认闭环</button>` : ''}
                 {% endif %}
             </td>
@@ -210,13 +215,14 @@ loadBugs();
             
             row.innerHTML = `
                 <td>${user.id}</td>
-                <td>${user.chinese_name || user.username}</td>
+                <td>${user.username}</td>
+                <td>${user.chinese_name || '-'}</td>
                 <td>${roleDisplay}</td>
                 <td>${user.team || '-'}</td>
                 <td>
-                    ${user.role !== 'gly' ? 
+                    ${user.role !== 'gly' ?
                         `<button class="btn btn-sm btn-primary" onclick="editUser(${user.id})">编辑</button>
-                         <button class="btn btn-sm btn-danger" onclick="deleteUser(${user.id})">删除</button>` : 
+                         <button class="btn btn-sm btn-danger" onclick="deleteUser(${user.id})">删除</button>` :
                         '不可操作'}
                 </td>
             `;
@@ -238,6 +244,7 @@ loadBugs();
             // 填充模态框表单
             document.getElementById('userId').value = user.id;
             document.getElementById('userForm').querySelector('[name="username"]').value = user.username;
+            document.getElementById('userForm').querySelector('[name="chinese_name"]').value = user.chinese_name || '';
             
             // 处理角色值映射
             const roleValueMap = {
@@ -300,6 +307,7 @@ loadBugs();
 
         const userData = {
             username: username,
+            chinese_name: formData.get('chinese_name') || null,
             role: roleValue,
             team: formData.get('team') || null
         };
@@ -328,6 +336,7 @@ loadBugs();
                 username: userData.username,
                 role: userData.role
             };
+            if (userData.chinese_name) requestBody.chinese_name = userData.chinese_name;
             if (userData.password) requestBody.password = userData.password;
             if (userData.team) requestBody.team = userData.team;
 

@@ -119,13 +119,14 @@ bug.created_at = 创建时间 (数据库字段: created_at)
                         {% endif %}
                         
                         <div class="mt-3">
+                            <a href="/bug/{{ bug.id }}" class="btn btn-outline-info btn-sm">查看详情</a>
                             {% if bug.status == '已分配' %}
-                            <button class="btn btn-primary btn-sm" 
+                            <button class="btn btn-primary btn-sm"
                                     onclick="confirmReceive('{{ bug.id }}', this)">
                                 确认接收
                             </button>
                             {% elif bug.status == '处理中' %}
-                            <button class="btn btn-success btn-sm" 
+                            <button class="btn btn-success btn-sm"
                                     onclick="location.href='/bug/resolve/{{ bug.id }}'">
                                 解决问题
                             </button>

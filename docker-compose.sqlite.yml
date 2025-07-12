@@ -1,0 +1,44 @@
+# docker-compose.sqlite.yml
+# ReBugTracker SQLite 模式 Docker Compose 配置
+# 使用方法: docker-compose -f docker-compose.sqlite.yml up -d
+
+version: '3.8'
+
+services:
+  # ReBugTracker 主应用服务 (SQLite模式)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rebugtracker_app_sqlite
+    ports:
+      - "5000:5000"
+    volumes:
+      # 持久化上传文件、日志和SQLite数据库
+      - app_uploads:/app/uploads
+      - app_logs:/app/logs
+      - app_data:/app/data
+    environment:
+      - FLASK_ENV=production
+      - DB_TYPE=sqlite
+      - SQLITE_PATH=/app/data/rebugtracker.db
+      - TZ=Asia/Shanghai
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+# 定义数据卷用于数据持久化
+volumes:
+  # 应用上传文件持久化
+  app_uploads:
+    driver: local
+  # 应用日志持久化
+  app_logs:
+    driver: local
+  # SQLite数据库文件持久化
+  app_data:
+    driver: local

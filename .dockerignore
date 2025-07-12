@@ -35,6 +35,9 @@ wheels/
 # 忽略测试相关
 tests/
 test/
+test_*.py
+debug_*.html
+database_tools/
 .coverage
 htmlcov/
 .pytest_cache/
@@ -45,5 +48,17 @@ htmlcov/
 *.swp
 *.swo
 
-# 忽略上传目录
+# 忽略运行时生成的目录
 uploads/
+*.db
+*.sqlite
+*.sqlite3
+
+# 忽略文档
+README.md
+*.md
+docs/
+
+# 忽略Docker相关文件
+docker-compose*.yml
+.dockerignore
