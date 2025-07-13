@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}403 权限不足{% endblock %}
+{% block content %}
+<div class="container mt-5">
+    <div class="alert alert-warning">
+        <h1>403 错误</h1>
+        <p>您没有权限访问此页面</p>
+        <a href="{{ url_for('index') }}" class="btn btn-primary">返回首页</a>
+    </div>
+</div>
+{% endblock %}

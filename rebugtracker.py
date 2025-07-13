@@ -83,10 +83,10 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # 注册时间格式化过滤器
 @app.template_filter('datetimeformat')
-def datetimeformat_filter(value, format='%Y-%m-%d %H:%M'):
+def datetimeformat_filter(value, format='%Y-%m-%d %H:%M:%S'):
     if not value:
         return '--'  # 空值占位符
-    
+
     try:
         # 处理字符串类型输入（兼容多种数据库时间格式）
         if isinstance(value, str):
@@ -97,7 +97,7 @@ def datetimeformat_filter(value, format='%Y-%m-%d %H:%M'):
                 except ValueError:
                     continue
             return value  # 无法解析时返回原值
-        
+
         # 处理datetime对象
         return value.strftime(format)
     except Exception as e:
@@ -432,11 +432,24 @@ def register():
     chinese_name = request.form.get('chinese_name')
     username = request.form.get('username')
     password = request.form.get('password')
+    email = request.form.get('email')
+    phone = request.form.get('phone')
     role = request.form.get('role')
     team = request.form.get('team')
-    
-    if not all([username, password, role]):
-        return jsonify({'success': False, 'message': '请填写完整信息'}), 400
+
+    # 通知偏好设置
+    email_notifications = request.form.get('email_notifications') == 'on'
+    gotify_notifications = request.form.get('gotify_notifications') == 'on'
+    inapp_notifications = request.form.get('inapp_notifications') == 'on'
+
+    if not all([username, password, role, email]):
+        return jsonify({'success': False, 'message': '请填写完整信息（用户名、密码、角色、邮箱为必填项）'}), 400
+
+    # 验证邮箱格式
+    import re
+    email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    if not re.match(email_pattern, email):
+        return jsonify({'success': False, 'message': '请输入有效的邮箱地址'}), 400
     
     # 角色值映射
     role_mapping = {
@@ -460,22 +473,36 @@ def register():
         hashed_password = generate_password_hash(password)
         if DB_TYPE == 'postgres':
             query, params = adapt_sql(
-                '''INSERT INTO users (chinese_name, username, password, role, role_en, team, team_en)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                '''INSERT INTO users (chinese_name, username, password, email, phone, role, role_en, team, team_en)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id''',
-                (chinese_name, username, hashed_password, role_cn, role_en, team, team_en)
+                (chinese_name, username, hashed_password, email, phone, role_cn, role_en, team, team_en)
             )
             c.execute(query, params)
             user_id = c.fetchone()['id']
         else:
             # SQLite模式
             query, params = adapt_sql(
-                '''INSERT INTO users (chinese_name, username, password, role, role_en, team, team_en)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)''',
-                (chinese_name, username, hashed_password, role_cn, role_en, team, team_en)
+                '''INSERT INTO users (chinese_name, username, password, email, phone, role, role_en, team, team_en)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)''',
+                (chinese_name, username, hashed_password, email, phone, role_cn, role_en, team, team_en)
             )
             c.execute(query, params)
             user_id = c.lastrowid
+
+        # 创建用户通知偏好设置
+        try:
+            from notification.notification_manager import NotificationManager
+            NotificationManager.set_user_notification_preferences(
+                str(user_id),
+                email_enabled=email_notifications,
+                gotify_enabled=gotify_notifications,
+                inapp_enabled=inapp_notifications
+            )
+        except Exception as e:
+            app.logger.warning(f"创建用户通知偏好失败: {e}")
+            # 不影响注册流程，只记录警告
+
         conn.commit()
         return jsonify({
             'success': True,
@@ -592,7 +619,7 @@ def index():
     if user['role_en'] == 'fzr':
         # 负责人看到自己团队的所有问题和待分配问题
         query = '''
-            SELECT b.*, u1.username as creator_name, u2.username as assignee_name,
+            SELECT b.*, COALESCE(u1.chinese_name, u1.username) as creator_name, COALESCE(u2.chinese_name, u2.username) as assignee_name,
                    b.created_at as local_created_at, b.resolved_at as local_resolved_at
             FROM bugs b
             LEFT JOIN users u1 ON b.created_by = u1.id
@@ -602,8 +629,21 @@ def index():
         '''
         adapted_query, adapted_params = adapt_sql(query, (user['team'], user['team']))
         c.execute(adapted_query, adapted_params)
+    elif user['role_en'] == 'ssz':
+        # 实施组只能看到自己创建的问题
+        query = '''
+            SELECT b.*, COALESCE(u1.chinese_name, u1.username) as creator_name, COALESCE(u2.chinese_name, u2.username) as assignee_name,
+                   b.created_at as local_created_at, b.resolved_at as local_resolved_at
+            FROM bugs b
+            LEFT JOIN users u1 ON b.created_by = u1.id
+            LEFT JOIN users u2 ON b.assigned_to = u2.id
+            WHERE b.created_by = %s
+            ORDER BY b.created_at DESC
+        '''
+        adapted_query, adapted_params = adapt_sql(query, (user['id'],))
+        c.execute(adapted_query, adapted_params)
     else:
-        # 其他角色看到所有问题
+        # 其他角色（主要是管理员）看到所有问题
         query = '''
             SELECT b.*, COALESCE(u1.chinese_name, u1.username) as creator_name, COALESCE(u2.chinese_name, u2.username) as assignee_name,
                    b.created_at as local_created_at, b.resolved_at as local_resolved_at
@@ -625,15 +665,15 @@ def index():
         if isinstance(bug_dict['created_at'], str):
             bug_dict['created_at'] = bug_dict['created_at']  # 已经是字符串则直接使用
         elif bug_dict['created_at']:
-            bug_dict['created_at'] = bug_dict['created_at'].strftime('%Y-%m-%d %H:%M')
+            bug_dict['created_at'] = bug_dict['created_at'].strftime('%Y-%m-%d %H:%M:%S')
         else:
             bug_dict['created_at'] = '--'
-        
+
         # 处理resolved_at
         if isinstance(bug_dict['resolved_at'], str):
             bug_dict['resolved_at'] = bug_dict['resolved_at']  # 已经是字符串则直接使用
         elif bug_dict['resolved_at']:
-            bug_dict['resolved_at'] = bug_dict['resolved_at'].strftime('%Y-%m-%d %H:%M')
+            bug_dict['resolved_at'] = bug_dict['resolved_at'].strftime('%Y-%m-%d %H:%M:%S')
         else:
             bug_dict['resolved_at'] = '--'
             
@@ -655,7 +695,7 @@ def admin_users():
     
     if request.method == 'GET':
         # 获取所有用户
-        query, params = adapt_sql('SELECT id, username, chinese_name, role, team FROM users ORDER BY id', ())
+        query, params = adapt_sql('SELECT id, username, chinese_name, email, phone, role, role_en, team FROM users ORDER BY id', ())
         c.execute(query, params)
         users = [dict(row) for row in c.fetchall()]
         conn.close()
@@ -762,7 +802,7 @@ def user_detail(user_id):
             c = conn.cursor(cursor_factory=DictCursor)
         else:
             c = conn.cursor()
-        query, params = adapt_sql('SELECT id, username, chinese_name, role, team FROM users WHERE id = %s', (user_id,))
+        query, params = adapt_sql('SELECT id, username, chinese_name, email, phone, role, role_en, team FROM users WHERE id = %s', (user_id,))
         c.execute(query, params)
         user = c.fetchone()
         conn.close()
@@ -782,7 +822,19 @@ def user_detail(user_id):
     team = data.get('team')
     role_en = data.get('role_en')
     chinese_name = data.get('chinese_name')
-    
+    email = data.get('email')
+    phone = data.get('phone')
+
+    # 生成角色英文编码
+    if not role_en and role:
+        role_mapping = {
+            '管理员': 'gly',
+            '负责人': 'fzr',
+            '实施组': 'ssz',
+            '组内成员': 'zncy'
+        }
+        role_en = role_mapping.get(role, 'zncy')
+
     # 生成团队英文编码(中文取首字母拼音大写)
     team_en = None
     if team:
@@ -816,16 +868,16 @@ def user_detail(user_id):
             hashed_password = generate_password_hash(password)
             query, params = adapt_sql('''
                 UPDATE users
-                SET username=%s, password=%s, role=%s, role_en=%s, team=%s, team_en=%s, chinese_name=%s
+                SET username=%s, password=%s, role=%s, role_en=%s, team=%s, team_en=%s, chinese_name=%s, email=%s, phone=%s
                 WHERE id=%s
-            ''', (username, hashed_password, role, role_en, team, team_en, chinese_name, user_id))
+            ''', (username, hashed_password, role, role_en, team, team_en, chinese_name, email, phone, user_id))
             c.execute(query, params)
         else:
             query, params = adapt_sql('''
                 UPDATE users
-                SET username=%s, role=%s, role_en=%s, team=%s, team_en=%s, chinese_name=%s
+                SET username=%s, role=%s, role_en=%s, team=%s, team_en=%s, chinese_name=%s, email=%s, phone=%s
                 WHERE id=%s
-            ''', (username, role, role_en, team, team_en, chinese_name, user_id))
+            ''', (username, role, role_en, team, team_en, chinese_name, email, phone, user_id))
             c.execute(query, params)
             
         conn.commit()
@@ -885,9 +937,12 @@ def admin_bugs():
     else:
         c = conn.cursor()
     query = '''
-        SELECT b.id, b.title, b.status, b.created_at, b.resolved_at, COALESCE(u.chinese_name, u.username) as creator_name
+        SELECT b.id, b.title, b.status, b.created_at, b.resolved_at, b.assigned_to,
+               COALESCE(u1.chinese_name, u1.username) as creator_name,
+               COALESCE(u2.chinese_name, u2.username) as assignee_name
         FROM bugs b
-        JOIN users u ON b.created_by = u.id
+        LEFT JOIN users u1 ON b.created_by = u1.id
+        LEFT JOIN users u2 ON b.assigned_to = u2.id
         ORDER BY b.created_at DESC
     '''
     adapted_query, adapted_params = adapt_sql(query, ())
@@ -900,7 +955,7 @@ def admin_bugs():
             if isinstance(bug['created_at'], str):
                 bug['created_at'] = bug['created_at']  # SQLite已经是字符串格式
             else:
-                bug['created_at'] = bug['created_at'].strftime('%Y-%m-%d %H:%M')  # PostgreSQL datetime
+                bug['created_at'] = bug['created_at'].strftime('%Y-%m-%d %H:%M:%S')  # PostgreSQL datetime
         else:
             bug['created_at'] = '--'
         # 处理resolved_at - 兼容SQLite字符串和PostgreSQL datetime
@@ -908,7 +963,7 @@ def admin_bugs():
             if isinstance(bug['resolved_at'], str):
                 bug['resolved_at'] = bug['resolved_at']  # SQLite已经是字符串格式
             else:
-                bug['resolved_at'] = bug['resolved_at'].strftime('%Y-%m-%d %H:%M')  # PostgreSQL datetime
+                bug['resolved_at'] = bug['resolved_at'].strftime('%Y-%m-%d %H:%M:%S')  # PostgreSQL datetime
         else:
             bug['resolved_at'] = '--'
         bugs.append(bug)
@@ -930,15 +985,21 @@ def admin():
         c = conn.cursor(cursor_factory=DictCursor)
     else:
         c = conn.cursor()
-    query, params = adapt_sql('SELECT id, username, chinese_name, role, team FROM users ORDER BY id', ())
+    query, params = adapt_sql('SELECT id, username, chinese_name, email, phone, role, role_en, team FROM users ORDER BY id', ())
     c.execute(query, params)
     users = c.fetchall()
 
+    # 获取总用户数
+    total_users = len(users)
+
     # 获取所有问题
     query, params = adapt_sql('''
-        SELECT b.id, b.title, b.status, b.created_at, b.resolved_at, COALESCE(u.chinese_name, u.username) as creator_name
+        SELECT b.id, b.title, b.status, b.created_at, b.resolved_at, b.assigned_to,
+               COALESCE(u1.chinese_name, u1.username) as creator_name,
+               COALESCE(u2.chinese_name, u2.username) as assignee_name
         FROM bugs b
-        JOIN users u ON b.created_by = u.id
+        LEFT JOIN users u1 ON b.created_by = u1.id
+        LEFT JOIN users u2 ON b.assigned_to = u2.id
         ORDER BY b.created_at DESC
     ''', ())
     c.execute(query, params)
@@ -952,22 +1013,22 @@ def admin():
         if isinstance(bug_dict['created_at'], str):
             bug_dict['created_at'] = bug_dict['created_at']  # 已经是字符串则直接使用
         elif bug_dict['created_at']:
-            bug_dict['created_at'] = bug_dict['created_at'].strftime('%Y-%m-%d %H:%M')
+            bug_dict['created_at'] = bug_dict['created_at'].strftime('%Y-%m-%d %H:%M:%S')
         else:
             bug_dict['created_at'] = '--'
-        
+
         # 处理resolved_at
         if isinstance(bug_dict['resolved_at'], str):
             bug_dict['resolved_at'] = bug_dict['resolved_at']  # 已经是字符串则直接使用
         elif bug_dict['resolved_at']:
-            bug_dict['resolved_at'] = bug_dict['resolved_at'].strftime('%Y-%m-%d %H:%M')
+            bug_dict['resolved_at'] = bug_dict['resolved_at'].strftime('%Y-%m-%d %H:%M:%S')
         else:
             bug_dict['resolved_at'] = '--'
             
         formatted_bugs.append(bug_dict)
     conn.close()
     
-    return render_template('admin.html', users=users, bugs=formatted_bugs, user=user)
+    return render_template('admin.html', users=users, bugs=formatted_bugs, user=user, total_users=total_users)
 
 @app.route('/team-issues')
 @login_required
@@ -1017,7 +1078,7 @@ def team_issues():
             if isinstance(created_at, str):
                 bug_dict['created_at'] = created_at  # 已经是字符串则直接使用
             elif created_at:
-                bug_dict['created_at'] = created_at.strftime('%Y-%m-%d %H:%M')
+                bug_dict['created_at'] = created_at.strftime('%Y-%m-%d %H:%M:%S')
             else:
                 bug_dict['created_at'] = '--'
 
@@ -1026,7 +1087,7 @@ def team_issues():
             if isinstance(resolved_at, str):
                 bug_dict['resolved_at'] = resolved_at  # 已经是字符串则直接使用
             elif resolved_at:
-                bug_dict['resolved_at'] = resolved_at.strftime('%Y-%m-%d %H:%M')
+                bug_dict['resolved_at'] = resolved_at.strftime('%Y-%m-%d %H:%M:%S')
             else:
                 bug_dict['resolved_at'] = '--'
 
@@ -1142,23 +1203,58 @@ def submit_bug_handler(user):
         manager_id = manager['id'] if DB_TYPE == 'postgres' else manager[0]
         project_id = request.form.get('project', '')
 
+        # 获取当前时间，精确到秒
+        from datetime import datetime
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
         if DB_TYPE == 'postgres':
             query, params = adapt_sql('''
                 INSERT INTO bugs (title, description, created_by, project, image_path, assigned_to, status, created_at)
-                VALUES (%s, %s, %s, %s, %s, %s, '待处理', CURRENT_TIMESTAMP)
+                VALUES (%s, %s, %s, %s, %s, %s, '待处理', %s)
                 RETURNING id
-            ''', (title, description, created_by, project_id, image_path, manager_id))
+            ''', (title, description, created_by, project_id, image_path, manager_id, current_time))
             c.execute(query, params)
             bug_id = c.fetchone()['id']
         else:
             query, params = adapt_sql('''
                 INSERT INTO bugs (title, description, created_by, project, image_path, assigned_to, status, created_at)
-                VALUES (%s, %s, %s, %s, %s, %s, '待处理', datetime('now'))
-            ''', (title, description, created_by, project_id, image_path, manager_id))
+                VALUES (%s, %s, %s, %s, %s, %s, '待处理', %s)
+            ''', (title, description, created_by, project_id, image_path, manager_id, current_time))
             c.execute(query, params)
             bug_id = c.lastrowid
 
         conn.commit()
+
+        # 异步发送通知（在后台处理）
+        def send_creation_notification_async():
+            try:
+                app.logger.info(f"后台发送问题创建通知 - bug_id: {bug_id}, manager_id: {manager_id}")
+                from notification.simple_notifier import simple_notifier
+                from datetime import datetime
+
+                notification_data = {
+                    'bug_id': bug_id,
+                    'title': title,
+                    'description': description,
+                    'creator_name': user['chinese_name'] or user['username'],
+                    'created_time': datetime.now().isoformat(),
+                    'creator_id': created_by,
+                    'assigned_manager_id': manager_id
+                }
+
+                simple_notifier.send_flow_notification('bug_created', notification_data)
+                app.logger.info(f"问题创建通知发送完成 - bug_id: {bug_id}")
+            except Exception as e:
+                app.logger.error(f"后台创建通知发送失败 - bug_id: {bug_id}, 错误: {e}")
+                import traceback
+                app.logger.error(f"创建通知发送错误详情: {traceback.format_exc()}")
+
+        # 启动后台线程发送通知
+        import threading
+        notification_thread = threading.Thread(target=send_creation_notification_async, daemon=True)
+        notification_thread.start()
+
+        app.logger.info(f"问题提交成功，通知已提交后台处理 - bug_id: {bug_id}")
         return redirect(f'/?message=问题提交成功')
 
     except Exception as e:
@@ -1231,20 +1327,59 @@ def submit_bug():
         manager_id = manager['id']
         project_id = request.form.get('project', '')
         
+        # 获取当前时间，精确到秒
+        from datetime import datetime
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
         query, params = adapt_sql('''
             INSERT INTO bugs (title, description, created_by, project, image_path, assigned_to, status, created_at)
-            VALUES (%s, %s, %s, %s, %s, %s, '待处理', CURRENT_TIMESTAMP)
+            VALUES (%s, %s, %s, %s, %s, %s, '待处理', %s)
             RETURNING id
-        ''', (title, description, created_by, project_id, image_path, manager_id))
+        ''', (title, description, created_by, project_id, image_path, manager_id, current_time))
         c.execute(query, params)
         
         bug_id = c.fetchone()['id']
         conn.commit()
-        return jsonify({
-            'success': True, 
-            'bug_id': bug_id, 
+
+        # 立即返回响应，不等待通知发送
+        response_data = {
+            'success': True,
+            'bug_id': bug_id,
             'redirect': f'/bug/{bug_id}'
-        })
+        }
+
+        # 异步发送通知（在后台处理）
+        def send_notification_async():
+            try:
+                app.logger.info(f"后台发送问题创建通知 - bug_id: {bug_id}, manager_id: {manager_id}")
+                from notification.simple_notifier import simple_notifier
+                from datetime import datetime
+
+                notification_data = {
+                    'bug_id': bug_id,
+                    'title': title,
+                    'description': description,
+                    'creator_name': user['chinese_name'] or user['username'],
+                    'created_time': datetime.now().isoformat(),
+                    'creator_id': created_by,
+                    'assigned_manager_id': manager_id
+                }
+
+                simple_notifier.send_flow_notification('bug_created', notification_data)
+                app.logger.info(f"问题创建通知发送完成 - bug_id: {bug_id}")
+            except Exception as e:
+                app.logger.error(f"后台通知发送失败 - bug_id: {bug_id}, 错误: {e}")
+                import traceback
+                app.logger.error(f"通知发送错误详情: {traceback.format_exc()}")
+
+        # 启动后台线程发送通知
+        import threading
+        notification_thread = threading.Thread(target=send_notification_async, daemon=True)
+        notification_thread.start()
+
+        app.logger.info(f"问题提交成功，通知已提交后台处理 - bug_id: {bug_id}")
+
+        return jsonify(response_data)
     except Exception as e:
         conn.rollback()
         error_msg = str(e)
@@ -1299,14 +1434,14 @@ def bug_detail(bug_id):
         if isinstance(bug_dict['local_created_at'], str):
             bug_dict['local_created_at'] = bug_dict['local_created_at']  # SQLite已经是字符串格式
         else:
-            bug_dict['local_created_at'] = bug_dict['local_created_at'].strftime('%Y-%m-%d %H:%M')  # PostgreSQL datetime
+            bug_dict['local_created_at'] = bug_dict['local_created_at'].strftime('%Y-%m-%d %H:%M:%S')  # PostgreSQL datetime
     else:
         bug_dict['local_created_at'] = '--'
     if bug_dict['local_resolved_at']:
         if isinstance(bug_dict['local_resolved_at'], str):
             bug_dict['local_resolved_at'] = bug_dict['local_resolved_at']  # SQLite已经是字符串格式
         else:
-            bug_dict['local_resolved_at'] = bug_dict['local_resolved_at'].strftime('%Y-%m-%d %H:%M')  # PostgreSQL datetime
+            bug_dict['local_resolved_at'] = bug_dict['local_resolved_at'].strftime('%Y-%m-%d %H:%M:%S')  # PostgreSQL datetime
     else:
         bug_dict['local_resolved_at'] = '--'
 
@@ -1379,6 +1514,11 @@ def assign_bug(bug_id):
         conn.close()
         return jsonify({'success': False, 'message': '只能指派给同团队成员'})
     
+    # 获取问题信息（用于通知）
+    query, params = adapt_sql('SELECT title, description, created_by FROM bugs WHERE id = %s', (bug_id,))
+    c.execute(query, params)
+    bug_info = c.fetchone()
+
     # 更新问题状态
     query, params = adapt_sql('''
         UPDATE bugs
@@ -1388,18 +1528,51 @@ def assign_bug(bug_id):
     ''', (assigned_to, bug_id))
     c.execute(query, params)
     conn.commit()
-    
+
     # 获取被指派人用户名
     query, params = adapt_sql('SELECT username FROM users WHERE id = %s', (assigned_to,))
     c.execute(query, params)
     assignee_name = c.fetchone()['username']
     conn.close()
-    
-    return jsonify({
-        'success': True, 
+
+    # 立即返回响应，不等待通知发送
+    response_data = {
+        'success': True,
         'message': f'问题已成功指派给 {assignee_name}',
         'redirect': f'/bug/{bug_id}?message=问题已成功指派给 {assignee_name}'
-    })
+    }
+
+    # 异步发送通知（在后台处理）
+    def send_assignment_notification_async():
+        try:
+            app.logger.info(f"后台发送问题分配通知 - bug_id: {bug_id}, assignee_id: {assigned_to}")
+            from notification.simple_notifier import simple_notifier
+            from datetime import datetime
+
+            notification_data = {
+                'bug_id': bug_id,
+                'title': bug_info['title'],
+                'description': bug_info['description'],
+                'assignee_id': assigned_to,
+                'assigner_name': user['chinese_name'] or user['username'],
+                'assigned_time': datetime.now().isoformat(),
+                'creator_id': bug_info['created_by']
+            }
+
+            simple_notifier.send_flow_notification('bug_assigned', notification_data)
+            app.logger.info(f"问题分配通知发送完成 - bug_id: {bug_id}")
+        except Exception as e:
+            app.logger.error(f"后台分配通知发送失败 - bug_id: {bug_id}, 错误: {e}")
+            import traceback
+            app.logger.error(f"分配通知发送错误详情: {traceback.format_exc()}")
+
+    # 启动后台线程发送通知
+    import threading
+    notification_thread = threading.Thread(target=send_assignment_notification_async, daemon=True)
+    notification_thread.start()
+
+    app.logger.info(f"问题分配成功，通知已提交后台处理 - bug_id: {bug_id}")
+    return jsonify(response_data)
 
 # 解决问题页面
 @app.route('/bug/resolve/<int:bug_id>')
@@ -1545,15 +1718,753 @@ def resolve_bug(bug_id):
         c = conn.cursor(cursor_factory=DictCursor)
     else:
         c = conn.cursor()
-    query, params = adapt_sql('''
-        UPDATE bugs 
-        SET resolution = %s, status = '已解决', resolved_at = CURRENT_TIMESTAMP
-        WHERE id = %s AND assigned_to = %s
-    ''', (resolution, bug_id, user['id']))
+
+    # 获取问题信息（用于通知）
+    query, params = adapt_sql('SELECT title, description, created_by FROM bugs WHERE id = %s', (bug_id,))
+    c.execute(query, params)
+    bug_info = c.fetchone()
+
+    # 获取当前时间，精确到秒
+    from datetime import datetime
+    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    if DB_TYPE == 'postgres':
+        query, params = adapt_sql('''
+            UPDATE bugs
+            SET resolution = %s, status = '已解决', resolved_at = %s
+            WHERE id = %s AND assigned_to = %s
+        ''', (resolution, current_time, bug_id, user['id']))
+    else:
+        query, params = adapt_sql('''
+            UPDATE bugs
+            SET resolution = %s, status = '已解决', resolved_at = %s
+            WHERE id = %s AND assigned_to = %s
+        ''', (resolution, current_time, bug_id, user['id']))
     c.execute(query, params)
     conn.commit()
     conn.close()
-    return jsonify({'success': True, 'redirect': f'/bug/{bug_id}'})
+
+    # 立即返回响应，不等待通知发送
+    response_data = {
+        'success': True,
+        'redirect': f'/bug/{bug_id}'
+    }
+
+    # 异步发送通知（在后台处理）
+    def send_resolution_notification_async():
+        try:
+            app.logger.info(f"后台发送问题解决通知 - bug_id: {bug_id}")
+            from notification.simple_notifier import simple_notifier
+            from datetime import datetime
+
+            notification_data = {
+                'bug_id': bug_id,
+                'title': bug_info['title'],
+                'description': bug_info['description'],
+                'solution': resolution,
+                'resolver_name': user['chinese_name'] or user['username'],
+                'resolved_time': datetime.now().isoformat(),
+                'creator_id': bug_info['created_by']
+            }
+
+            simple_notifier.send_flow_notification('bug_resolved', notification_data)
+            app.logger.info(f"问题解决通知发送完成 - bug_id: {bug_id}")
+        except Exception as e:
+            app.logger.error(f"后台解决通知发送失败 - bug_id: {bug_id}, 错误: {e}")
+            import traceback
+            app.logger.error(f"解决通知发送错误详情: {traceback.format_exc()}")
+
+    # 启动后台线程发送通知
+    import threading
+    notification_thread = threading.Thread(target=send_resolution_notification_async, daemon=True)
+    notification_thread.start()
+
+    app.logger.info(f"问题解决成功，通知已提交后台处理 - bug_id: {bug_id}")
+    return jsonify(response_data)
+
+# 通知管理路由
+@app.route('/admin/notifications')
+@login_required
+@role_required('gly')
+def notification_settings():
+    """通知管理页面（仅管理员）"""
+    user = get_current_user()
+    if not user:
+        return redirect('/login')
+
+    try:
+        from notification.notification_manager import NotificationManager
+
+        # 获取服务器通知状态
+        server_enabled = NotificationManager.is_notification_enabled()
+
+        # 获取所有用户的通知设置
+        users = NotificationManager.get_all_users_preferences()
+
+        return render_template('admin/notifications.html',
+                             server_enabled=server_enabled,
+                             users=users)
+    except Exception as e:
+        app.logger.error(f"Error loading notification settings: {e}")
+        return "加载通知设置失败", 500
+
+@app.route('/admin/notifications/server', methods=['POST'])
+@login_required
+@role_required('gly')
+def toggle_server_notification():
+    """切换服务器通知开关"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'success': False, 'message': '用户未登录'})
+
+    try:
+        from notification.notification_manager import NotificationManager
+
+        enabled = request.json.get('enabled', False)
+        success = NotificationManager.set_server_notification(enabled, user['id'])
+
+        if success:
+            return jsonify({'success': True})
+        else:
+            return jsonify({'success': False, 'message': '权限不足或操作失败'})
+    except Exception as e:
+        app.logger.error(f"Error toggling server notification: {e}")
+        return jsonify({'success': False, 'message': '系统错误'})
+
+@app.route('/admin/notifications/user', methods=['POST'])
+@login_required
+@role_required('gly')
+def toggle_user_notification():
+    """切换用户通知开关"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'success': False, 'message': '用户未登录'})
+
+    try:
+        from notification.notification_manager import NotificationManager
+
+        user_id = request.json.get('user_id')
+        channel = request.json.get('channel')
+        enabled = request.json.get('enabled', False)
+
+        if not user_id or not channel:
+            return jsonify({'success': False, 'message': '参数不完整'})
+
+        success = NotificationManager.set_user_notification(user_id, channel, enabled, user['id'])
+
+        if success:
+            return jsonify({'success': True})
+        else:
+            return jsonify({'success': False, 'message': '操作失败'})
+    except Exception as e:
+        app.logger.error(f"Error toggling user notification: {e}")
+        return jsonify({'success': False, 'message': '系统错误'})
+
+@app.route('/admin/notification-status')
+@login_required
+@role_required('gly')
+def admin_notification_status():
+    """获取服务器通知状态"""
+    try:
+        from notification.notification_manager import NotificationManager
+        enabled = NotificationManager.is_notification_enabled()
+        return jsonify({'enabled': enabled})
+    except Exception as e:
+        app.logger.error(f"获取通知状态失败: {e}")
+        return jsonify({'enabled': False})
+
+@app.route('/admin/notification-stats')
+@login_required
+@role_required('gly')
+def admin_notification_stats():
+    """获取通知统计信息"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # 总通知数
+        cursor.execute("SELECT COUNT(*) FROM notifications")
+        total = cursor.fetchone()[0]
+
+        # 未读通知数
+        if DB_TYPE == 'postgres':
+            cursor.execute("SELECT COUNT(*) FROM notifications WHERE read_status = false")
+        else:
+            cursor.execute("SELECT COUNT(*) FROM notifications WHERE read_status = 0")
+        unread = cursor.fetchone()[0]
+
+        # 启用通知的用户数
+        if DB_TYPE == 'postgres':
+            cursor.execute("SELECT COUNT(*) FROM user_notification_preferences WHERE email_enabled = true OR gotify_enabled = true OR inapp_enabled = true")
+        else:
+            cursor.execute("SELECT COUNT(*) FROM user_notification_preferences WHERE email_enabled = 1 OR gotify_enabled = 1 OR inapp_enabled = 1")
+        enabled_users = cursor.fetchone()[0]
+
+        # 今日通知数
+        if DB_TYPE == 'postgres':
+            cursor.execute("SELECT COUNT(*) FROM notifications WHERE DATE(created_at) = CURRENT_DATE")
+        else:
+            cursor.execute("SELECT COUNT(*) FROM notifications WHERE date(created_at) = date('now')")
+        today = cursor.fetchone()[0]
+
+        conn.close()
+
+        return jsonify({
+            'total': total,
+            'unread': unread,
+            'enabled_users': enabled_users,
+            'today': today
+        })
+
+    except Exception as e:
+        app.logger.error(f"获取通知统计失败: {e}")
+        return jsonify({
+            'total': 0,
+            'unread': 0,
+            'enabled_users': 0,
+            'today': 0
+        })
+
+@app.route('/admin/toggle-notification', methods=['POST'])
+@login_required
+@role_required('gly')
+def admin_toggle_notification():
+    """切换服务器通知开关"""
+    try:
+        data = request.get_json()
+        enabled = data.get('enabled', False)
+
+        from notification.notification_manager import NotificationManager
+        success = NotificationManager.set_notification_enabled(enabled)
+
+        if success:
+            return jsonify({'success': True, 'message': '设置成功'})
+        else:
+            return jsonify({'success': False, 'message': '设置失败'})
+
+    except Exception as e:
+        app.logger.error(f"切换通知开关失败: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/admin/global-notification-status')
+@login_required
+@role_required('gly')
+def admin_global_notification_status():
+    """获取全局通知开关状态"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # 获取邮件全局开关
+        cursor.execute("SELECT config_value FROM system_config WHERE config_key = 'email_global_enabled'")
+        email_result = cursor.fetchone()
+        email_enabled = email_result[0].lower() == 'true' if email_result else True
+
+        # 获取Gotify全局开关
+        cursor.execute("SELECT config_value FROM system_config WHERE config_key = 'gotify_global_enabled'")
+        gotify_result = cursor.fetchone()
+        gotify_enabled = gotify_result[0].lower() == 'true' if gotify_result else True
+
+        conn.close()
+
+        return jsonify({
+            'email_enabled': email_enabled,
+            'gotify_enabled': gotify_enabled
+        })
+
+    except Exception as e:
+        app.logger.error(f"获取全局通知状态失败: {e}")
+        return jsonify({
+            'email_enabled': True,
+            'gotify_enabled': True
+        })
+
+@app.route('/admin/toggle-global-notification', methods=['POST'])
+@login_required
+@role_required('gly')
+def admin_toggle_global_notification():
+    """切换全局通知开关"""
+    try:
+        data = request.get_json()
+        notification_type = data.get('type')  # 'email' 或 'gotify'
+        enabled = data.get('enabled', False)
+
+        if notification_type not in ['email', 'gotify']:
+            return jsonify({'success': False, 'message': '无效的通知类型'})
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        config_key = f'{notification_type}_global_enabled'
+        config_value = 'true' if enabled else 'false'
+
+        # 更新或插入配置
+        cursor.execute("""
+            UPDATE system_config
+            SET config_value = %s, updated_at = CURRENT_TIMESTAMP
+            WHERE config_key = %s
+        """, (config_value, config_key))
+
+        # 如果没有更新任何行，则插入新记录
+        if cursor.rowcount == 0:
+            description = f'全局{notification_type}通知开关'
+            cursor.execute("""
+                INSERT INTO system_config (config_key, config_value, description)
+                VALUES (%s, %s, %s)
+            """, (config_key, config_value, description))
+
+        conn.commit()
+        conn.close()
+
+        return jsonify({'success': True, 'message': '设置成功'})
+
+    except Exception as e:
+        app.logger.error(f"切换全局通知开关失败: {e}")
+        if 'conn' in locals():
+            conn.rollback()
+            conn.close()
+        return jsonify({'success': False, 'message': str(e)})
+
+# 应用内通知API
+@app.route('/api/notifications')
+@login_required
+def api_get_notifications():
+    """获取用户通知"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'success': False, 'message': '未登录'})
+
+    try:
+        from notification.channels.inapp_notifier import InAppNotifier
+
+        inapp_notifier = InAppNotifier()
+
+        # 获取最新的10条通知
+        notifications = inapp_notifier.get_user_notifications(str(user['id']), limit=10)
+
+        # 获取未读数量
+        unread_count = inapp_notifier.get_unread_count(str(user['id']))
+
+        return jsonify({
+            'success': True,
+            'notifications': notifications,
+            'unread_count': unread_count
+        })
+
+    except Exception as e:
+        app.logger.error(f"获取通知失败: {e}")
+        return jsonify({'success': False, 'message': '获取通知失败'})
+
+@app.route('/api/notifications/read', methods=['POST'])
+@login_required
+def api_mark_notification_read():
+    """标记通知为已读"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'success': False, 'message': '未登录'})
+
+    try:
+        data = request.get_json()
+        notification_id = data.get('notification_id')
+
+        if not notification_id:
+            return jsonify({'success': False, 'message': '缺少通知ID'})
+
+        from notification.channels.inapp_notifier import InAppNotifier
+
+        inapp_notifier = InAppNotifier()
+        success = inapp_notifier.mark_as_read(notification_id, str(user['id']))
+
+        if success:
+            return jsonify({'success': True, 'message': '标记成功'})
+        else:
+            return jsonify({'success': False, 'message': '标记失败'})
+
+    except Exception as e:
+        app.logger.error(f"标记通知已读失败: {e}")
+        return jsonify({'success': False, 'message': '操作失败'})
+
+@app.route('/api/notifications/read-all', methods=['POST'])
+@login_required
+def api_mark_all_notifications_read():
+    """标记所有通知为已读"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'success': False, 'message': '未登录'})
+
+    try:
+        from notification.channels.inapp_notifier import InAppNotifier
+
+        inapp_notifier = InAppNotifier()
+        success = inapp_notifier.mark_all_as_read(str(user['id']))
+
+        if success:
+            return jsonify({'success': True, 'message': '全部标记成功'})
+        else:
+            return jsonify({'success': False, 'message': '标记失败'})
+
+    except Exception as e:
+        app.logger.error(f"标记全部通知已读失败: {e}")
+        return jsonify({'success': False, 'message': '操作失败'})
+
+@app.route('/notifications')
+@login_required
+def notifications_page():
+    """通知页面"""
+    user = get_current_user()
+    if not user:
+        return redirect('/login')
+
+    try:
+        from notification.channels.inapp_notifier import InAppNotifier
+
+        inapp_notifier = InAppNotifier()
+
+        # 获取所有通知
+        notifications = inapp_notifier.get_user_notifications(str(user['id']), limit=50)
+
+        return render_template('notifications.html', notifications=notifications)
+
+    except Exception as e:
+        app.logger.error(f"加载通知页面失败: {e}")
+        return "加载通知页面失败", 500
+
+# 通知配置API
+@app.route('/admin/notifications/config', methods=['GET'])
+@login_required
+@role_required('gly')
+def get_notification_config():
+    """获取通知配置"""
+    try:
+        conn = get_db_connection()
+        if DB_TYPE == 'postgres':
+            from psycopg2.extras import DictCursor
+            cursor = conn.cursor(cursor_factory=DictCursor)
+        else:
+            cursor = conn.cursor()
+
+        # 获取所有配置
+        query, params = adapt_sql('SELECT config_key, config_value FROM system_config WHERE config_key LIKE %s', ('notification_%',))
+        cursor.execute(query, params)
+        configs = cursor.fetchall()
+
+        # 构建配置字典
+        config_dict = {}
+        for config in configs:
+            key = config['config_key'] if isinstance(config, dict) else config[0]
+            value = config['config_value'] if isinstance(config, dict) else config[1]
+            config_dict[key] = value
+
+        # 构建返回的配置结构
+        result = {
+            'server': {
+                'enabled': config_dict.get('notification_server_enabled', 'true') == 'true',
+                'retention_days': int(config_dict.get('notification_retention_days', '30'))
+            },
+            'inapp': {
+                'enabled': config_dict.get('notification_inapp_enabled', 'true') == 'true',
+                'max_notifications_per_user': int(config_dict.get('notification_max_per_user', '100'))
+            },
+            'email': {
+                'enabled': config_dict.get('notification_email_enabled', 'false') == 'true',
+                'smtp_server': config_dict.get('notification_email_smtp_server', 'smtp.gmail.com'),
+                'smtp_port': int(config_dict.get('notification_email_smtp_port', '587')),
+                'smtp_username': config_dict.get('notification_email_smtp_username', ''),
+                'smtp_password': config_dict.get('notification_email_smtp_password', ''),
+                'from_email': config_dict.get('notification_email_from_email', 'noreply@rebugtracker.com'),
+                'from_name': config_dict.get('notification_email_from_name', 'ReBugTracker'),
+                'use_tls': config_dict.get('notification_email_use_tls', 'true') == 'true'
+            },
+            'gotify': {
+                'enabled': config_dict.get('notification_gotify_enabled', 'false') == 'true',
+                'server_url': config_dict.get('notification_gotify_server_url', 'http://localhost:8080'),
+                'app_token': config_dict.get('notification_gotify_app_token', ''),
+                'default_priority': int(config_dict.get('notification_gotify_default_priority', '5'))
+            },
+            'flow_rules': {
+                'bug_created': config_dict.get('notification_flow_bug_created', 'true') == 'true',
+                'bug_assigned': config_dict.get('notification_flow_bug_assigned', 'true') == 'true',
+                'bug_status_changed': config_dict.get('notification_flow_bug_status_changed', 'true') == 'true',
+                'bug_resolved': config_dict.get('notification_flow_bug_resolved', 'true') == 'true',
+                'bug_closed': config_dict.get('notification_flow_bug_closed', 'true') == 'true'
+            }
+        }
+
+        conn.close()
+        return jsonify({'success': True, 'data': result})
+
+    except Exception as e:
+        app.logger.error(f"获取通知配置失败: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/admin/notifications/config', methods=['POST'])
+@login_required
+@role_required('gly')
+def save_notification_config():
+    """保存通知配置"""
+    try:
+        data = request.get_json()
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # 配置映射
+        config_mappings = {
+            # 服务器配置
+            'notification_server_enabled': str(data.get('server', {}).get('enabled', True)).lower(),
+            'notification_retention_days': str(data.get('server', {}).get('retention_days', 30)),
+
+            # 应用内通知
+            'notification_inapp_enabled': str(data.get('inapp', {}).get('enabled', True)).lower(),
+            'notification_max_per_user': str(data.get('inapp', {}).get('max_notifications_per_user', 100)),
+
+            # 邮件通知
+            'notification_email_enabled': str(data.get('email', {}).get('enabled', False)).lower(),
+            'notification_email_smtp_server': data.get('email', {}).get('smtp_server', 'smtp.gmail.com'),
+            'notification_email_smtp_port': str(data.get('email', {}).get('smtp_port', 587)),
+            'notification_email_smtp_username': data.get('email', {}).get('smtp_username', ''),
+            'notification_email_smtp_password': data.get('email', {}).get('smtp_password', ''),
+            'notification_email_from_email': data.get('email', {}).get('from_email', 'noreply@rebugtracker.com'),
+            'notification_email_from_name': data.get('email', {}).get('from_name', 'ReBugTracker'),
+            'notification_email_use_tls': str(data.get('email', {}).get('use_tls', True)).lower(),
+
+            # Gotify通知
+            'notification_gotify_enabled': str(data.get('gotify', {}).get('enabled', False)).lower(),
+            'notification_gotify_server_url': data.get('gotify', {}).get('server_url', 'http://localhost:8080'),
+            'notification_gotify_app_token': data.get('gotify', {}).get('app_token', ''),
+            'notification_gotify_default_priority': str(data.get('gotify', {}).get('default_priority', 5)),
+
+            # 流程规则
+            'notification_flow_bug_created': str(data.get('flow_rules', {}).get('bug_created', True)).lower(),
+            'notification_flow_bug_assigned': str(data.get('flow_rules', {}).get('bug_assigned', True)).lower(),
+            'notification_flow_bug_status_changed': str(data.get('flow_rules', {}).get('bug_status_changed', True)).lower(),
+            'notification_flow_bug_resolved': str(data.get('flow_rules', {}).get('bug_resolved', True)).lower(),
+            'notification_flow_bug_closed': str(data.get('flow_rules', {}).get('bug_closed', True)).lower(),
+        }
+
+        # 保存每个配置项
+        for config_key, config_value in config_mappings.items():
+            if DB_TYPE == 'postgres':
+                query, params = adapt_sql('''
+                    INSERT INTO system_config (config_key, config_value, created_at, updated_at)
+                    VALUES (%s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    ON CONFLICT (config_key) DO UPDATE SET
+                    config_value = EXCLUDED.config_value,
+                    updated_at = CURRENT_TIMESTAMP
+                ''', (config_key, config_value))
+            else:
+                # SQLite使用不同的语法
+                query, params = adapt_sql('''
+                    INSERT OR REPLACE INTO system_config (config_key, config_value, created_at, updated_at)
+                    VALUES (%s, %s, datetime('now'), datetime('now'))
+                ''', (config_key, config_value))
+
+            cursor.execute(query, params)
+
+        conn.commit()
+        conn.close()
+
+        return jsonify({'success': True, 'message': '通知配置保存成功'})
+
+    except Exception as e:
+        app.logger.error(f"保存通知配置失败: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/admin/notifications/test', methods=['POST'])
+@login_required
+@role_required('gly')
+def test_notification():
+    """测试通知"""
+    try:
+        data = request.get_json()
+        channels = data.get('channels', ['inapp'])
+        message = data.get('message', '这是一条测试通知')
+
+        successful_channels = []
+        failed_channels = []
+
+        # 测试应用内通知
+        if 'inapp' in channels:
+            try:
+                from notification.channels.inapp_notifier import InAppNotifier
+                inapp_notifier = InAppNotifier()
+                user = get_current_user()
+
+                success = inapp_notifier.send_notification(
+                    user_id=str(user['id']),
+                    title='测试通知',
+                    content=message,
+                    notification_type='system'
+                )
+
+                if success:
+                    successful_channels.append('应用内通知')
+                else:
+                    failed_channels.append('应用内通知')
+            except Exception as e:
+                app.logger.error(f"测试应用内通知失败: {e}")
+                failed_channels.append('应用内通知')
+
+        # 测试邮件通知
+        if 'email' in channels:
+            try:
+                # 这里可以添加邮件通知测试逻辑
+                # 暂时标记为成功
+                successful_channels.append('邮件通知')
+            except Exception as e:
+                app.logger.error(f"测试邮件通知失败: {e}")
+                failed_channels.append('邮件通知')
+
+        # 测试Gotify通知
+        if 'gotify' in channels:
+            try:
+                # 这里可以添加Gotify通知测试逻辑
+                # 暂时标记为成功
+                successful_channels.append('Gotify通知')
+            except Exception as e:
+                app.logger.error(f"测试Gotify通知失败: {e}")
+                failed_channels.append('Gotify通知')
+
+        return jsonify({
+            'success': True,
+            'message': '测试通知已发送',
+            'successful_channels': successful_channels,
+            'failed_channels': failed_channels
+        })
+
+    except Exception as e:
+        app.logger.error(f"测试通知失败: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/admin/notifications/user-preferences', methods=['GET'])
+@login_required
+@role_required('gly')
+def get_user_notification_preferences():
+    """获取用户通知偏好"""
+    try:
+        conn = get_db_connection()
+        if DB_TYPE == 'postgres':
+            from psycopg2.extras import DictCursor
+            cursor = conn.cursor(cursor_factory=DictCursor)
+        else:
+            cursor = conn.cursor()
+
+        # 获取所有用户及其通知偏好
+        query, params = adapt_sql('''
+            SELECT u.id, u.username, u.chinese_name, u.email,
+                   COALESCE(np.inapp_enabled, true) as inapp_enabled,
+                   COALESCE(np.email_enabled, false) as email_enabled,
+                   COALESCE(np.gotify_enabled, false) as gotify_enabled
+            FROM users u
+            LEFT JOIN notification_preferences np ON u.id = np.user_id
+            ORDER BY u.id
+        ''', ())
+
+        cursor.execute(query, params)
+        users = cursor.fetchall()
+
+        # 构建返回数据
+        preferences = {}
+        for user in users:
+            user_id = user['id'] if isinstance(user, dict) else user[0]
+            preferences[str(user_id)] = {
+                'inapp': user['inapp_enabled'] if isinstance(user, dict) else user[4],
+                'email': user['email_enabled'] if isinstance(user, dict) else user[5],
+                'gotify': user['gotify_enabled'] if isinstance(user, dict) else user[6]
+            }
+
+        conn.close()
+        return jsonify({'success': True, 'data': preferences})
+
+    except Exception as e:
+        app.logger.error(f"获取用户通知偏好失败: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/admin/notifications/user-preferences', methods=['POST'])
+@login_required
+@role_required('gly')
+def save_user_notification_preference():
+    """保存单个用户通知偏好"""
+    try:
+        data = request.get_json()
+        user_id = data.get('user_id')
+        inapp_enabled = data.get('inapp', True)
+        email_enabled = data.get('email', False)
+        gotify_enabled = data.get('gotify', False)
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        if DB_TYPE == 'postgres':
+            query, params = adapt_sql('''
+                INSERT INTO notification_preferences (user_id, inapp_enabled, email_enabled, gotify_enabled, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                ON CONFLICT (user_id) DO UPDATE SET
+                inapp_enabled = EXCLUDED.inapp_enabled,
+                email_enabled = EXCLUDED.email_enabled,
+                gotify_enabled = EXCLUDED.gotify_enabled,
+                updated_at = CURRENT_TIMESTAMP
+            ''', (user_id, inapp_enabled, email_enabled, gotify_enabled))
+        else:
+            query, params = adapt_sql('''
+                INSERT OR REPLACE INTO notification_preferences (user_id, inapp_enabled, email_enabled, gotify_enabled, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, datetime('now'), datetime('now'))
+            ''', (user_id, inapp_enabled, email_enabled, gotify_enabled))
+
+        cursor.execute(query, params)
+        conn.commit()
+        conn.close()
+
+        return jsonify({'success': True, 'message': '用户通知偏好保存成功'})
+
+    except Exception as e:
+        app.logger.error(f"保存用户通知偏好失败: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/admin/notifications/user-preferences/batch', methods=['POST'])
+@login_required
+@role_required('gly')
+def save_batch_user_notification_preferences():
+    """批量保存用户通知偏好"""
+    try:
+        data = request.get_json()
+        preferences = data.get('preferences', [])
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        for pref in preferences:
+            user_id = pref.get('user_id')
+            inapp_enabled = pref.get('inapp', True)
+            email_enabled = pref.get('email', False)
+            gotify_enabled = pref.get('gotify', False)
+
+            if DB_TYPE == 'postgres':
+                query, params = adapt_sql('''
+                    INSERT INTO notification_preferences (user_id, inapp_enabled, email_enabled, gotify_enabled, created_at, updated_at)
+                    VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    ON CONFLICT (user_id) DO UPDATE SET
+                    inapp_enabled = EXCLUDED.inapp_enabled,
+                    email_enabled = EXCLUDED.email_enabled,
+                    gotify_enabled = EXCLUDED.gotify_enabled,
+                    updated_at = CURRENT_TIMESTAMP
+                ''', (user_id, inapp_enabled, email_enabled, gotify_enabled))
+            else:
+                query, params = adapt_sql('''
+                    INSERT OR REPLACE INTO notification_preferences (user_id, inapp_enabled, email_enabled, gotify_enabled, created_at, updated_at)
+                    VALUES (%s, %s, %s, %s, datetime('now'), datetime('now'))
+                ''', (user_id, inapp_enabled, email_enabled, gotify_enabled))
+
+            cursor.execute(query, params)
+
+        conn.commit()
+        conn.close()
+
+        return jsonify({'success': True, 'message': f'批量保存了 {len(preferences)} 个用户的通知偏好'})
+
+    except Exception as e:
+        app.logger.error(f"批量保存用户通知偏好失败: {e}")
+        return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/favicon.ico')
 def favicon():

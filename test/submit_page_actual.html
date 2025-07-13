@@ -1,0 +1,649 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户登录 - ReBugTracker</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 0;
+            overflow: hidden;
+            max-width: 800px;
+            width: 100%;
+            animation: slideUp 0.6s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .login-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .login-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .login-header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .login-header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .login-content {
+            display: flex;
+            min-height: 500px;
+        }
+        
+        .login-form {
+            flex: 1;
+            padding: 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .login-info {
+            flex: 0 0 300px;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .info-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+            animation: fadeInRight 0.6s ease-out;
+            animation-fill-mode: both;
+        }
+        
+        .info-item:nth-child(1) { animation-delay: 0.1s; }
+        .info-item:nth-child(2) { animation-delay: 0.2s; }
+        .info-item:nth-child(3) { animation-delay: 0.3s; }
+        .info-item:nth-child(4) { animation-delay: 0.4s; }
+        
+        @keyframes fadeInRight {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .info-icon {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 1.2rem;
+        }
+        
+        .info-text h4 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .info-text p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin: 0;
+        }
+        
+        .form-section {
+            margin-bottom: 30px;
+            animation: fadeInUp 0.6s ease-out;
+            animation-fill-mode: both;
+        }
+        
+        .form-section:nth-child(1) { animation-delay: 0.1s; }
+        .form-section:nth-child(2) { animation-delay: 0.2s; }
+        .form-section:nth-child(3) { animation-delay: 0.3s; }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .welcome-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .welcome-subtitle {
+            font-size: 1rem;
+            color: #666;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+            position: relative;
+        }
+        
+        .form-control {
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            padding: 15px 20px;
+            padding-left: 50px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+            width: 100%;
+        }
+        
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            background: white;
+            transform: translateY(-2px);
+            outline: none;
+        }
+        
+        .form-group i {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #667eea;
+            font-size: 1.1rem;
+            z-index: 1;
+        }
+        
+        .btn-login {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 15px;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: white;
+            width: 100%;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        
+        .btn-login::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .btn-login:hover::before {
+            left: 100%;
+        }
+        
+        .btn-login:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-link {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-link:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+        
+        .divider {
+            text-align: center;
+            margin: 30px 0;
+            position: relative;
+        }
+        
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #e9ecef;
+        }
+        
+        .divider span {
+            background: white;
+            padding: 0 20px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .quick-login {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .quick-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            background: #f8f9fa;
+            color: #666;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .quick-btn:hover {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        @media (max-width: 768px) {
+            .login-content {
+                flex-direction: column;
+            }
+            
+            .login-info {
+                flex: none;
+                order: -1;
+            }
+            
+            .login-header h1 {
+                font-size: 2rem;
+            }
+            
+            .login-form,
+            .login-info {
+                padding: 30px 20px;
+            }
+            
+            .welcome-title {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <!-- 头部 -->
+        <div class="login-header">
+            <h1><i class="fas fa-sign-in-alt"></i> 系统登录</h1>
+            <p>欢迎回到 ReBugTracker，继续您的问题管理工作</p>
+        </div>
+
+        <!-- 主要内容 -->
+        <div class="login-content">
+            <!-- 登录表单 -->
+            <div class="login-form">
+                <div class="welcome-title">欢迎回来</div>
+                <div class="welcome-subtitle">请登录您的账户以继续使用系统</div>
+
+                <form id="loginForm">
+                    <input type="hidden" name="next" value="">
+
+                    <div class="form-section">
+                        <div class="form-group">
+                            <i class="fas fa-user"></i>
+                            <input type="text" class="form-control" id="username" name="username"
+                                   placeholder="请输入用户名" required>
+                        </div>
+
+                        <div class="form-group">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" class="form-control" id="password" name="password"
+                                   placeholder="请输入密码" required>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <button type="submit" class="btn-login">
+                            <i class="fas fa-sign-in-alt"></i>
+                            立即登录
+                        </button>
+
+                        <div class="text-center">
+                            <span>还没有账户？</span>
+                            <a href="/register" class="btn-link">立即注册</a>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="divider">
+                    <span>快速登录</span>
+                </div>
+
+                <div class="quick-login">
+                    <button class="quick-btn" onclick="quickLogin('admin', 'admin')">
+                        <i class="fas fa-user-shield"></i><br>管理员
+                    </button>
+                    <button class="quick-btn" onclick="quickLogin('gh', 'gh')">
+                        <i class="fas fa-tools"></i><br>实施组
+                    </button>
+                    <button class="quick-btn" onclick="quickLogin('zjn', 'zjn')">
+                        <i class="fas fa-user-tie"></i><br>负责人
+                    </button>
+                    <button class="quick-btn" onclick="quickLogin('wbx', 'wbx')">
+                        <i class="fas fa-user"></i><br>组员
+                    </button>
+                </div>
+            </div>
+
+            <!-- 信息侧边栏 -->
+            <div class="login-info">
+                <div class="info-item">
+                    <div class="info-icon">
+                        <i class="fas fa-rocket"></i>
+                    </div>
+                    <div class="info-text">
+                        <h4>高效管理</h4>
+                        <p>专业的问题跟踪和管理系统，提升工作效率</p>
+                    </div>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="info-text">
+                        <h4>团队协作</h4>
+                        <p>支持多角色权限管理，促进团队协作</p>
+                    </div>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-icon">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <div class="info-text">
+                        <h4>实时通知</h4>
+                        <p>多渠道通知系统，重要信息及时送达</p>
+                    </div>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-icon">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <div class="info-text">
+                        <h4>数据洞察</h4>
+                        <p>丰富的统计分析，助力科学决策</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 表单提交处理
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const submitBtn = document.querySelector('.btn-login');
+            const originalText = submitBtn.innerHTML;
+
+            // 显示加载状态
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 登录中...';
+            submitBtn.disabled = true;
+
+            try {
+                const formData = new FormData(this);
+
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    // 检查是否是JSON响应
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        const result = await response.json();
+                        if (result.success) {
+                            showNotification('登录成功！正在跳转...', 'success');
+                            setTimeout(() => {
+                                window.location.href = result.redirect || '/';
+                            }, 1500);
+                        } else {
+                            showNotification(result.message || '登录失败', 'error');
+                            submitBtn.innerHTML = originalText;
+                            submitBtn.disabled = false;
+                        }
+                    } else {
+                        // 如果是重定向响应
+                        showNotification('登录成功！正在跳转...', 'success');
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 1500);
+                    }
+                } else {
+                    showNotification('用户名或密码错误', 'error');
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
+            } catch (error) {
+                console.error('登录错误:', error);
+                showNotification('网络错误，请重试', 'error');
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+
+        // 快速登录功能
+        function quickLogin(username, password) {
+            document.getElementById('username').value = username;
+            document.getElementById('password').value = password;
+
+            // 添加视觉反馈
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+
+            usernameInput.style.borderColor = '#28a745';
+            passwordInput.style.borderColor = '#28a745';
+
+            setTimeout(() => {
+                usernameInput.style.borderColor = '#667eea';
+                passwordInput.style.borderColor = '#667eea';
+            }, 1000);
+
+            showNotification(`已填入${getRoleName(username)}账户信息`, 'success');
+        }
+
+        // 获取角色名称
+        function getRoleName(username) {
+            const roleMap = {
+                'admin': '管理员',
+                'gh': '实施组',
+                'zjn': '负责人',
+                'wbx': '组员'
+            };
+            return roleMap[username] || username;
+        }
+
+        // 通知显示函数
+        function showNotification(message, type) {
+            // 移除现有通知
+            const existingNotification = document.querySelector('.notification');
+            if (existingNotification) {
+                existingNotification.remove();
+            }
+
+            // 创建通知元素
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 10px;
+                color: white;
+                font-weight: 500;
+                z-index: 9999;
+                animation: slideInRight 0.3s ease-out;
+                max-width: 300px;
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            `;
+
+            if (type === 'success') {
+                notification.style.background = 'linear-gradient(135deg, #4CAF50, #45a049)';
+            } else {
+                notification.style.background = 'linear-gradient(135deg, #f44336, #d32f2f)';
+            }
+
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+                ${message}
+            `;
+
+            document.body.appendChild(notification);
+
+            // 自动移除通知
+            setTimeout(() => {
+                notification.style.animation = 'slideOutRight 0.3s ease-out';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // 添加动画样式
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideInRight {
+                from {
+                    opacity: 0;
+                    transform: translateX(100%);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateX(0);
+                }
+            }
+
+            @keyframes slideOutRight {
+                from {
+                    opacity: 1;
+                    transform: translateX(0);
+                }
+                to {
+                    opacity: 0;
+                    transform: translateX(100%);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // 表单验证增强
+        const inputs = document.querySelectorAll('.form-control');
+        inputs.forEach(input => {
+            input.addEventListener('blur', function() {
+                if (this.hasAttribute('required') && !this.value.trim()) {
+                    this.style.borderColor = '#dc3545';
+                } else {
+                    this.style.borderColor = '#28a745';
+                }
+            });
+
+            input.addEventListener('focus', function() {
+                this.style.borderColor = '#667eea';
+            });
+        });
+
+        // 页面加载完成后的欢迎动画
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                showNotification('欢迎使用 ReBugTracker！', 'success');
+            }, 500);
+        });
+    </script>
+</body>
+</html>

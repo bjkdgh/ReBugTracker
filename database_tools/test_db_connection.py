@@ -49,7 +49,37 @@ def test_database_connection():
                 print(f"📊 问题表记录数: {bug_count}")
             except Exception as e:
                 print(f"⚠️ 查询问题表失败: {e}")
-            
+
+            # 检查通知系统表
+            notification_tables = ['system_config', 'user_notification_preferences', 'notifications']
+            for table in notification_tables:
+                try:
+                    cursor.execute(f"SELECT COUNT(*) FROM {table}")
+                    count = cursor.fetchone()[0]
+                    print(f"📊 {table}表记录数: {count}")
+                except Exception as e:
+                    print(f"⚠️ {table}表不存在或查询失败: {e}")
+
+            # 检查用户表扩展字段
+            try:
+                if DB_TYPE == 'postgres':
+                    cursor.execute("""
+                        SELECT column_name
+                        FROM information_schema.columns
+                        WHERE table_name = 'users' AND column_name IN ('email', 'phone')
+                    """)
+                else:
+                    cursor.execute("PRAGMA table_info(users)")
+                    columns = [col[1] for col in cursor.fetchall()]
+                    extended_fields = [field for field in ['email', 'phone'] if field in columns]
+                    print(f"📧 用户表扩展字段: {extended_fields}")
+
+                if DB_TYPE == 'postgres':
+                    extended_fields = [row[0] for row in cursor.fetchall()]
+                    print(f"📧 用户表扩展字段: {extended_fields}")
+            except Exception as e:
+                print(f"⚠️ 检查用户表扩展字段失败: {e}")
+
             # 关闭连接
             conn.close()
             print("🔒 数据库连接已关闭")
