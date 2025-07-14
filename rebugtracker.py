@@ -388,22 +388,66 @@ def complete_bug(bug_id):
     
     try:
         # 检查问题是否存在且状态为'已解决'
-        query, params = adapt_sql('SELECT status FROM bugs WHERE id = %s', (bug_id,))
+        query, params = adapt_sql('SELECT * FROM bugs WHERE id = %s', (bug_id,))
         c.execute(query, params)
         bug = c.fetchone()
         if not bug:
             return jsonify({'success': False, 'message': '问题不存在'}), 404
         if bug['status'] != '已解决':
             return jsonify({'success': False, 'message': '问题状态不是已解决，无法闭环'}), 400
-        
+
+        # 获取问题的详细信息用于通知
+        if hasattr(bug, 'keys'):
+            bug_info = dict(bug)
+        else:
+            # SQLite返回的是tuple，需要手动映射
+            bug_info = {
+                'id': bug[0], 'title': bug[1], 'description': bug[2],
+                'status': bug[3], 'assigned_to': bug[4], 'created_by': bug[5],
+                'project': bug[6], 'created_at': bug[7], 'resolved_at': bug[8],
+                'resolution': bug[9], 'image_path': bug[10]
+            }
+
         # 更新问题状态为"已完成"
         query, params = adapt_sql('''
-            UPDATE bugs 
+            UPDATE bugs
             SET status = '已完成'
             WHERE id = %s
         ''', (bug_id,))
         c.execute(query, params)
         conn.commit()
+
+        # 异步发送通知（在后台处理）
+        def send_closure_notification_async():
+            try:
+                app.logger.info(f"后台发送问题关闭通知 - bug_id: {bug_id}")
+                from notification.simple_notifier import simple_notifier
+                from datetime import datetime
+
+                notification_data = {
+                    'bug_id': bug_id,
+                    'title': bug_info['title'],
+                    'description': bug_info['description'],
+                    'close_reason': '实施组确认闭环',
+                    'closer_name': user['chinese_name'] or user['username'],
+                    'closed_time': datetime.now().isoformat(),
+                    'creator_id': bug_info['created_by'],
+                    'assignee_id': bug_info.get('assigned_to')
+                }
+
+                simple_notifier.send_flow_notification('bug_closed', notification_data)
+                app.logger.info(f"问题关闭通知发送完成 - bug_id: {bug_id}")
+            except Exception as e:
+                app.logger.error(f"后台关闭通知发送失败 - bug_id: {bug_id}, 错误: {e}")
+                import traceback
+                app.logger.error(f"关闭通知发送错误详情: {traceback.format_exc()}")
+
+        # 启动后台通知任务
+        import threading
+        notification_thread = threading.Thread(target=send_closure_notification_async)
+        notification_thread.daemon = True
+        notification_thread.start()
+
         return jsonify({'success': True, 'message': '问题已成功闭环'})
     except Exception as e:
         conn.rollback()
@@ -2159,7 +2203,8 @@ def get_notification_config():
         result = {
             'server': {
                 'enabled': config_dict.get('notification_server_enabled', 'true') == 'true',
-                'retention_days': int(config_dict.get('notification_retention_days', '30'))
+                'retention_days': int(config_dict.get('notification_retention_days', '30')),
+                'auto_cleanup_enabled': config_dict.get('notification_auto_cleanup_enabled', 'false') == 'true'
             },
             'inapp': {
                 'enabled': config_dict.get('notification_inapp_enabled', 'true') == 'true',
@@ -2179,7 +2224,7 @@ def get_notification_config():
                 'enabled': config_dict.get('notification_gotify_enabled', 'false') == 'true',
                 'server_url': config_dict.get('notification_gotify_server_url', 'http://localhost:8080'),
                 'app_token': config_dict.get('notification_gotify_app_token', ''),
-                'default_priority': int(config_dict.get('notification_gotify_default_priority', '5'))
+                'default_priority': int(config_dict.get('notification_gotify_default_priority', '10'))
             },
             'flow_rules': {
                 'bug_created': config_dict.get('notification_flow_bug_created', 'true') == 'true',
@@ -2213,6 +2258,7 @@ def save_notification_config():
             # 服务器配置
             'notification_server_enabled': str(data.get('server', {}).get('enabled', True)).lower(),
             'notification_retention_days': str(data.get('server', {}).get('retention_days', 30)),
+            'notification_auto_cleanup_enabled': str(data.get('server', {}).get('auto_cleanup_enabled', False)).lower(),
 
             # 应用内通知
             'notification_inapp_enabled': str(data.get('inapp', {}).get('enabled', True)).lower(),
@@ -2232,7 +2278,7 @@ def save_notification_config():
             'notification_gotify_enabled': str(data.get('gotify', {}).get('enabled', False)).lower(),
             'notification_gotify_server_url': data.get('gotify', {}).get('server_url', 'http://localhost:8080'),
             'notification_gotify_app_token': data.get('gotify', {}).get('app_token', ''),
-            'notification_gotify_default_priority': str(data.get('gotify', {}).get('default_priority', 5)),
+            'notification_gotify_default_priority': str(data.get('gotify', {}).get('default_priority', 10)),
 
             # 流程规则
             'notification_flow_bug_created': str(data.get('flow_rules', {}).get('bug_created', True)).lower(),
@@ -2246,8 +2292,8 @@ def save_notification_config():
         for config_key, config_value in config_mappings.items():
             if DB_TYPE == 'postgres':
                 query, params = adapt_sql('''
-                    INSERT INTO system_config (config_key, config_value, created_at, updated_at)
-                    VALUES (%s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    INSERT INTO system_config (config_key, config_value, updated_at)
+                    VALUES (%s, %s, CURRENT_TIMESTAMP)
                     ON CONFLICT (config_key) DO UPDATE SET
                     config_value = EXCLUDED.config_value,
                     updated_at = CURRENT_TIMESTAMP
@@ -2255,8 +2301,8 @@ def save_notification_config():
             else:
                 # SQLite使用不同的语法
                 query, params = adapt_sql('''
-                    INSERT OR REPLACE INTO system_config (config_key, config_value, created_at, updated_at)
-                    VALUES (%s, %s, datetime('now'), datetime('now'))
+                    INSERT OR REPLACE INTO system_config (config_key, config_value, updated_at)
+                    VALUES (%s, %s, datetime('now'))
                 ''', (config_key, config_value))
 
             cursor.execute(query, params)
@@ -2356,7 +2402,7 @@ def get_user_notification_preferences():
                    COALESCE(np.email_enabled, false) as email_enabled,
                    COALESCE(np.gotify_enabled, false) as gotify_enabled
             FROM users u
-            LEFT JOIN notification_preferences np ON u.id = np.user_id
+            LEFT JOIN user_notification_preferences np ON u.id = np.user_id
             ORDER BY u.id
         ''', ())
 
@@ -2397,8 +2443,8 @@ def save_user_notification_preference():
 
         if DB_TYPE == 'postgres':
             query, params = adapt_sql('''
-                INSERT INTO notification_preferences (user_id, inapp_enabled, email_enabled, gotify_enabled, created_at, updated_at)
-                VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                INSERT INTO user_notification_preferences (user_id, inapp_enabled, email_enabled, gotify_enabled, updated_at)
+                VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)
                 ON CONFLICT (user_id) DO UPDATE SET
                 inapp_enabled = EXCLUDED.inapp_enabled,
                 email_enabled = EXCLUDED.email_enabled,
@@ -2407,8 +2453,8 @@ def save_user_notification_preference():
             ''', (user_id, inapp_enabled, email_enabled, gotify_enabled))
         else:
             query, params = adapt_sql('''
-                INSERT OR REPLACE INTO notification_preferences (user_id, inapp_enabled, email_enabled, gotify_enabled, created_at, updated_at)
-                VALUES (%s, %s, %s, %s, datetime('now'), datetime('now'))
+                INSERT OR REPLACE INTO user_notification_preferences (user_id, inapp_enabled, email_enabled, gotify_enabled, updated_at)
+                VALUES (%s, %s, %s, %s, datetime('now'))
             ''', (user_id, inapp_enabled, email_enabled, gotify_enabled))
 
         cursor.execute(query, params)
@@ -2441,8 +2487,8 @@ def save_batch_user_notification_preferences():
 
             if DB_TYPE == 'postgres':
                 query, params = adapt_sql('''
-                    INSERT INTO notification_preferences (user_id, inapp_enabled, email_enabled, gotify_enabled, created_at, updated_at)
-                    VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    INSERT INTO user_notification_preferences (user_id, inapp_enabled, email_enabled, gotify_enabled, updated_at)
+                    VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)
                     ON CONFLICT (user_id) DO UPDATE SET
                     inapp_enabled = EXCLUDED.inapp_enabled,
                     email_enabled = EXCLUDED.email_enabled,
@@ -2451,8 +2497,8 @@ def save_batch_user_notification_preferences():
                 ''', (user_id, inapp_enabled, email_enabled, gotify_enabled))
             else:
                 query, params = adapt_sql('''
-                    INSERT OR REPLACE INTO notification_preferences (user_id, inapp_enabled, email_enabled, gotify_enabled, created_at, updated_at)
-                    VALUES (%s, %s, %s, %s, datetime('now'), datetime('now'))
+                    INSERT OR REPLACE INTO user_notification_preferences (user_id, inapp_enabled, email_enabled, gotify_enabled, updated_at)
+                    VALUES (%s, %s, %s, %s, datetime('now'))
                 ''', (user_id, inapp_enabled, email_enabled, gotify_enabled))
 
             cursor.execute(query, params)
@@ -2460,10 +2506,74 @@ def save_batch_user_notification_preferences():
         conn.commit()
         conn.close()
 
-        return jsonify({'success': True, 'message': f'批量保存了 {len(preferences)} 个用户的通知偏好'})
+        return jsonify({
+            'success': True,
+            'message': f'批量保存了 {len(preferences)} 个用户的通知偏好',
+            'updated_count': len(preferences)
+        })
 
     except Exception as e:
         app.logger.error(f"批量保存用户通知偏好失败: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/admin/notifications/cleanup', methods=['POST'])
+@login_required
+@role_required('gly')
+def admin_cleanup_notifications():
+    """手动触发通知清理"""
+    try:
+        data = request.get_json() or {}
+        cleanup_type = data.get('type', 'all')  # 'expired', 'excess', 'all'
+
+        from notification.cleanup_manager import cleanup_manager
+
+        results = {}
+
+        if cleanup_type in ['expired', 'all']:
+            # 清理过期通知
+            expired_result = cleanup_manager.cleanup_expired_notifications()
+            results['expired'] = expired_result
+
+        if cleanup_type in ['excess', 'all']:
+            # 清理超量通知
+            excess_result = cleanup_manager.cleanup_excess_notifications()
+            results['excess'] = excess_result
+
+        # 计算总清理数量
+        total_deleted = 0
+        if 'expired' in results:
+            total_deleted += results['expired'].get('deleted_count', 0)
+        if 'excess' in results:
+            total_deleted += results['excess'].get('total_deleted', 0)
+
+        return jsonify({
+            'success': True,
+            'message': f'清理完成，共删除 {total_deleted} 条通知',
+            'total_deleted': total_deleted,
+            'results': results
+        })
+
+    except Exception as e:
+        app.logger.error(f"手动清理通知失败: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/admin/notifications/cleanup/stats')
+@login_required
+@role_required('gly')
+def admin_cleanup_stats():
+    """获取通知清理统计信息"""
+    try:
+        from notification.cleanup_manager import cleanup_manager
+
+        stats = cleanup_manager.get_cleanup_stats()
+
+        return jsonify({
+            'success': True,
+            'data': stats
+        })
+
+    except Exception as e:
+        app.logger.error(f"获取清理统计失败: {e}")
         return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/favicon.ico')
@@ -2590,6 +2700,275 @@ def check_port_available(host, port):
         print(f"继续启动应用程序...")
         return True
 
+# 用户设置相关路由
+@app.route('/user/settings')
+@login_required
+def user_settings():
+    """用户设置页面"""
+    user = get_current_user()
+    if not user:
+        return redirect('/login')
+    return render_template('user_settings.html', user=user)
+
+@app.route('/user/email-settings', methods=['GET', 'POST'])
+@login_required
+def user_email_settings():
+    """用户邮件设置"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'success': False, 'message': '用户未登录'})
+
+    if request.method == 'GET':
+        # 获取用户当前的邮件设置
+        try:
+            conn = get_db_connection()
+            if DB_TYPE == 'postgres':
+                c = conn.cursor(cursor_factory=DictCursor)
+            else:
+                c = conn.cursor()
+
+            query, params = adapt_sql('SELECT email FROM users WHERE id = %s', (user['id'],))
+            c.execute(query, params)
+            result = c.fetchone()
+            conn.close()
+
+            email = result[0] if result and result[0] else None
+            return jsonify({
+                'success': True,
+                'email': email
+            })
+
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)})
+
+    else:  # POST
+        # 保存用户的邮件设置
+        try:
+            data = request.get_json()
+            email = data.get('email', '').strip()
+
+            if not email:
+                return jsonify({'success': False, 'message': '邮箱地址不能为空'})
+
+            # 简单的邮箱格式验证
+            import re
+            email_pattern = r'^[^\s@]+@[^\s@]+\.[^\s@]+$'
+            if not re.match(email_pattern, email):
+                return jsonify({'success': False, 'message': '邮箱格式不正确'})
+
+            conn = get_db_connection()
+            if DB_TYPE == 'postgres':
+                c = conn.cursor(cursor_factory=DictCursor)
+            else:
+                c = conn.cursor()
+
+            query, params = adapt_sql(
+                'UPDATE users SET email = %s WHERE id = %s',
+                (email, user['id'])
+            )
+            c.execute(query, params)
+            conn.commit()
+            conn.close()
+
+            return jsonify({'success': True, 'message': '邮箱设置保存成功'})
+
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/user/test-email', methods=['POST'])
+@login_required
+def test_user_email():
+    """测试用户的邮件发送"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'success': False, 'message': '用户未登录'})
+
+    try:
+        data = request.get_json()
+        email = data.get('email', '').strip()
+
+        if not email:
+            return jsonify({'success': False, 'message': '邮箱地址不能为空'})
+
+        # 测试发送邮件
+        try:
+            from notification.channels.email_notifier import EmailNotifier
+            email_notifier = EmailNotifier()
+
+            if not email_notifier.is_enabled():
+                return jsonify({'success': False, 'message': '邮件服务未启用，请联系管理员配置'})
+
+            # 构造测试邮件内容
+            recipient_info = {
+                'name': user.get('chinese_name') or user.get('username'),
+                'email': email
+            }
+
+            success = email_notifier.send(
+                title="🧪 ReBugTracker邮件测试",
+                content=f"您好 {recipient_info['name']}！\n\n这是一封测试邮件，说明您的邮箱配置正确。\n\n如果您收到这封邮件，表示ReBugTracker可以正常向您发送通知。",
+                recipient=recipient_info,
+                priority=1
+            )
+
+            if success:
+                return jsonify({'success': True, 'message': '测试邮件发送成功'})
+            else:
+                return jsonify({'success': False, 'message': '邮件发送失败，请检查邮箱地址'})
+
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'邮件发送失败: {str(e)}'})
+
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/user/gotify-settings', methods=['GET', 'POST'])
+@login_required
+def user_gotify_settings():
+    """用户Gotify设置"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'success': False, 'message': '用户未登录'})
+
+    if request.method == 'GET':
+        # 获取用户当前的Gotify设置
+        try:
+            conn = get_db_connection()
+            if DB_TYPE == 'postgres':
+                c = conn.cursor(cursor_factory=DictCursor)
+            else:
+                c = conn.cursor()
+
+            query, params = adapt_sql('SELECT gotify_app_token FROM users WHERE id = %s', (user['id'],))
+            c.execute(query, params)
+            result = c.fetchone()
+            conn.close()
+
+            app_token = result[0] if result and result[0] else None
+            return jsonify({
+                'success': True,
+                'app_token': app_token[:10] + '...' if app_token else None  # 只显示前10位
+            })
+
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)})
+
+    else:  # POST
+        # 保存用户的Gotify设置
+        try:
+            data = request.get_json()
+            app_token = data.get('app_token', '').strip()
+
+            if not app_token:
+                return jsonify({'success': False, 'message': 'App Token不能为空'})
+
+            conn = get_db_connection()
+            if DB_TYPE == 'postgres':
+                c = conn.cursor(cursor_factory=DictCursor)
+            else:
+                c = conn.cursor()
+
+            query, params = adapt_sql(
+                'UPDATE users SET gotify_app_token = %s WHERE id = %s',
+                (app_token, user['id'])
+            )
+            c.execute(query, params)
+            conn.commit()
+            conn.close()
+
+            return jsonify({'success': True, 'message': 'Gotify设置保存成功'})
+
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/user/test-gotify', methods=['POST'])
+@login_required
+def test_user_gotify():
+    """测试用户的Gotify连接"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'success': False, 'message': '用户未登录'})
+
+    try:
+        data = request.get_json()
+        app_token = data.get('app_token', '').strip()
+
+        if not app_token:
+            return jsonify({'success': False, 'message': 'App Token不能为空'})
+
+        # 测试发送通知
+        import requests
+        import os
+
+        server_url = os.getenv('GOTIFY_SERVER_URL', 'http://localhost:8080')
+        url = f"{server_url.rstrip('/')}/message"
+
+        test_data = {
+            "title": "🧪 ReBugTracker测试通知",
+            "message": f"您好 {user.get('chinese_name') or user.get('username')}！\n\n这是一条测试通知，说明您的Gotify配置正确。",
+            "priority": 5
+        }
+
+        headers = {
+            "X-Gotify-Key": app_token,
+            "Content-Type": "application/json"
+        }
+
+        response = requests.post(url, json=test_data, headers=headers, timeout=10)
+
+        if response.status_code == 200:
+            return jsonify({'success': True, 'message': '测试通知发送成功'})
+        else:
+            return jsonify({'success': False, 'message': f'发送失败: {response.status_code}'})
+
+    except requests.exceptions.RequestException as e:
+        return jsonify({'success': False, 'message': f'网络错误: {str(e)}'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/user/notification-preferences', methods=['GET', 'POST'])
+@login_required
+def user_notification_preferences():
+    """用户通知偏好设置"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'success': False, 'message': '用户未登录'})
+
+    if request.method == 'GET':
+        # 获取用户通知偏好
+        try:
+            from notification.notification_manager import NotificationManager
+            preferences = NotificationManager.is_user_notification_enabled(user['id'])
+            return jsonify({
+                'success': True,
+                'inapp_enabled': preferences.get('inapp', True),
+                'email_enabled': preferences.get('email', False),
+                'gotify_enabled': preferences.get('gotify', False)
+            })
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)})
+
+    else:  # POST
+        # 保存用户通知偏好
+        try:
+            data = request.get_json()
+            from notification.notification_manager import NotificationManager
+
+            success = NotificationManager.set_user_notification_preferences(
+                str(user['id']),
+                email_enabled=data.get('email_enabled', False),
+                gotify_enabled=data.get('gotify_enabled', False),
+                inapp_enabled=data.get('inapp_enabled', True)
+            )
+
+            if success:
+                return jsonify({'success': True, 'message': '通知偏好保存成功'})
+            else:
+                return jsonify({'success': False, 'message': '保存失败'})
+
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)})
+
 if __name__ == '__main__':
     # 检查端口是否可用
     HOST = '127.0.0.1'
@@ -2599,6 +2978,11 @@ if __name__ == '__main__':
     check_port_available(HOST, PORT)
 
     try:
+        # 启动通知清理调度器
+        print("🧹 启动通知清理调度器...")
+        from notification.cleanup_manager import cleanup_manager
+        cleanup_manager.start_cleanup_scheduler(interval_hours=24)  # 每24小时清理一次
+
         print(f"📡 应用程序将在 http://{HOST}:{PORT} 启动")
         app.run(host=HOST, port=PORT, debug=True, use_reloader=False)
     except KeyboardInterrupt:
@@ -2606,6 +2990,14 @@ if __name__ == '__main__':
     except Exception as e:
         print(f"❌ 启动失败: {e}")
     finally:
+        # 停止清理调度器
+        try:
+            from notification.cleanup_manager import cleanup_manager
+            cleanup_manager.stop_cleanup_scheduler()
+            print("🧹 通知清理调度器已停止")
+        except:
+            pass
+
         # 确保所有资源被释放
         import os
         import signal

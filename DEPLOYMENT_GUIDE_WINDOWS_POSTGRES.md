@@ -25,10 +25,10 @@
 
 ### 步骤 3.1: 克隆 ReBugTracker 仓库
 
-在您选择的部署路径下（例如 `D:\app_data\repository\`），克隆 ReBugTracker 仓库：
+在您选择的部署路径下（例如 `D:\app_data\repositories\`），克隆 ReBugTracker 仓库：
 
 ```bash
-cd D:\app_data\repository\
+cd D:\app_data\repositories\
 git clone <您的 ReBugTracker 仓库地址> ReBugTracker
 cd ReBugTracker
 ```
@@ -96,10 +96,10 @@ python deployment_tools/run_waitress.py
 ```
 
 **选项2: 创建简化的启动脚本**
-在 `D:\app_data\repository\ReBugTracker\` 目录下创建 `run_waitress.py`：
+在 `D:\app_data\repositories\ReBugTracker\` 目录下创建 `run_waitress.py`：
 
 ```python
-# D:\app_data\repository\ReBugTracker\run_waitress.py
+# D:\app_data\repositories\ReBugTracker\run_waitress.py
 from waitress import serve
 from rebugtracker import app
 import logging
@@ -140,7 +140,7 @@ if __name__ == '__main__':
 在命令提示符中，导航到 ReBugTracker 目录并运行：
 
 ```bash
-cd D:\app_data\repository\ReBugTracker
+cd D:\app_data\repositories\ReBugTracker
 python run_waitress.py
 ```
 
@@ -268,9 +268,9 @@ http {
     在弹出的 NSSM GUI 界面中，按照以下说明填写字段：
     *   **Application Tab (应用程序选项卡)**:
         *   **Path (路径)**: 填写您的虚拟环境中 Python 解释器的完整路径。
-            例如: `D:\app_data\repository\ReBugTracker\.venv\Scripts\python.exe`
+            例如: `D:\app_data\repositories\ReBugTracker\.venv\Scripts\python.exe`
         *   **Startup directory (启动目录)**: 填写您的 ReBugTracker 项目的根目录。
-            例如: `D:\app_data\repository\ReBugTracker`
+            例如: `D:\app_data\repositories\ReBugTracker`
         *   **Arguments (参数)**: 填写您的 Waitress 启动脚本的文件名。
             例如: `run_waitress.py`
     *   **Details Tab (详细信息选项卡)**:
@@ -279,8 +279,8 @@ http {
     *   **Log On Tab (登录选项卡)**:
         *   建议选择 `Local System account` (本地系统账户)，或一个具有足够权限的用户账户。
     *   **I/O Tab (输入/输出选项卡)**: (可选，但强烈推荐配置日志输出)
-        *   **Output (stdout)**: `D:\app_data\repository\ReBugTracker\logs\waitress_stdout.log` (确保 `logs` 目录存在)
-        *   **Error (stderr)**: `D:\app_data\repository\ReBugTracker\logs\waitress_stderr.log` (确保 `logs` 目录存在)
+        *   **Output (stdout)**: `D:\app_data\repositories\ReBugTracker\logs\waitress_stdout.log` (确保 `logs` 目录存在)
+        *   **Error (stderr)**: `D:\app_data\repositories\ReBugTracker\logs\waitress_stderr.log` (确保 `logs` 目录存在)
     *   **Exit Actions Tab (退出操作选项卡)**:
         *   **Restart Application (重启应用程序)**: 确保选中此项，以便在应用崩溃时自动重启。
     *   **点击 "Install service" (安装服务)**。
@@ -299,7 +299,7 @@ http {
     *   **ReBugTracker Service**: 检查 Windows 服务管理器，确认 `ReBugTracker Web Service` 状态为“正在运行”。
     *   **Nginx**: 确认 Nginx 进程正在运行。
 2.  **检查日志**:
-    *   查看 `D:\app_data\repository\ReBugTracker\logs\` 目录下的 `waitress_stdout.log` 和 `waitress_stderr.log` 文件，确保没有错误信息。
+    *   查看 `D:\app_data\repositories\ReBugTracker\logs\` 目录下的 `waitress_stdout.log` 和 `waitress_stderr.log` 文件，确保没有错误信息。
     *   查看 Nginx 的日志文件（通常在 `C:\nginx\logs\` 目录下），检查 `access.log` 和 `error.log`。
 3.  **访问应用**:
     在浏览器中输入您的服务器 IP 地址或配置的域名（例如 `http://localhost` 或 `http://your_server_ip`），应该能看到 ReBugTracker 的登录页面。

@@ -20,18 +20,75 @@ class EmailNotifier(BaseNotifier):
     """邮件通知器"""
     
     def __init__(self):
-        self.config = {
-            'enabled': os.getenv('EMAIL_NOTIFICATIONS_ENABLED', 'true').lower() == 'true',
-            'smtp_server': os.getenv('SMTP_SERVER', 'smtp.gmail.com'),
-            'smtp_port': int(os.getenv('SMTP_PORT', '587')),
-            'username': os.getenv('SMTP_USERNAME', ''),
-            'password': os.getenv('SMTP_PASSWORD', ''),
-            'from_email': os.getenv('FROM_EMAIL', 'noreply@rebugtracker.com'),
-            'from_name': os.getenv('FROM_NAME', 'ReBugTracker'),
-            'use_tls': os.getenv('SMTP_USE_TLS', 'true').lower() == 'true',
-        }
-        
+        # 从数据库读取配置
+        self.config = self._load_config_from_db()
+
         logger.debug(f"Email notifier initialized: enabled={self.config['enabled']}")
+
+    def _load_config_from_db(self):
+        """从数据库加载邮件配置"""
+        try:
+            from db_factory import get_db_connection
+            from sql_adapter import adapt_sql
+
+            conn = get_db_connection()
+            cursor = conn.cursor()
+
+            # 查询邮件相关配置
+            query, params = adapt_sql('''
+                SELECT config_key, config_value FROM system_config
+                WHERE config_key LIKE %s
+            ''', ('notification_email_%',))
+
+            cursor.execute(query, params)
+            db_configs = cursor.fetchall()
+            conn.close()
+
+            # 构建配置字典
+            config = {}
+            for key, value in db_configs:
+                if key == 'notification_email_enabled':
+                    config['enabled'] = value.lower() == 'true'
+                elif key == 'notification_email_smtp_server':
+                    config['smtp_server'] = value
+                elif key == 'notification_email_smtp_port':
+                    config['smtp_port'] = int(value)
+                elif key == 'notification_email_smtp_username':
+                    config['username'] = value
+                elif key == 'notification_email_smtp_password':
+                    config['password'] = value
+                elif key == 'notification_email_from_email':
+                    config['from_email'] = value
+                elif key == 'notification_email_from_name':
+                    config['from_name'] = value
+                elif key == 'notification_email_use_tls':
+                    config['use_tls'] = value.lower() == 'true'
+
+            # 设置默认值
+            config.setdefault('enabled', True)
+            config.setdefault('smtp_server', 'smtp.gmail.com')
+            config.setdefault('smtp_port', 587)
+            config.setdefault('username', '')
+            config.setdefault('password', '')
+            config.setdefault('from_email', 'noreply@rebugtracker.com')
+            config.setdefault('from_name', 'ReBugTracker')
+            config.setdefault('use_tls', True)
+
+            return config
+
+        except Exception as e:
+            logger.error(f"Failed to load email config from database: {e}")
+            # 回退到环境变量配置
+            return {
+                'enabled': os.getenv('EMAIL_NOTIFICATIONS_ENABLED', 'true').lower() == 'true',
+                'smtp_server': os.getenv('SMTP_SERVER', 'smtp.gmail.com'),
+                'smtp_port': int(os.getenv('SMTP_PORT', '587')),
+                'username': os.getenv('SMTP_USERNAME', ''),
+                'password': os.getenv('SMTP_PASSWORD', ''),
+                'from_email': os.getenv('FROM_EMAIL', 'noreply@rebugtracker.com'),
+                'from_name': os.getenv('FROM_NAME', 'ReBugTracker'),
+                'use_tls': os.getenv('SMTP_USE_TLS', 'true').lower() == 'true',
+            }
     
     def is_enabled(self) -> bool:
         """检查邮件通知是否启用"""
@@ -77,14 +134,23 @@ class EmailNotifier(BaseNotifier):
             msg.attach(MIMEText(html_content, 'html', 'utf-8'))
             
             # 发送邮件
-            with smtplib.SMTP(self.config['smtp_server'], self.config['smtp_port']) as server:
-                if self.config['use_tls']:
-                    server.starttls()
-                
-                if self.config['username'] and self.config['password']:
-                    server.login(self.config['username'], self.config['password'])
-                
-                server.send_message(msg)
+            # 根据端口和TLS设置选择连接方式
+            if self.config['smtp_port'] == 465 and not self.config['use_tls']:
+                # SSL模式 (465端口)
+                with smtplib.SMTP_SSL(self.config['smtp_server'], self.config['smtp_port']) as server:
+                    if self.config['username'] and self.config['password']:
+                        server.login(self.config['username'], self.config['password'])
+                    server.send_message(msg)
+            else:
+                # TLS模式 (587端口) 或普通模式
+                with smtplib.SMTP(self.config['smtp_server'], self.config['smtp_port']) as server:
+                    if self.config['use_tls']:
+                        server.starttls()
+
+                    if self.config['username'] and self.config['password']:
+                        server.login(self.config['username'], self.config['password'])
+
+                    server.send_message(msg)
             
             logger.info(f"Email sent to {recipient['email']}: {title}")
             return True

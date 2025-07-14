@@ -937,6 +937,336 @@
         background: #a8a8a8;
     }
 
+    /* 现代化Modal样式 */
+    .modern-modal {
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+    }
+
+    /* 确认删除Modal样式 */
+    .confirm-delete-header {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+        color: white;
+        border: none;
+        padding: 25px 30px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .confirm-delete-icon {
+        width: 50px;
+        height: 50px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+    }
+
+    .confirm-delete-body {
+        padding: 40px 30px;
+        text-align: center;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    }
+
+    .warning-animation {
+        margin-bottom: 25px;
+    }
+
+    .warning-icon {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        font-size: 40px;
+        color: white;
+        animation: pulse 2s infinite;
+    }
+
+    .confirm-delete-message {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 10px;
+    }
+
+    .warning-text {
+        color: #dc3545;
+        font-weight: 500;
+        margin: 0;
+    }
+
+    .confirm-delete-footer {
+        background: white;
+        border: none;
+        padding: 20px 30px;
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+    }
+
+    .confirm-delete-footer .btn-modern {
+        color: white !important;
+        font-weight: 600;
+        padding: 12px 24px;
+        border-radius: 25px;
+        border: none;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .confirm-delete-footer .btn-secondary {
+        background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+        color: white !important;
+    }
+
+    .confirm-delete-footer .btn-secondary:hover {
+        background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+    }
+
+    .confirm-delete-footer .btn-danger {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        color: white !important;
+    }
+
+    .confirm-delete-footer .btn-danger:hover {
+        background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+    }
+
+    /* 成功Modal样式 */
+    .success-header {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        border: none;
+        padding: 25px 30px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .success-icon {
+        width: 50px;
+        height: 50px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+    }
+
+    .success-body {
+        padding: 40px 30px;
+        text-align: center;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    }
+
+    .success-animation {
+        margin-bottom: 25px;
+    }
+
+    .checkmark {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        display: block;
+        stroke-width: 2;
+        stroke: #28a745;
+        stroke-miterlimit: 10;
+        margin: 0 auto 20px;
+        box-shadow: inset 0px 0px 0px #28a745;
+        animation: fill .4s ease-in-out .4s forwards, scale .3s ease-in-out .9s both;
+    }
+
+    .checkmark__circle {
+        stroke-dasharray: 166;
+        stroke-dashoffset: 166;
+        stroke-width: 2;
+        stroke-miterlimit: 10;
+        stroke: #28a745;
+        fill: none;
+        animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+    }
+
+    .checkmark__check {
+        transform-origin: 50% 50%;
+        stroke-dasharray: 48;
+        stroke-dashoffset: 48;
+        animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+    }
+
+    .success-message {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+        margin: 0;
+    }
+
+    .success-footer {
+        background: white;
+        border: none;
+        padding: 20px 30px;
+        text-align: center;
+    }
+
+    .success-footer .btn-modern {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white !important;
+        font-weight: 600;
+        padding: 12px 24px;
+        border-radius: 25px;
+        border: none;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .success-footer .btn-modern:hover {
+        background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    }
+
+    /* 错误Modal样式 */
+    .error-header {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        color: white;
+        border: none;
+        padding: 25px 30px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .error-icon {
+        width: 50px;
+        height: 50px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+    }
+
+    .error-body {
+        padding: 40px 30px;
+        text-align: center;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    }
+
+    .error-animation {
+        margin-bottom: 25px;
+    }
+
+    .error-icon-large {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        font-size: 40px;
+        color: white;
+        animation: shake 0.5s ease-in-out;
+    }
+
+    .error-message {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+        margin: 0;
+    }
+
+    .error-footer {
+        background: white;
+        border: none;
+        padding: 20px 30px;
+        text-align: center;
+    }
+
+    .error-footer .btn-modern {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: white !important;
+        font-weight: 600;
+        padding: 12px 24px;
+        border-radius: 25px;
+        border: none;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .error-footer .btn-modern:hover {
+        background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+    }
+
+    /* 动画效果 */
+    @keyframes stroke {
+        100% {
+            stroke-dashoffset: 0;
+        }
+    }
+
+    @keyframes scale {
+        0%, 100% {
+            transform: none;
+        }
+        50% {
+            transform: scale3d(1.1, 1.1, 1);
+        }
+    }
+
+    @keyframes fill {
+        100% {
+            box-shadow: inset 0px 0px 0px 30px #28a745;
+        }
+    }
+
+    @keyframes pulse {
+        0% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.1);
+        }
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    @keyframes shake {
+        0%, 100% {
+            transform: translateX(0);
+        }
+        10%, 30%, 50%, 70%, 90% {
+            transform: translateX(-5px);
+        }
+        20%, 40%, 60%, 80% {
+            transform: translateX(5px);
+        }
+    }
+
     /* 通知配置页面样式 */
     .notifications-theme {
         background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
@@ -1061,6 +1391,44 @@
     .config-actions .btn:hover {
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    /* 清理管理样式 */
+    .cleanup-stats-card {
+        transition: all 0.3s ease;
+    }
+
+    .cleanup-stats-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(25, 118, 210, 0.15);
+    }
+
+    .stat-item {
+        text-align: center;
+        padding: 10px;
+    }
+
+    .stat-value {
+        font-size: 1.8rem;
+        font-weight: bold;
+        color: #1976d2;
+        margin-bottom: 5px;
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        color: #666;
+        font-weight: 500;
+    }
+
+    .cleanup-action-card {
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+
+    .cleanup-action-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
     }
 
     /* 用户通知偏好表格样式 */
@@ -1735,6 +2103,23 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div class="row mt-3">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label class="form-label">
+                                                <i class="fas fa-magic"></i>
+                                                自动清理功能
+                                            </label>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="enableAutoCleanup">
+                                                <label class="form-check-label" for="enableAutoCleanup">
+                                                    启用自动清理过期和超量通知
+                                                </label>
+                                            </div>
+                                            <small class="text-muted">开启后系统将每24小时自动清理过期和超量的通知</small>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -2130,23 +2515,109 @@
                             </div>
                         </div>
 
+                        <!-- 通知清理管理 -->
+                        <div class="config-section">
+                            <div class="config-header">
+                                <h3><i class="fas fa-broom"></i> 通知清理管理</h3>
+                                <p class="config-description">管理通知数据的清理和维护</p>
+                            </div>
+                            <div class="config-body">
+                                <!-- 清理统计信息 -->
+                                <div class="row mb-4">
+                                    <div class="col-md-12">
+                                        <div class="cleanup-stats-card" style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border-radius: 15px; padding: 20px; border: 1px solid #90caf9;">
+                                            <h5 style="color: #1976d2; margin-bottom: 15px;">
+                                                <i class="fas fa-chart-bar"></i> 清理统计信息
+                                            </h5>
+                                            <div class="row" id="cleanupStatsContainer">
+                                                <div class="col-md-2">
+                                                    <div class="stat-item">
+                                                        <div class="stat-value" id="totalNotifications">-</div>
+                                                        <div class="stat-label">总通知数</div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <div class="stat-item">
+                                                        <div class="stat-value" id="userCount">-</div>
+                                                        <div class="stat-label">用户数</div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <div class="stat-item">
+                                                        <div class="stat-value" id="retentionDays">-</div>
+                                                        <div class="stat-label">保留天数</div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <div class="stat-item">
+                                                        <div class="stat-value" id="maxPerUser">-</div>
+                                                        <div class="stat-label">每用户上限</div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <div class="stat-item">
+                                                        <div class="stat-value" id="expiredCount" style="color: #f57c00;">-</div>
+                                                        <div class="stat-label">过期记录数</div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <div class="stat-item">
+                                                        <div class="stat-value" id="excessCount" style="color: #e91e63;">-</div>
+                                                        <div class="stat-label">过量记录数</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="mt-3">
+                                                <small class="text-muted" id="oldestNotification">最旧通知: -</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 清理操作 -->
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="cleanup-action-card" style="background: #fff3e0; border: 1px solid #ffb74d; border-radius: 12px; padding: 20px; text-align: center;">
+                                            <h6 style="color: #f57c00; margin-bottom: 10px;">
+                                                <i class="fas fa-calendar-times"></i> 清理过期通知
+                                            </h6>
+                                            <p style="font-size: 0.9rem; color: #666; margin-bottom: 15px;">删除超过保留天数的通知</p>
+                                            <button class="btn btn-warning btn-sm" onclick="cleanupNotifications('expired')" style="border-radius: 20px;">
+                                                <i class="fas fa-trash-alt"></i> 清理过期
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="cleanup-action-card" style="background: #f3e5f5; border: 1px solid #ba68c8; border-radius: 12px; padding: 20px; text-align: center;">
+                                            <h6 style="color: #8e24aa; margin-bottom: 10px;">
+                                                <i class="fas fa-layer-group"></i> 清理超量通知
+                                            </h6>
+                                            <p style="font-size: 0.9rem; color: #666; margin-bottom: 15px;">删除超出数量限制的通知</p>
+                                            <button class="btn btn-secondary btn-sm" onclick="cleanupNotifications('excess')" style="border-radius: 20px; background: #8e24aa; border-color: #8e24aa;">
+                                                <i class="fas fa-compress-alt"></i> 清理超量
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="cleanup-action-card" style="background: #ffebee; border: 1px solid #f48fb1; border-radius: 12px; padding: 20px; text-align: center;">
+                                            <h6 style="color: #c2185b; margin-bottom: 10px;">
+                                                <i class="fas fa-broom"></i> 全面清理
+                                            </h6>
+                                            <p style="font-size: 0.9rem; color: #666; margin-bottom: 15px;">执行所有清理操作</p>
+                                            <button class="btn btn-danger btn-sm" onclick="cleanupNotifications('all')" style="border-radius: 20px;">
+                                                <i class="fas fa-magic"></i> 全面清理
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- 操作按钮 -->
-                        <div class="config-actions">
-                            <button class="btn btn-primary btn-lg" onclick="saveNotificationConfig()">
-                                <i class="fas fa-save"></i>
+                        <div class="config-actions text-center">
+                            <button class="btn btn-primary btn-lg" onclick="saveAllNotificationConfig()" style="padding: 15px 40px; font-size: 1.1rem; border-radius: 25px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);">
+                                <i class="fas fa-save me-2"></i>
                                 保存全局配置
-                            </button>
-                            <button class="btn btn-success btn-lg" onclick="saveAllUserPreferences()">
-                                <i class="fas fa-users-cog"></i>
-                                保存所有用户偏好
-                            </button>
-                            <button class="btn btn-secondary btn-lg" onclick="testNotification()">
-                                <i class="fas fa-paper-plane"></i>
-                                测试通知
-                            </button>
-                            <button class="btn btn-warning btn-lg" onclick="resetNotificationConfig()">
-                                <i class="fas fa-undo"></i>
-                                重置配置
                             </button>
                         </div>
                     </div>
@@ -2497,6 +2968,94 @@
                 <button type="button" class="btn btn-primary" onclick="saveUserChanges()">
                     <i class="fas fa-save"></i>
                     保存更改
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 现代化确认删除Modal -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modern-modal">
+            <div class="modal-header confirm-delete-header">
+                <div class="confirm-delete-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h5 class="modal-title">确认删除</h5>
+            </div>
+            <div class="modal-body confirm-delete-body">
+                <div class="warning-animation">
+                    <div class="warning-icon">
+                        <i class="fas fa-user-times"></i>
+                    </div>
+                </div>
+                <p class="confirm-delete-message">确定要删除这个用户吗？</p>
+                <p class="warning-text">此操作不可撤销！</p>
+            </div>
+            <div class="modal-footer confirm-delete-footer">
+                <button type="button" class="btn-modern btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>取消
+                </button>
+                <button type="button" class="btn-modern btn-danger" id="confirmDeleteBtn">
+                    <i class="fas fa-trash me-2"></i>确认删除
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 现代化成功提示Modal -->
+<div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modern-modal">
+            <div class="modal-header success-header">
+                <div class="success-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h5 class="modal-title" id="successModalTitle">操作成功！</h5>
+            </div>
+            <div class="modal-body success-body">
+                <div class="success-animation">
+                    <div class="checkmark">
+                        <svg class="checkmark__svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                            <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none"/>
+                            <path class="checkmark__check" fill="none" d="m14.1 27.2l7.1 7.2 16.7-16.8"/>
+                        </svg>
+                    </div>
+                </div>
+                <p class="success-message" id="successModalMessage">操作已成功完成</p>
+            </div>
+            <div class="modal-footer success-footer">
+                <button type="button" class="btn-modern btn-primary" data-bs-dismiss="modal">
+                    <i class="fas fa-check me-2"></i>确定
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 现代化错误提示Modal -->
+<div class="modal fade" id="errorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modern-modal">
+            <div class="modal-header error-header">
+                <div class="error-icon">
+                    <i class="fas fa-exclamation-circle"></i>
+                </div>
+                <h5 class="modal-title">操作失败</h5>
+            </div>
+            <div class="modal-body error-body">
+                <div class="error-animation">
+                    <div class="error-icon-large">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                </div>
+                <p class="error-message" id="errorModalMessage">操作失败，请稍后重试</p>
+            </div>
+            <div class="modal-footer error-footer">
+                <button type="button" class="btn-modern btn-primary" data-bs-dismiss="modal">
+                    <i class="fas fa-check me-2"></i>确定
                 </button>
             </div>
         </div>
@@ -2865,23 +3424,36 @@ async function saveUserChanges() {
             // 刷新页面
             location.reload();
         } else {
-            alert('更新失败：' + result.message);
+            document.getElementById('errorModalMessage').textContent = '更新失败：' + result.message;
+            const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+            errorModal.show();
         }
 
     } catch (error) {
         console.error('保存用户更改错误:', error);
-        alert('保存失败：' + error.message);
+        document.getElementById('errorModalMessage').textContent = '保存失败：' + error.message;
+        const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+        errorModal.show();
     }
 }
 
 // 删除用户
-async function deleteUser(userId) {
-    if (!confirm('确定要删除这个用户吗？此操作不可撤销！')) {
-        return;
-    }
+let currentDeleteUserId = null;
+
+function deleteUser(userId) {
+    currentDeleteUserId = userId;
+
+    // 显示确认删除Modal
+    const modal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+    modal.show();
+}
+
+// 确认删除用户
+async function confirmDeleteUser() {
+    if (!currentDeleteUserId) return;
 
     try {
-        const response = await fetch(`/admin/users/${userId}`, {
+        const response = await fetch(`/admin/users/${currentDeleteUserId}`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
@@ -2890,21 +3462,60 @@ async function deleteUser(userId) {
 
         const result = await response.json();
 
+        // 关闭确认Modal
+        const confirmModal = bootstrap.Modal.getInstance(document.getElementById('confirmDeleteModal'));
+        confirmModal.hide();
+
         if (result.success) {
-            // 刷新页面
-            location.reload();
+            // 显示成功Modal
+            document.getElementById('successModalTitle').textContent = '删除成功！';
+            document.getElementById('successModalMessage').textContent = '用户已成功删除';
+            const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+            successModal.show();
+
+            // 2秒后刷新页面
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
         } else {
-            alert('删除失败：' + result.message);
+            // 显示错误Modal
+            document.getElementById('errorModalMessage').textContent = '删除失败：' + result.message;
+            const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+            errorModal.show();
         }
 
     } catch (error) {
         console.error('删除用户错误:', error);
-        alert('删除失败：' + error.message);
+
+        // 关闭确认Modal
+        const confirmModal = bootstrap.Modal.getInstance(document.getElementById('confirmDeleteModal'));
+        if (confirmModal) confirmModal.hide();
+
+        // 显示错误Modal
+        document.getElementById('errorModalMessage').textContent = '删除失败：' + error.message;
+        const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+        errorModal.show();
     }
+
+    currentDeleteUserId = null;
 }
 
 function deleteBugAdmin(bugId) {
-    if (confirm('确定要删除这个问题吗？')) {
+    // 使用现有的确认删除Modal
+    currentDeleteUserId = null; // 清除用户删除状态
+
+    // 修改Modal内容为删除问题
+    document.querySelector('#confirmDeleteModal .modal-title').textContent = '确认删除问题';
+    document.querySelector('#confirmDeleteModal .confirm-delete-message').textContent = '确定要删除这个问题吗？';
+    document.querySelector('#confirmDeleteModal .warning-text').textContent = '此操作不可撤销！';
+
+    const modal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+    modal.show();
+
+    // 重新绑定确认按钮事件
+    document.getElementById('confirmDeleteBtn').onclick = function() {
+        modal.hide();
+
         fetch(`/bug/delete/${bugId}`, {
             method: 'POST',
             headers: {
@@ -2914,16 +3525,27 @@ function deleteBugAdmin(bugId) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                location.reload();
+                document.getElementById('successModalTitle').textContent = '删除成功！';
+                document.getElementById('successModalMessage').textContent = '问题已成功删除';
+                const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                successModal.show();
+
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
             } else {
-                alert('删除失败：' + data.message);
+                document.getElementById('errorModalMessage').textContent = '删除失败：' + data.message;
+                const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                errorModal.show();
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('删除失败，请重试');
+            document.getElementById('errorModalMessage').textContent = '删除失败，请重试';
+            const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+            errorModal.show();
         });
-    }
+    };
 }
 
 // 初始化
@@ -2954,6 +3576,12 @@ document.addEventListener('DOMContentLoaded', function() {
             dropdown.style.display = 'none';
         }
     });
+
+    // 绑定确认删除按钮事件
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+    if (confirmDeleteBtn) {
+        confirmDeleteBtn.addEventListener('click', confirmDeleteUser);
+    }
 });
 
 // 添加动画样式
@@ -3030,6 +3658,7 @@ async function loadNotificationConfig() {
             if (data.server) {
                 document.getElementById('enableServerNotifications').checked = data.server.enabled !== false;
                 document.getElementById('notificationRetention').value = data.server.retention_days || 30;
+                document.getElementById('enableAutoCleanup').checked = data.server.auto_cleanup_enabled !== false;
             }
 
             // 应用内通知
@@ -3075,6 +3704,9 @@ async function loadNotificationConfig() {
         // 同时加载用户通知偏好
         await loadUserNotificationPreferences();
 
+        // 加载清理统计信息
+        await loadCleanupStats();
+
     } catch (error) {
         console.error('加载通知配置错误:', error);
         console.log('使用默认配置');
@@ -3086,7 +3718,8 @@ async function saveNotificationConfig() {
         // 全局设置
         server: {
             enabled: document.getElementById('enableServerNotifications').checked,
-            retention_days: parseInt(document.getElementById('notificationRetention').value)
+            retention_days: parseInt(document.getElementById('notificationRetention').value),
+            auto_cleanup_enabled: document.getElementById('enableAutoCleanup').checked
         },
 
         // 应用内通知
@@ -3140,13 +3773,66 @@ async function saveNotificationConfig() {
         const result = await response.json();
 
         if (result.success) {
-            alert('通知配置已保存成功！');
+            return { success: true, message: '全局配置保存成功' };
         } else {
-            alert('保存失败：' + (result.message || '未知错误'));
+            return { success: false, message: '全局配置保存失败：' + (result.message || '未知错误') };
         }
     } catch (error) {
         console.error('保存通知配置错误:', error);
-        alert('保存失败：网络错误');
+        return { success: false, message: '全局配置保存失败：网络错误' };
+    }
+}
+
+// 新的统一保存函数
+async function saveAllNotificationConfig() {
+    console.log('开始保存所有通知配置...');
+
+    // 显示加载状态
+    const saveButton = document.querySelector('.config-actions button');
+    const originalText = saveButton.innerHTML;
+    saveButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>保存中...';
+    saveButton.disabled = true;
+
+    try {
+        // 1. 保存全局配置
+        console.log('保存全局配置...');
+        const globalResult = await saveNotificationConfig();
+
+        // 2. 保存所有用户偏好
+        console.log('保存用户偏好...');
+        const userResult = await saveAllUserPreferences();
+
+        // 3. 显示结果
+        if (globalResult.success && userResult.success) {
+            // 显示成功Modal
+            document.getElementById('successModalTitle').textContent = '保存成功！';
+            document.getElementById('successModalMessage').textContent = '全局配置和用户偏好已全部保存成功';
+            const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+            successModal.show();
+        } else {
+            // 显示错误信息
+            let errorMessage = '保存过程中出现问题：\n';
+            if (!globalResult.success) {
+                errorMessage += '• ' + globalResult.message + '\n';
+            }
+            if (!userResult.success) {
+                errorMessage += '• ' + userResult.message + '\n';
+            }
+
+            document.getElementById('errorModalMessage').textContent = errorMessage;
+            const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+            errorModal.show();
+        }
+
+    } catch (error) {
+        console.error('保存配置时发生错误:', error);
+        document.getElementById('errorModalMessage').textContent = '保存失败：' + error.message;
+        const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+        errorModal.show();
+    } finally {
+        // 恢复按钮状态
+        saveButton.innerHTML = originalText;
+        saveButton.disabled = false;
     }
 }
 
@@ -3168,13 +3854,20 @@ async function testNotification() {
         const result = await response.json();
 
         if (result.success) {
-            alert(`测试通知已发送！\n成功渠道：${result.successful_channels.join(', ')}\n失败渠道：${result.failed_channels.join(', ')}`);
+            document.getElementById('successModalTitle').textContent = '测试通知已发送！';
+            document.getElementById('successModalMessage').textContent = `成功渠道：${result.successful_channels.join(', ')}\n失败渠道：${result.failed_channels.join(', ')}`;
+            const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+            successModal.show();
         } else {
-            alert('测试通知发送失败：' + (result.message || '未知错误'));
+            document.getElementById('errorModalMessage').textContent = '测试通知发送失败：' + (result.message || '未知错误');
+            const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+            errorModal.show();
         }
     } catch (error) {
         console.error('测试通知错误:', error);
-        alert('测试通知发送失败：网络错误');
+        document.getElementById('errorModalMessage').textContent = '测试通知发送失败：网络错误';
+        const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+        errorModal.show();
     }
 }
 
@@ -3184,6 +3877,7 @@ function resetNotificationConfig() {
         // 全局设置
         document.getElementById('enableServerNotifications').checked = true;
         document.getElementById('notificationRetention').value = '30';
+        document.getElementById('enableAutoCleanup').checked = false;
 
         // 应用内通知
         document.getElementById('enableInAppNotifications').checked = true;
@@ -3343,13 +4037,13 @@ async function saveAllUserPreferences() {
         const result = await response.json();
 
         if (result.success) {
-            alert(`成功保存 ${result.updated_count} 个用户的通知偏好！`);
+            return { success: true, message: `成功保存 ${result.updated_count} 个用户的通知偏好` };
         } else {
-            alert('批量保存失败：' + (result.message || '未知错误'));
+            return { success: false, message: '批量保存失败：' + (result.message || '未知错误') };
         }
     } catch (error) {
         console.error('批量保存用户通知偏好错误:', error);
-        alert('批量保存失败：网络错误');
+        return { success: false, message: '批量保存失败：网络错误' };
     }
 }
 
@@ -3688,6 +4382,120 @@ function applyExportTemplate(config) {
     // 应用文件名
     if (config.filename) document.getElementById('exportFileName').value = config.filename;
 }
+
+// 清理管理相关函数
+async function loadCleanupStats() {
+    console.log('加载清理统计信息...');
+
+    try {
+        const response = await fetch('/admin/notifications/cleanup/stats');
+        const result = await response.json();
+
+        if (result.success) {
+            const stats = result.data;
+
+            // 更新统计显示
+            document.getElementById('totalNotifications').textContent = stats.total_notifications || 0;
+            document.getElementById('userCount').textContent = stats.user_count || 0;
+            document.getElementById('retentionDays').textContent = stats.retention_days || 30;
+            document.getElementById('maxPerUser').textContent = stats.max_per_user || 100;
+            document.getElementById('expiredCount').textContent = stats.expired_count || 0;
+            document.getElementById('excessCount').textContent = stats.excess_count || 0;
+
+            if (stats.oldest_notification) {
+                const oldestDate = new Date(stats.oldest_notification);
+                document.getElementById('oldestNotification').textContent =
+                    `最旧通知: ${oldestDate.toLocaleDateString()} ${oldestDate.toLocaleTimeString()}`;
+            } else {
+                document.getElementById('oldestNotification').textContent = '最旧通知: 无通知记录';
+            }
+
+            console.log('清理统计信息加载成功');
+        } else {
+            console.warn('加载清理统计失败:', result.message);
+        }
+
+    } catch (error) {
+        console.error('加载清理统计错误:', error);
+    }
+}
+
+async function cleanupNotifications(type) {
+    const typeNames = {
+        'expired': '过期通知',
+        'excess': '超量通知',
+        'all': '所有通知'
+    };
+
+    const typeName = typeNames[type] || '通知';
+
+    if (!confirm(`确定要清理${typeName}吗？此操作不可撤销。`)) {
+        return;
+    }
+
+    // 找到对应的按钮并显示加载状态
+    const buttons = document.querySelectorAll('.cleanup-action-card button');
+    let targetButton = null;
+
+    buttons.forEach(btn => {
+        if ((type === 'expired' && btn.textContent.includes('清理过期')) ||
+            (type === 'excess' && btn.textContent.includes('清理超量')) ||
+            (type === 'all' && btn.textContent.includes('全面清理'))) {
+            targetButton = btn;
+        }
+    });
+
+    if (targetButton) {
+        const originalText = targetButton.innerHTML;
+        targetButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 清理中...';
+        targetButton.disabled = true;
+    }
+
+    try {
+        const response = await fetch('/admin/notifications/cleanup', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ type: type })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // 显示成功Modal
+            document.getElementById('successModalTitle').textContent = '清理完成！';
+            document.getElementById('successModalMessage').textContent = result.message;
+            const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+            successModal.show();
+
+            // 重新加载统计信息
+            await loadCleanupStats();
+
+        } else {
+            // 显示错误Modal
+            document.getElementById('errorModalMessage').textContent = '清理失败：' + result.message;
+            const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+            errorModal.show();
+        }
+
+    } catch (error) {
+        console.error('清理通知错误:', error);
+        document.getElementById('errorModalMessage').textContent = '清理失败：网络错误';
+        const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+        errorModal.show();
+    } finally {
+        // 恢复按钮状态
+        if (targetButton) {
+            targetButton.innerHTML = targetButton.dataset.originalText ||
+                (type === 'expired' ? '<i class="fas fa-trash-alt"></i> 清理过期' :
+                 type === 'excess' ? '<i class="fas fa-compress-alt"></i> 清理超量' :
+                 '<i class="fas fa-magic"></i> 全面清理');
+            targetButton.disabled = false;
+        }
+    }
+}
+
 </script>
 
 {% endblock %}

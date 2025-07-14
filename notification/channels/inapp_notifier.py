@@ -14,9 +14,8 @@ logger = logging.getLogger(__name__)
 
 class InAppNotifier(BaseNotifier):
     """应用内通知器"""
-    
+
     def __init__(self):
-        self.max_notifications = 100  # 每个用户最多保留的通知数
         logger.debug("In-app notifier initialized")
     
     def is_enabled(self) -> bool:
@@ -80,29 +79,59 @@ class InAppNotifier(BaseNotifier):
         """清理旧通知，保持最新的通知"""
         try:
             from sql_adapter import adapt_sql
-            
+
+            # 从配置中获取最大通知数量
+            max_notifications = self._get_max_notifications_per_user()
+
             # 删除超出限制的旧通知
             query, params = adapt_sql("""
-                DELETE FROM notifications 
-                WHERE user_id = %s 
+                DELETE FROM notifications
+                WHERE user_id = %s
                 AND id NOT IN (
                     SELECT id FROM (
-                        SELECT id FROM notifications 
-                        WHERE user_id = %s 
-                        ORDER BY created_at DESC 
+                        SELECT id FROM notifications
+                        WHERE user_id = %s
+                        ORDER BY created_at DESC
                         LIMIT %s
                     ) AS recent_notifications
                 )
-            """, (user_id, user_id, self.max_notifications))
-            
+            """, (user_id, user_id, max_notifications))
+
             cursor.execute(query, params)
-            
+
             deleted_count = cursor.rowcount
             if deleted_count > 0:
-                logger.debug(f"Cleaned up {deleted_count} old notifications for user {user_id}")
-            
+                logger.debug(f"Cleaned up {deleted_count} old notifications for user {user_id} (limit: {max_notifications})")
+
         except Exception as e:
             logger.error(f"Failed to cleanup old notifications for user {user_id}: {str(e)}")
+
+    def _get_max_notifications_per_user(self) -> int:
+        """从配置中获取每用户最大通知数量"""
+        try:
+            from db_factory import get_db_connection
+            from sql_adapter import adapt_sql
+
+            conn = get_db_connection()
+            cursor = conn.cursor()
+
+            query, params = adapt_sql("""
+                SELECT config_value FROM system_config
+                WHERE config_key = %s
+            """, ('notification_max_per_user',))
+
+            cursor.execute(query, params)
+            result = cursor.fetchone()
+            conn.close()
+
+            if result:
+                return int(result[0])
+            else:
+                return 100  # 默认100条
+
+        except Exception as e:
+            logger.error(f"Failed to get max notifications config: {e}")
+            return 100  # 默认100条
     
     def _push_realtime_notification(self, user_id: str, notification_data: Dict[str, Any]):
         """实时推送通知（WebSocket）"""

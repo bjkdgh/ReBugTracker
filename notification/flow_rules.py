@@ -66,16 +66,25 @@ class FlowNotificationRules:
                 logger.debug(f"Bug resolved notification targets: {len(targets)} users")
                 
             elif event_type == "bug_closed":
-                # 问题关闭：通知所有相关人员
+                # 问题关闭：通知相关负责人和组内成员
                 creator_id = event_data.get('creator_id')
                 assignee_id = event_data.get('assignee_id')
-                
+
+                # 通知创建者（实施组）
                 if creator_id:
                     targets.add(str(creator_id))
+
+                # 通知被分配者（组内成员）
                 if assignee_id:
                     targets.add(str(assignee_id))
-                    
-                logger.debug(f"Bug closed notification targets: {len(targets)} users")
+
+                    # 通过组内成员找到对应的负责人
+                    manager_id = FlowNotificationRules._get_manager_by_assignee(assignee_id)
+                    if manager_id:
+                        targets.add(str(manager_id))
+                        logger.debug(f"Found manager {manager_id} for assignee {assignee_id}")
+
+                logger.debug(f"Bug closed notification targets: {len(targets)} users (creator: {creator_id}, assignee: {assignee_id})")
             
             else:
                 logger.warning(f"Unknown event type: {event_type}")
@@ -89,42 +98,97 @@ class FlowNotificationRules:
     def _get_users_by_roles(roles: List[str]) -> List[str]:
         """
         根据角色获取用户ID列表
-        
+
         Args:
             roles: 角色列表 ['ssz', 'fzr', 'gly', 'zncy']
-            
+
         Returns:
             List[str]: 用户ID列表
         """
         try:
             from db_factory import get_db_connection
             from sql_adapter import adapt_sql
-            
+
             conn = get_db_connection()
             cursor = conn.cursor()
-            
+
             # 构建IN查询
             placeholders = ','.join(['%s'] * len(roles))
             query = f"""
-                SELECT id FROM users 
+                SELECT id FROM users
                 WHERE role_en IN ({placeholders})
                 AND id IS NOT NULL
             """
-            
+
             query, params = adapt_sql(query, roles)
             cursor.execute(query, params)
-            
+
             users = cursor.fetchall()
             conn.close()
-            
+
             user_ids = [str(user[0]) for user in users]
             logger.debug(f"Found {len(user_ids)} users for roles {roles}")
-            
+
             return user_ids
-            
+
         except Exception as e:
             logger.error(f"Error getting users by roles {roles}: {e}")
             return []
+
+    @staticmethod
+    def _get_manager_by_assignee(assignee_id: str) -> str:
+        """
+        根据被分配者ID找到对应的负责人ID
+
+        Args:
+            assignee_id: 被分配者（组内成员）ID
+
+        Returns:
+            str: 负责人ID，如果未找到则返回None
+        """
+        try:
+            from db_factory import get_db_connection
+            from sql_adapter import adapt_sql
+
+            conn = get_db_connection()
+            cursor = conn.cursor()
+
+            # 先获取被分配者的团队信息
+            query, params = adapt_sql("""
+                SELECT team FROM users WHERE id = %s
+            """, (assignee_id,))
+            cursor.execute(query, params)
+
+            assignee_result = cursor.fetchone()
+            if not assignee_result:
+                logger.warning(f"Assignee {assignee_id} not found")
+                conn.close()
+                return None
+
+            assignee_team = assignee_result[0]
+
+            # 根据团队找到对应的负责人
+            query, params = adapt_sql("""
+                SELECT id FROM users
+                WHERE team = %s AND role_en = 'fzr'
+                LIMIT 1
+            """, (assignee_team,))
+            cursor.execute(query, params)
+
+            manager_result = cursor.fetchone()
+            conn.close()
+
+            if manager_result:
+                manager_id = str(manager_result[0])
+                logger.debug(f"Found manager {manager_id} for assignee {assignee_id} in team {assignee_team}")
+                return manager_id
+            else:
+                logger.warning(f"No manager found for team {assignee_team}")
+                return None
+
+        except Exception as e:
+            logger.error(f"Error getting manager for assignee {assignee_id}: {e}")
+            return None
     
     @staticmethod
     def get_role_description(role_en: str) -> str:

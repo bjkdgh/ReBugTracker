@@ -22,46 +22,21 @@ def show_tool_menu():
             "description": "全面检查数据库健康状态（推荐）"
         },
         "2": {
-            "name": "数据库连接测试",
-            "file": "test_db_connection.py", 
-            "description": "测试数据库连接和基本功能"
-        },
-        "3": {
-            "name": "数据库表结构查看",
-            "file": "show_table_structure.py",
-            "description": "详细显示所有表的结构信息"
-        },
-        "4": {
             "name": "用户表数据对比",
             "file": "compare_users_table.py",
             "description": "比较PostgreSQL和SQLite的用户数据"
         },
-        "5": {
-            "name": "创建SQLite通知系统表",
-            "file": "create_notification_tables_sqlite.py",
-            "description": "为SQLite数据库创建通知系统表"
-        },
-        "6": {
-            "name": "创建PostgreSQL通知系统表", 
+        "3": {
+            "name": "通用通知系统表创建",
             "file": "create_notification_tables.py",
-            "description": "为PostgreSQL数据库创建通知系统表"
+            "description": "为当前数据库创建通知系统表（支持PostgreSQL和SQLite）"
         },
-        "7": {
-            "name": "添加用户联系方式字段",
-            "file": "add_user_contact_fields.py",
-            "description": "为用户表添加email和phone字段"
-        },
-        "8": {
-            "name": "SQLite数据检查",
-            "file": "check_sqlite_data.py",
-            "description": "检查SQLite数据库内容"
-        },
-        "9": {
+        "4": {
             "name": "SQLite配置检查",
             "file": "sqlite_config_checker.py",
             "description": "检查SQLite配置和优化建议"
         },
-        "10": {
+        "5": {
             "name": "SQLite优化工具",
             "file": "sqlite_optimizer.py",
             "description": "优化SQLite数据库性能"

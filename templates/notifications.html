@@ -481,7 +481,7 @@ async function markAllAsRead() {
         const response = await fetch('/api/notifications/read-all', {
             method: 'POST'
         });
-        
+
         const result = await response.json();
         if (result.success) {
             // 更新所有通知的状态
@@ -494,15 +494,80 @@ async function markAllAsRead() {
                     icon.className = 'fas fa-check-circle notification-read-icon';
                 }
             });
-            
-            alert('所有通知已标记为已读');
+
+            // 显示成功提示
+            showToast('所有通知已标记为已读', 'success');
         } else {
-            alert('操作失败: ' + result.message);
+            showToast('操作失败: ' + result.message, 'error');
         }
     } catch (error) {
         console.error('标记全部已读失败:', error);
-        alert('操作失败');
+        showToast('操作失败', 'error');
     }
+}
+
+// 显示Toast提示
+function showToast(message, type = 'info') {
+    // 创建toast容器（如果不存在）
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        `;
+        document.body.appendChild(toastContainer);
+    }
+
+    // 创建toast元素
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        padding: 15px 20px;
+        border-radius: 10px;
+        color: white;
+        font-weight: 500;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        transform: translateX(100%);
+        transition: all 0.3s ease;
+        max-width: 300px;
+        word-wrap: break-word;
+    `;
+
+    // 根据类型设置颜色
+    switch (type) {
+        case 'success':
+            toast.style.background = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)';
+            break;
+        case 'error':
+            toast.style.background = 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)';
+            break;
+        default:
+            toast.style.background = 'linear-gradient(135deg, #007bff 0%, #0056b3 100%)';
+    }
+
+    toast.textContent = message;
+    toastContainer.appendChild(toast);
+
+    // 显示动画
+    setTimeout(() => {
+        toast.style.transform = 'translateX(0)';
+    }, 100);
+
+    // 自动隐藏
+    setTimeout(() => {
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 300);
+    }, 3000);
 }
 </script>
 {% endblock %}
