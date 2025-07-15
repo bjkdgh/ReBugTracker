@@ -265,20 +265,20 @@
                     </h4>
 
                     <div class="form-group file-upload-modern">
-                        <label for="image" class="form-label">
-                            <i class="fas fa-image me-2"></i>问题截图（可选）
+                        <label for="images" class="form-label">
+                            <i class="fas fa-image me-2"></i>问题截图（可选，支持多张）
                         </label>
-                        <div class="file-upload-area" onclick="document.getElementById('image').click()">
+                        <div class="file-upload-area" onclick="document.getElementById('images').click()">
                             <div class="upload-icon">
                                 <i class="fas fa-cloud-upload-alt"></i>
                             </div>
                             <div class="upload-text">
                                 <p class="upload-title">点击上传截图</p>
-                                <p class="upload-subtitle">支持 JPG、PNG、GIF 格式，最大 10MB</p>
+                                <p class="upload-subtitle">支持 JPG、PNG、GIF 格式，最大 10MB，可选择多张图片</p>
                             </div>
-                            <input type="file" id="image" name="image" accept="image/*" style="display: none;">
+                            <input type="file" id="images" name="images" accept="image/*" multiple style="display: none;">
                         </div>
-                        <div class="image-preview" id="preview"></div>
+                        <div class="images-preview" id="preview"></div>
                     </div>
                 </div>
 
@@ -789,13 +789,16 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const imageInput = document.getElementById('image');
+    const imagesInput = document.getElementById('images');
     const previewDiv = document.getElementById('preview');
     const form = document.getElementById('bugForm');
     const submitBtn = form.querySelector('button[type="submit"]');
     const loadingSpinner = submitBtn.querySelector('.loading-spinner');
     const submitText = submitBtn.querySelector('.submit-text');
     const fileUploadArea = document.querySelector('.file-upload-area');
+
+    // 存储已选择的文件
+    let selectedFiles = [];
 
     // 文件拖拽上传功能
     fileUploadArea.addEventListener('dragover', (e) => {
@@ -820,58 +823,108 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const files = e.dataTransfer.files;
         if (files.length > 0) {
-            imageInput.files = files;
-            handleImagePreview(files[0]);
+            // 添加新文件到已选择的文件列表
+            for (let file of files) {
+                if (file.type.startsWith('image/')) {
+                    selectedFiles.push(file);
+                }
+            }
+            updateFileInput();
+            updatePreview();
         }
     });
 
     // 图片预览功能
-    imageInput.addEventListener('change', function() {
-        if (this.files && this.files[0]) {
-            handleImagePreview(this.files[0]);
+    imagesInput.addEventListener('change', function() {
+        if (this.files && this.files.length > 0) {
+            // 添加新文件到已选择的文件列表
+            for (let file of this.files) {
+                if (file.type.startsWith('image/')) {
+                    selectedFiles.push(file);
+                }
+            }
+            updateFileInput();
+            updatePreview();
         }
     });
 
-    function handleImagePreview(file) {
-        // 文件大小检查
-        if (file.size > 10 * 1024 * 1024) {
-            showNotification('文件大小不能超过10MB', 'error');
+    // 更新文件输入框
+    function updateFileInput() {
+        const dt = new DataTransfer();
+        selectedFiles.forEach(file => dt.items.add(file));
+        imagesInput.files = dt.files;
+    }
+
+    // 更新预览显示
+    function updatePreview() {
+        if (selectedFiles.length === 0) {
+            previewDiv.innerHTML = '';
             return;
         }
 
-        // 文件类型检查
-        if (!file.type.startsWith('image/')) {
-            showNotification('请选择图片文件', 'error');
-            return;
-        }
+        let previewHTML = '<div class="images-preview-container" style="margin-top: 20px;">';
+        previewHTML += `<div style="margin-bottom: 15px; color: #6c757d; font-size: 14px;">
+                            <i class="fas fa-images me-1"></i>已选择 ${selectedFiles.length} 张图片
+                        </div>`;
+        previewHTML += '<div class="images-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px;">';
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            previewDiv.innerHTML = `
-                <div class="preview-container" style="position: relative; margin-top: 20px;">
-                    <img src="${e.target.result}"
-                         alt="预览图"
-                         style="max-width: 100%; max-height: 300px; border-radius: 12px; border: 3px solid #e9ecef; box-shadow: 0 5px 20px rgba(0,0,0,0.1); transition: transform 0.3s ease; cursor: pointer;"
-                         onclick="this.style.transform = this.style.transform ? '' : 'scale(1.5)'; this.style.zIndex = this.style.zIndex ? '' : '1000'; this.style.position = this.style.position ? '' : 'relative';">
-                    <button type="button" class="remove-image"
-                            style="position: absolute; top: 10px; right: 10px; background: #dc3545; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(0,0,0,0.3);"
-                            onclick="removeImage()">
-                        <i class="fas fa-times"></i>
-                    </button>
-                    <div style="text-align: center; margin-top: 10px; color: #6c757d; font-size: 14px;">
-                        <i class="fas fa-info-circle me-1"></i>点击图片可放大查看
-                    </div>
-                </div>
-            `;
-        };
-        reader.readAsDataURL(file);
+        selectedFiles.forEach((file, index) => {
+            // 文件大小检查
+            if (file.size > 10 * 1024 * 1024) {
+                showNotification('文件大小不能超过10MB', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const imageContainer = document.getElementById(`image-container-${index}`);
+                if (imageContainer) {
+                    imageContainer.innerHTML = `
+                        <div style="position: relative; border-radius: 8px; overflow: hidden; box-shadow: 0 3px 10px rgba(0,0,0,0.1);">
+                            <img src="${e.target.result}"
+                                 alt="预览图 ${index + 1}"
+                                 style="width: 100%; height: 120px; object-fit: cover; cursor: pointer;"
+                                 onclick="this.style.transform = this.style.transform ? '' : 'scale(2)'; this.style.zIndex = this.style.zIndex ? '' : '1000'; this.style.position = this.style.position ? '' : 'fixed'; this.style.top = this.style.top ? '' : '50%'; this.style.left = this.style.left ? '' : '50%'; this.style.transform = this.style.transform ? '' : 'translate(-50%, -50%) scale(2)'; this.style.background = this.style.background ? '' : 'rgba(0,0,0,0.8)';">
+                            <button type="button" class="remove-image-btn"
+                                    style="position: absolute; top: 5px; right: 5px; background: #dc3545; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"
+                                    onclick="removeImage(${index})">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; padding: 5px; font-size: 12px; text-align: center;">
+                                ${file.name.length > 15 ? file.name.substring(0, 12) + '...' : file.name}
+                            </div>
+                        </div>
+                    `;
+                }
+            };
+            reader.readAsDataURL(file);
+
+            previewHTML += `<div id="image-container-${index}" style="min-height: 120px; background: #f8f9fa; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-spinner fa-spin" style="color: #6c757d;"></i>
+                            </div>`;
+        });
+
+        previewHTML += '</div>';
+        previewHTML += `<div style="text-align: center; margin-top: 15px; color: #6c757d; font-size: 14px;">
+                            <i class="fas fa-info-circle me-1"></i>点击图片可放大查看
+                        </div>`;
+        previewHTML += '</div>';
+        previewDiv.innerHTML = previewHTML;
     }
 
     // 移除图片函数
-    window.removeImage = function() {
-        previewDiv.innerHTML = '';
-        imageInput.value = '';
-        showNotification('图片已移除', 'success');
+    window.removeImage = function(index) {
+        if (typeof index === 'number') {
+            // 删除指定索引的图片
+            selectedFiles.splice(index, 1);
+            showNotification('图片已移除', 'success');
+        } else {
+            // 删除所有图片
+            selectedFiles = [];
+            showNotification('所有图片已移除', 'success');
+        }
+        updateFileInput();
+        updatePreview();
     };
 
     // 表单提交处理
@@ -896,6 +949,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
         try {
             const formData = new FormData(form);
+
+            // 移除所有图片字段，避免重复
+            if (formData.has('images')) {
+                formData.delete('images');
+            }
+            if (formData.has('image')) {
+                formData.delete('image');
+            }
+
+            // 只添加selectedFiles中的图片
+            if (selectedFiles.length > 0) {
+                selectedFiles.forEach(file => {
+                    formData.append('images', file);
+                });
+            }
+
             const response = await fetch('/bug/submit', {
                 method: 'POST',
                 body: formData

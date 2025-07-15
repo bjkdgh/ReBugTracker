@@ -747,6 +747,328 @@
         background: #a8a8a8;
     }
 
+    /* 现代化Modal样式 */
+    .modern-modal {
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+    }
+
+    /* 确认Modal样式 */
+    .confirm-header {
+        background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+        color: white;
+        border: none;
+        padding: 25px 30px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .confirm-icon {
+        width: 50px;
+        height: 50px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+    }
+
+    .confirm-body {
+        padding: 40px 30px;
+        text-align: center;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    }
+
+    .confirm-animation {
+        margin-bottom: 25px;
+    }
+
+    .confirm-icon-large {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        font-size: 40px;
+        color: white;
+        animation: pulse 2s infinite;
+    }
+
+    .confirm-message {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+        margin: 0;
+    }
+
+    .confirm-footer {
+        background: white;
+        border: none;
+        padding: 20px 30px;
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+    }
+
+    .confirm-footer .btn-modern {
+        color: white !important;
+        font-weight: 600;
+        padding: 12px 24px;
+        border-radius: 25px;
+        border: none;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .confirm-footer .btn-secondary {
+        background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+    }
+
+    .confirm-footer .btn-secondary:hover {
+        background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+    }
+
+    .confirm-footer .btn-primary {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    }
+
+    .confirm-footer .btn-primary:hover {
+        background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+    }
+
+    /* 成功Modal样式 */
+    .success-header {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        border: none;
+        padding: 25px 30px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .success-icon {
+        width: 50px;
+        height: 50px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+    }
+
+    .success-body {
+        padding: 40px 30px;
+        text-align: center;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    }
+
+    .success-animation {
+        margin-bottom: 25px;
+    }
+
+    .checkmark {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        display: block;
+        stroke-width: 2;
+        stroke: #28a745;
+        stroke-miterlimit: 10;
+        margin: 0 auto 20px;
+        box-shadow: inset 0px 0px 0px #28a745;
+        animation: fill .4s ease-in-out .4s forwards, scale .3s ease-in-out .9s both;
+    }
+
+    .checkmark__circle {
+        stroke-dasharray: 166;
+        stroke-dashoffset: 166;
+        stroke-width: 2;
+        stroke-miterlimit: 10;
+        stroke: #28a745;
+        fill: none;
+        animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+    }
+
+    .checkmark__check {
+        transform-origin: 50% 50%;
+        stroke-dasharray: 48;
+        stroke-dashoffset: 48;
+        animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+    }
+
+    .success-message {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+        margin: 0;
+    }
+
+    .success-footer {
+        background: white;
+        border: none;
+        padding: 20px 30px;
+        text-align: center;
+    }
+
+    .success-footer .btn-modern {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white !important;
+        font-weight: 600;
+        padding: 12px 24px;
+        border-radius: 25px;
+        border: none;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .success-footer .btn-modern:hover {
+        background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    }
+
+    /* 错误Modal样式 */
+    .error-header {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        color: white;
+        border: none;
+        padding: 25px 30px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .error-icon {
+        width: 50px;
+        height: 50px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+    }
+
+    .error-body {
+        padding: 40px 30px;
+        text-align: center;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    }
+
+    .error-animation {
+        margin-bottom: 25px;
+    }
+
+    .error-icon-large {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        font-size: 40px;
+        color: white;
+        animation: shake 0.5s ease-in-out;
+    }
+
+    .error-message {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+        margin: 0;
+    }
+
+    .error-footer {
+        background: white;
+        border: none;
+        padding: 20px 30px;
+        text-align: center;
+    }
+
+    .error-footer .btn-modern {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: white !important;
+        font-weight: 600;
+        padding: 12px 24px;
+        border-radius: 25px;
+        border: none;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .error-footer .btn-modern:hover {
+        background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+    }
+
+    /* 动画效果 */
+    @keyframes stroke {
+        100% {
+            stroke-dashoffset: 0;
+        }
+    }
+
+    @keyframes scale {
+        0%, 100% {
+            transform: none;
+        }
+        50% {
+            transform: scale3d(1.1, 1.1, 1);
+        }
+    }
+
+    @keyframes fill {
+        100% {
+            box-shadow: inset 0px 0px 0px 30px #28a745;
+        }
+    }
+
+    @keyframes pulse {
+        0% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.1);
+        }
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    @keyframes shake {
+        0%, 100% {
+            transform: translateX(0);
+        }
+        10%, 30%, 50%, 70%, 90% {
+            transform: translateX(-5px);
+        }
+        20%, 40%, 60%, 80% {
+            transform: translateX(5px);
+        }
+    }
+
     @media (max-width: 768px) {
         .header-content {
             gap: 10px;
@@ -884,8 +1206,14 @@
                             <span class="user-team">
                                 <i class="fas fa-building"></i> {{ user.team }}
                             </span>
-                    {% endif %}
-                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- 通知设置链接 -->
+                        <a href="/user/settings" class="btn btn-outline-light btn-sm" title="通知设置" style="margin-right: 10px;">
+                            <i class="fas fa-bell-slash"></i>
+                            通知设置
+                        </a>
 
                         <div class="header-actions">
                             <!-- 通知按钮 -->
@@ -1126,7 +1454,7 @@
                         {% endif %}
 
                         {% if user.role_en == 'zncy' and bug.assigned_to == user.id and bug.status == '已分配' %}
-                        <button onclick="confirmReceive('{{ bug.id }}')" class="btn-action btn-confirm">
+                        <button onclick="event.stopPropagation(); confirmReceive('{{ bug.id }}')" class="btn-action btn-confirm">
                             <i class="fas fa-check"></i>
                             确认接收
                         </button>
@@ -1140,14 +1468,14 @@
                         {% endif %}
 
                         {% if user.role_en == 'ssz' and bug.status == '已解决' and bug.created_by == user.id %}
-                        <button onclick="confirmComplete('{{ bug.id }}')" class="btn-action btn-complete">
+                        <button onclick="event.stopPropagation(); confirmComplete('{{ bug.id }}')" class="btn-action btn-complete">
                             <i class="fas fa-check-circle"></i>
                             确认闭环
                         </button>
                         {% endif %}
 
                         {% if user.role_en == 'gly' or (user.role_en == 'ssz' and bug.created_by == user.id) %}
-                        <button onclick="deleteBug('{{ bug.id }}')" class="btn-action btn-delete">
+                        <button onclick="event.stopPropagation(); deleteBug('{{ bug.id }}')" class="btn-action btn-delete">
                             <i class="fas fa-trash"></i>
                             删除
                         </button>
@@ -1177,6 +1505,92 @@
     </div>
     </div>
 
+<!-- 现代化确认Modal -->
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modern-modal">
+            <div class="modal-header confirm-header">
+                <div class="confirm-icon">
+                    <i class="fas fa-question-circle"></i>
+                </div>
+                <h5 class="modal-title" id="confirmModalTitle">确认操作</h5>
+            </div>
+            <div class="modal-body confirm-body">
+                <div class="confirm-animation">
+                    <div class="confirm-icon-large">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                </div>
+                <p class="confirm-message" id="confirmModalMessage">确定要执行此操作吗？</p>
+            </div>
+            <div class="modal-footer confirm-footer">
+                <button type="button" class="btn-modern btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>取消
+                </button>
+                <button type="button" class="btn-modern btn-primary" id="confirmModalBtn">
+                    <i class="fas fa-check me-2"></i>确认
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 现代化成功提示Modal -->
+<div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modern-modal">
+            <div class="modal-header success-header">
+                <div class="success-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h5 class="modal-title" id="successModalTitle">操作成功！</h5>
+            </div>
+            <div class="modal-body success-body">
+                <div class="success-animation">
+                    <div class="checkmark">
+                        <svg class="checkmark__svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                            <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none"/>
+                            <path class="checkmark__check" fill="none" d="m14.1 27.2l7.1 7.2 16.7-16.8"/>
+                        </svg>
+                    </div>
+                </div>
+                <p class="success-message" id="successModalMessage">操作已成功完成</p>
+            </div>
+            <div class="modal-footer success-footer">
+                <button type="button" class="btn-modern btn-primary" data-bs-dismiss="modal">
+                    <i class="fas fa-check me-2"></i>确定
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 现代化错误提示Modal -->
+<div class="modal fade" id="errorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modern-modal">
+            <div class="modal-header error-header">
+                <div class="error-icon">
+                    <i class="fas fa-exclamation-circle"></i>
+                </div>
+                <h5 class="modal-title">操作失败</h5>
+            </div>
+            <div class="modal-body error-body">
+                <div class="error-animation">
+                    <div class="error-icon-large">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                </div>
+                <p class="error-message" id="errorModalMessage">操作失败，请稍后重试</p>
+            </div>
+            <div class="modal-footer error-footer">
+                <button type="button" class="btn-modern btn-primary" data-bs-dismiss="modal">
+                    <i class="fas fa-check me-2"></i>确定
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
 // 统计数据计算
@@ -1631,9 +2045,45 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+// 现代化Modal函数
+function showConfirmModal(title, message, onConfirm) {
+    document.getElementById('confirmModalTitle').textContent = title;
+    document.getElementById('confirmModalMessage').textContent = message;
+
+    const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    modal.show();
+
+    // 绑定确认按钮事件
+    document.getElementById('confirmModalBtn').onclick = function() {
+        modal.hide();
+        if (onConfirm) onConfirm();
+    };
+}
+
+function showSuccessModal(title, message, onClose) {
+    document.getElementById('successModalTitle').textContent = title;
+    document.getElementById('successModalMessage').textContent = message;
+
+    const modal = new bootstrap.Modal(document.getElementById('successModal'));
+    modal.show();
+
+    // 2秒后自动关闭并执行回调
+    setTimeout(() => {
+        modal.hide();
+        if (onClose) onClose();
+    }, 2000);
+}
+
+function showErrorModal(message) {
+    document.getElementById('errorModalMessage').textContent = message;
+
+    const modal = new bootstrap.Modal(document.getElementById('errorModal'));
+    modal.show();
+}
+
 // 操作按钮相关函数
 function confirmReceive(bugId) {
-    if (confirm('确认接收此问题？')) {
+    showConfirmModal('确认接收', '确认接收此问题？', function() {
         fetch(`/bug/confirm/${bugId}`, {
             method: 'POST',
             headers: {
@@ -1643,45 +2093,47 @@ function confirmReceive(bugId) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert('接收成功！');
-                location.reload();
+                showSuccessModal('接收成功！', '问题已成功接收', function() {
+                    location.reload();
+                });
             } else {
-                alert('接收失败：' + data.message);
+                showErrorModal('接收失败：' + data.message);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('操作失败，请重试');
+            showErrorModal('操作失败，请重试');
         });
-    }
+    });
 }
 
 function confirmComplete(bugId) {
-    if (confirm('确认此问题已完成闭环？')) {
-    fetch(`/bug/complete/${bugId}`, {
-        method: 'POST',
-        headers: {
+    showConfirmModal('确认完成', '确认此问题已完成闭环？', function() {
+        fetch(`/bug/complete/${bugId}`, {
+            method: 'POST',
+            headers: {
                 'Content-Type': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-                alert('确认完成！');
-            location.reload();
-        } else {
-                alert('操作失败：' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-            alert('操作失败，请重试');
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showSuccessModal('确认完成！', '问题已成功完成闭环', function() {
+                    location.reload();
+                });
+            } else {
+                showErrorModal('操作失败：' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showErrorModal('操作失败，请重试');
+        });
     });
-}
 }
 
 function deleteBug(bugId) {
-    if (confirm('确认删除此问题？此操作不可撤销！')) {
+    showConfirmModal('确认删除', '确认删除此问题？此操作不可撤销！', function() {
         fetch(`/bug/delete/${bugId}`, {
             method: 'POST',
             headers: {
@@ -1691,17 +2143,18 @@ function deleteBug(bugId) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert('删除成功！');
-                location.reload();
+                showSuccessModal('删除成功！', '问题已成功删除', function() {
+                    location.reload();
+                });
             } else {
-                alert('删除失败：' + data.message);
+                showErrorModal('删除失败：' + data.message);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('删除失败，请重试');
-});
-    }
+            showErrorModal('删除失败，请重试');
+        });
+    });
 }
 </script>
 {% endblock %}

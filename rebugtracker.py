@@ -118,14 +118,14 @@ def get_current_user():
             team = unquote(team)
         if chinese_name:
             chinese_name = unquote(chinese_name)
-        
+
         if not all([user_id, username, role_en]):
             app.logger.debug(f"获取用户信息失败 - 缺少必要cookie: user_id={user_id}, username={username}, role_en={role_en}")
             return None
-        
+
         # 添加调试信息
         app.logger.debug(f"当前用户cookie - user_id: {user_id}, username: {username}, role_en: {role_en}, team: {team}, chinese_name: {chinese_name}")
-        
+
         # 角色映射
         role_mapping = {
             'gly': '管理员',
@@ -158,7 +158,7 @@ def login_required(f):
         if not user:
             resp = make_response(redirect('/login'))
             resp.delete_cookie('user_id')
-            resp.delete_cookie('username') 
+            resp.delete_cookie('username')
             resp.delete_cookie('role_en')
             resp.delete_cookie('team')
             resp.delete_cookie('chinese_name')
@@ -177,31 +177,31 @@ def role_required(role):
 
             user_role = safe_get(user, 'role_en', '').lower()
             required_role = role.lower()
-            
+
             app.logger.debug(f"权限检查 - 用户角色: {user_role}, 要求角色: {required_role}")
-            
+
             # 管理员拥有所有权限
             if user_role == 'gly':
                 app.logger.debug("权限检查通过 - 管理员权限")
                 return f(*args, **kwargs)
-                
+
             # 允许更高权限角色访问
             if required_role == 'zncy' and user_role in ['zncy', 'fzr', 'ssz']:
                 app.logger.debug(f"权限检查通过 - 用户角色 {user_role} 满足要求 {required_role}")
                 return f(*args, **kwargs)
-                
+
             if required_role == 'fzr' and user_role in ['fzr', 'ssz']:
                 app.logger.debug(f"权限检查通过 - 用户角色 {user_role} 满足要求 {required_role}")
                 return f(*args, **kwargs)
-                
+
             if required_role == 'ssz' and user_role == 'ssz':
                 app.logger.debug(f"权限检查通过 - 用户角色 {user_role} 匹配要求 {required_role}")
                 return f(*args, **kwargs)
-                
+
             if user_role == required_role:
                 app.logger.debug(f"权限检查通过 - 用户角色 {user_role} 匹配要求 {required_role}")
                 return f(*args, **kwargs)
-                
+
             app.logger.debug(f"权限检查失败 - 用户角色 {user_role} 不满足要求 {required_role}")
             abort(403)
         return decorated_function
@@ -210,7 +210,7 @@ def role_required(role):
 # 数据库初始化函数
 def init_db():
     """初始化数据库结构
-    
+
     功能：
     - 根据数据库类型创建users表和bugs表
     - 添加缺失的字段（如role_en, team_en, chinese_name）
@@ -226,7 +226,7 @@ def init_db():
         c = conn.cursor(cursor_factory=DictCursor)
     else:
         c = conn.cursor()
-    
+
     # 创建用户表（兼容SQLite和PostgreSQL）
     if DB_TYPE == 'postgres':
         # PostgreSQL建表语句
@@ -256,7 +256,7 @@ def init_db():
                 team_en TEXT
             )
         ''')
-    
+
     # 添加新列(如果不存在) - 兼容SQLite和PostgreSQL
     columns_to_add = ['role_en', 'team_en', 'chinese_name']
     for col in columns_to_add:
@@ -274,41 +274,41 @@ def init_db():
             print(f"添加列{col}时出错: {str(e)}")
             if DB_TYPE == 'postgres':
                 conn.rollback()
-    
+
     # 更新现有数据的角色英文缩写（仅当有数据时）
     if DB_TYPE == 'postgres':
         # 使用CASE语句将中文角色转换为英文标识
         c.execute('''
-            UPDATE users SET 
-                role_en = CASE role 
-                    WHEN '管理员' THEN 'gly' 
-                    WHEN '负责人' THEN 'fzr' 
-                    WHEN '组内成员' THEN 'zncy' 
-                    WHEN '实施组' THEN 'ssz' 
-                    ELSE role 
+            UPDATE users SET
+                role_en = CASE role
+                    WHEN '管理员' THEN 'gly'
+                    WHEN '负责人' THEN 'fzr'
+                    WHEN '组内成员' THEN 'zncy'
+                    WHEN '实施组' THEN 'ssz'
+                    ELSE role
                 END
         ''')
     else:
         # SQLite版本
         c.execute('''
-            UPDATE users SET 
-                role_en = CASE role 
-                    WHEN '管理员' THEN 'gly' 
-                    WHEN '负责人' THEN 'fzr' 
-                    WHEN '组内成员' THEN 'zncy' 
-                    WHEN '实施组' THEN 'ssz' 
-                    ELSE role 
+            UPDATE users SET
+                role_en = CASE role
+                    WHEN '管理员' THEN 'gly'
+                    WHEN '负责人' THEN 'fzr'
+                    WHEN '组内成员' THEN 'zncy'
+                    WHEN '实施组' THEN 'ssz'
+                    ELSE role
                 END
         ''')
-    
+
     # 添加表达式索引来实现大小写不敏感的唯一约束（仅PostgreSQL需要，SQLite默认大小写不敏感）
     if DB_TYPE == 'postgres':
         # 创建表达式索引
         c.execute('''
-            CREATE UNIQUE INDEX IF NOT EXISTS lowercase_username_idx 
+            CREATE UNIQUE INDEX IF NOT EXISTS lowercase_username_idx
             ON users (LOWER(username))
         ''')
-    
+
     # 检查并添加默认管理员账户(如果不存在)
     # 查询用户名为admin的用户
     query, params = adapt_sql('SELECT * FROM users WHERE username = %s', ('admin',))
@@ -321,7 +321,7 @@ def init_db():
             VALUES (%s, %s, '管理员')
         ''', ('admin', hashed_password))
         c.execute(query, params)
-    
+
     # PostgreSQL: 确保角色类型存在
     if DB_TYPE == 'postgres':
         # 使用DO块执行条件创建类型的操作
@@ -333,7 +333,7 @@ def init_db():
                 END IF;
             END $$;
         ''')
-    
+
     # 创建bugs表（兼容SQLite和PostgreSQL）
     if DB_TYPE == 'postgres':
         c.execute('''
@@ -367,7 +367,29 @@ def init_db():
                 image_path TEXT             -- 图片路径
             )
         ''')
-    
+
+    # 创建问题图片表
+    if DB_TYPE == 'postgres':
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS bug_images (
+                id SERIAL PRIMARY KEY,
+                bug_id INTEGER NOT NULL,
+                image_path TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (bug_id) REFERENCES bugs (id) ON DELETE CASCADE
+            )
+        ''')
+    else:
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS bug_images (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                bug_id INTEGER NOT NULL,
+                image_path TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (bug_id) REFERENCES bugs (id) ON DELETE CASCADE
+            )
+        ''')
+
     # 提交事务并关闭连接
     conn.commit()
     conn.close()
@@ -379,13 +401,13 @@ def complete_bug(bug_id):
     user = get_current_user()
     if not user:
         return jsonify({'success': False, 'message': '用户未登录'})
-    
+
     conn = get_db_connection()
     if DB_TYPE == 'postgres':
         c = conn.cursor(cursor_factory=DictCursor)
     else:
         c = conn.cursor()
-    
+
     try:
         # 检查问题是否存在且状态为'已解决'
         query, params = adapt_sql('SELECT * FROM bugs WHERE id = %s', (bug_id,))
@@ -471,7 +493,7 @@ def register():
     """用户注册路由"""
     if request.method == 'GET':
         return render_template('register.html')
-        
+
     # 处理注册请求
     chinese_name = request.form.get('chinese_name')
     username = request.form.get('username')
@@ -494,25 +516,25 @@ def register():
     email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     if not re.match(email_pattern, email):
         return jsonify({'success': False, 'message': '请输入有效的邮箱地址'}), 400
-    
+
     # 角色值映射
     role_mapping = {
         'ssz': '实施组',
-        'fzr': '负责人', 
+        'fzr': '负责人',
         'zncy': '组内成员'
     }
     role_cn = role_mapping.get(role, role)
     role_en = role  # 保持原英文缩写
-    
+
     # 简单处理team_en
     team_en = team if team else None
-    
+
     conn = get_db_connection()
     if DB_TYPE == 'postgres':
         c = conn.cursor(cursor_factory=DictCursor)
     else:
         c = conn.cursor()
-    
+
     try:
         hashed_password = generate_password_hash(password)
         if DB_TYPE == 'postgres':
@@ -574,7 +596,7 @@ def login():
         if not username or not password:
             app.logger.debug("用户名或密码为空")
             return jsonify({'success': False, 'message': '用户名和密码不能为空'}), 400
-            
+
         conn = None
         try:
             conn = get_db_connection()
@@ -585,10 +607,10 @@ def login():
             query, params = adapt_sql('SELECT * FROM users WHERE username = %s', (username,))
             c.execute(query, params)
             user = c.fetchone()
-            
+
             if not user:
                 return jsonify({'success': False, 'message': '用户名或密码错误'}), 401
-                
+
             if check_password_hash(user['password'], password):
                 # 确保role_en不为空
                 if not user['role_en']:
@@ -630,36 +652,36 @@ def login():
                     except:
                         pass
 
-    # 
+    #
     if request.method == 'GET':
         return render_template('login.html')
-    
-    # 
+
+    #
     return jsonify({'success': False, 'message': '无效的请求方法'}), 400
 
 # 首页路由
 @app.route('/')
 @login_required
 def index():
-    
+
     user = get_current_user()
     if not user:
         return redirect('/login')
-    
+
     if safe_get(user, 'role_en') == 'zncy':
         # 组内成员直接跳转到team-issues页面
         return redirect('/team-issues')
     elif safe_get(user, 'role_en') == 'gly':
         return redirect('/admin')
     # 实施组和负责人等角色继续执行后面的代码（渲染首页）
-    
+
     # 确保数据库连接使用UTF-8编码
     conn = get_db_connection()
     if DB_TYPE == 'postgres':
         c = conn.cursor(cursor_factory=DictCursor)
     else:
         c = conn.cursor()
-    
+
     if user['role_en'] == 'fzr':
         # 负责人看到自己团队的所有问题和待分配问题
         query = '''
@@ -698,9 +720,9 @@ def index():
         '''
         adapted_query, adapted_params = adapt_sql(query, ())
         c.execute(adapted_query, adapted_params)
-    
+
     bugs = c.fetchall()
-    
+
     # 格式化问题创建时间和解决时间
     formatted_bugs = []
     for bug in bugs:
@@ -720,7 +742,7 @@ def index():
             bug_dict['resolved_at'] = bug_dict['resolved_at'].strftime('%Y-%m-%d %H:%M:%S')
         else:
             bug_dict['resolved_at'] = '--'
-            
+
         formatted_bugs.append(bug_dict)
     conn.close()
     return render_template('index.html', bugs=bugs, user=user)
@@ -736,7 +758,7 @@ def admin_users():
         c = conn.cursor(cursor_factory=DictCursor)
     else:
         c = conn.cursor()
-    
+
     if request.method == 'GET':
         # 获取所有用户
         query, params = adapt_sql('SELECT id, username, chinese_name, email, phone, role, role_en, team FROM users ORDER BY id', ())
@@ -744,13 +766,13 @@ def admin_users():
         users = [dict(row) for row in c.fetchall()]
         conn.close()
         return jsonify(users)
-        
+
     elif request.method == 'POST':
         # 添加新用户(JSON格式)
         data = request.get_json()
         if not data:
             return jsonify({'success': False, 'message': '请求数据格式错误'}), 400
-            
+
         username = data.get('username')
         chinese_name = data.get('chinese_name')
         password = data.get('password')
@@ -789,7 +811,7 @@ def admin_users():
                 return jsonify({'success': False, 'message': f'添加用户失败: {str(e)}'}), 500
         finally:
             conn.close()
-            
+
     elif request.method == 'PUT':
         # 更新用户信息
         data = request.get_json()
@@ -802,10 +824,10 @@ def admin_users():
         password = data.get('password')
         role = data.get('role')
         team = data.get('team')
-        
+
         if not user_id:
             return jsonify({'success': False, 'message': '缺少用户ID'}), 400
-            
+
         try:
             if password:
                 hashed_password = generate_password_hash(password)
@@ -822,7 +844,7 @@ def admin_users():
                     WHERE id=%s
                 ''', (username, chinese_name, role, team, user_id))
                 c.execute(query, params)
-                
+
             conn.commit()
             return jsonify({'success': True})
         except Exception as e:
@@ -850,16 +872,16 @@ def user_detail(user_id):
         c.execute(query, params)
         user = c.fetchone()
         conn.close()
-        
+
         if not user:
             return jsonify({'success': False, 'message': '用户不存在'}), 404
-            
+
         return jsonify(dict(user))
     """更新用户信息"""
     data = request.get_json()
     if not data:
         return jsonify({'success': False, 'message': '缺少请求数据'}), 400
-        
+
     username = data.get('username')
     password = data.get('password')
     role = data.get('role')
@@ -893,20 +915,20 @@ def user_detail(user_id):
             '大':'D', '呆':'D', '歹':'D', '傣':'D', '戴':'D', '带':'D', '殆':'D', '代':'D', '贷':'D', '袋':'D',
             '待':'D', '逮':'D', '怠':'D', '耽':'D', '担':'D', '丹':'D', '单':'D', '郸':'D', '掸':'D', '胆':'D',
             # 其他字母...
-            '网络分析':'wlfx','实施组':'ssz','第三道防线':'dsdfx','新能源':'xny' 
+            '网络分析':'wlfx','实施组':'ssz','第三道防线':'dsdfx','新能源':'xny'
         }
         # 只处理中文字符，生成大写拼音首字母
         team_en = ''.join([pinyin_map.get(c, '') for c in team if '\u4e00' <= c <= '\u9fa5'])
         # 如果team_en为空(无中文字符)，则使用team的前3个字符大写
         if not team_en:
             team_en = team[:3].upper()
-    
+
     conn = get_db_connection()
     if DB_TYPE == 'postgres':
         c = conn.cursor(cursor_factory=DictCursor)
     else:
         c = conn.cursor()
-    
+
     try:
         if password:
             hashed_password = generate_password_hash(password)
@@ -923,7 +945,7 @@ def user_detail(user_id):
                 WHERE id=%s
             ''', (username, role, role_en, team, team_en, chinese_name, email, phone, user_id))
             c.execute(query, params)
-            
+
         conn.commit()
         return jsonify({'success': True})
     except Exception as e:
@@ -945,20 +967,20 @@ def delete_user(user_id):
     current_user = get_current_user()
     if current_user['id'] == user_id:
         return jsonify({'success': False, 'message': '不能删除自己'}), 400
-    
+
     conn = get_db_connection()
     if DB_TYPE == 'postgres':
         c = conn.cursor(cursor_factory=DictCursor)
     else:
         c = conn.cursor()
-    
+
     try:
         # 检查用户是否存在
         query, params = adapt_sql('SELECT id FROM users WHERE id = %s', (user_id,))
         c.execute(query, params)
         if not c.fetchone():
             return jsonify({'success': False, 'message': '用户不存在'}), 404
-        
+
         # 删除用户
         query, params = adapt_sql('DELETE FROM users WHERE id = %s', (user_id,))
         c.execute(query, params)
@@ -1022,7 +1044,7 @@ def admin():
     user = get_current_user()
     if not user:
         return redirect('/login')
-        
+
     # 获取所有用户
     conn = get_db_connection()
     if DB_TYPE == 'postgres':
@@ -1048,7 +1070,7 @@ def admin():
     ''', ())
     c.execute(query, params)
     bugs = c.fetchall()
-    
+
     # 格式化问题创建时间和解决时间
     formatted_bugs = []
     for bug in bugs:
@@ -1068,10 +1090,10 @@ def admin():
             bug_dict['resolved_at'] = bug_dict['resolved_at'].strftime('%Y-%m-%d %H:%M:%S')
         else:
             bug_dict['resolved_at'] = '--'
-            
+
         formatted_bugs.append(bug_dict)
     conn.close()
-    
+
     return render_template('admin.html', users=users, bugs=formatted_bugs, user=user, total_users=total_users)
 
 @app.route('/team-issues')
@@ -1320,57 +1342,91 @@ def submit_bug():
     if not user:
         app.logger.warning("提交问题失败: 用户未登录")
         return jsonify({'success': False, 'message': '用户未登录'}), 401
-        
+
     title = request.form.get('title')
     description = request.form.get('description')
     created_by = user['id']
     app.logger.debug(f"提交用户ID: {created_by}, 标题: {title}, 描述: {description}")
-    
+
     if not title or not description:
         return jsonify({'success': False, 'message': '标题和描述不能为空'}), 400
-    
-    # 处理图片上传
-    image_path = None
-    if 'image' in request.files:
+
+    # 处理多图片上传
+    image_paths = []
+    main_image_path = None
+
+    app.logger.debug(f"请求文件字段: {list(request.files.keys())}")
+
+    if 'images' in request.files:
         app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
+        files = request.files.getlist('images')
+        app.logger.debug(f"接收到 {len(files)} 个图片文件")
 
-# ... (rest of the file)
+        upload_dir = app.config['UPLOAD_FOLDER']
+        if not os.path.exists(upload_dir):
+            os.makedirs(upload_dir, mode=0o777, exist_ok=True)
 
-# ... (inside the file upload logic)
+        for i, file in enumerate(files):
+            if file and file.filename and allowed_file(file.filename):
+                # 生成唯一文件名
+                import uuid
+                file_ext = file.filename.rsplit('.', 1)[1].lower()
+                unique_filename = f"{uuid.uuid4().hex}.{file_ext}"
+                filepath = os.path.join(upload_dir, unique_filename)
+                file.save(filepath)
+
+                image_url = f'/uploads/{unique_filename}'
+                image_paths.append(image_url)
+
+                # 第一张图片作为主图片（向后兼容）
+                if i == 0:
+                    main_image_path = image_url
+
+                app.logger.debug(f"文件保存成功: {filepath}")
+
+        app.logger.debug(f"多图片上传完成，共保存 {len(image_paths)} 张图片")
+
+    # 向后兼容：如果没有使用新的多图片上传，检查旧的单图片上传
+    elif 'image' in request.files:
+        app.logger.debug("使用旧版单图片上传")
         file = request.files['image']
-        if file and allowed_file(file.filename):
-            # ... (rest of the file upload logic)
+        if file and file.filename and allowed_file(file.filename):
             upload_dir = app.config['UPLOAD_FOLDER']
             if not os.path.exists(upload_dir):
                 os.makedirs(upload_dir, mode=0o777, exist_ok=True)
-            filename = secure_filename(file.filename)
-            filepath = os.path.join(upload_dir, filename)
+
+            import uuid
+            file_ext = file.filename.rsplit('.', 1)[1].lower()
+            unique_filename = f"{uuid.uuid4().hex}.{file_ext}"
+            filepath = os.path.join(upload_dir, unique_filename)
             file.save(filepath)
-            image_path = f'/uploads/{filename}'
+
+            main_image_path = f'/uploads/{unique_filename}'
+            image_paths.append(main_image_path)
             app.logger.debug(f"文件保存成功: {filepath}")
-    
+
     # 存入数据库
     conn = get_db_connection()
     if DB_TYPE == 'postgres':
         c = conn.cursor(cursor_factory=DictCursor)
     else:
         c = conn.cursor()
-    
+
     try:
         manager_name = request.form.get('manager')
         if not manager_name:
             return jsonify({'success': False, 'message': '请选择负责人'}), 400
-        
+
         # 获取负责人ID（使用显示名查询）
         query, params = adapt_sql('SELECT id FROM users WHERE COALESCE(chinese_name, username) = %s', (manager_name,))
         c.execute(query, params)
         manager = c.fetchone()
         if not manager:
             return jsonify({'success': False, 'message': f'指定的负责人"{manager_name}"不存在'}), 404
-        
+
         manager_id = manager['id']
         project_id = request.form.get('project', '')
-        
+
         # 获取当前时间，精确到秒
         from datetime import datetime
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -1379,10 +1435,20 @@ def submit_bug():
             INSERT INTO bugs (title, description, created_by, project, image_path, assigned_to, status, created_at)
             VALUES (%s, %s, %s, %s, %s, %s, '待处理', %s)
             RETURNING id
-        ''', (title, description, created_by, project_id, image_path, manager_id, current_time))
+        ''', (title, description, created_by, project_id, main_image_path, manager_id, current_time))
         c.execute(query, params)
-        
+
         bug_id = c.fetchone()['id']
+
+        # 保存所有图片到bug_images表
+        if image_paths:
+            for image_path in image_paths:
+                image_query, image_params = adapt_sql('''
+                    INSERT INTO bug_images (bug_id, image_path, created_at)
+                    VALUES (%s, %s, %s)
+                ''', (bug_id, image_path, current_time))
+                c.execute(image_query, image_params)
+
         conn.commit()
 
         # 立即返回响应，不等待通知发送
@@ -1450,12 +1516,14 @@ def bug_detail(bug_id):
     user = get_current_user()
     if not user:
         return redirect('/login')
-        
+
     conn = get_db_connection()
     if DB_TYPE == 'postgres':
         c = conn.cursor(cursor_factory=DictCursor)
     else:
         c = conn.cursor()
+
+    # 查询bug基本信息
     query = '''
         SELECT b.*, COALESCE(u1.chinese_name, u1.username) as creator_name, COALESCE(u2.chinese_name, u2.username) as assignee_name,
                b.created_at as local_created_at,
@@ -1468,10 +1536,22 @@ def bug_detail(bug_id):
     adapted_query, adapted_params = adapt_sql(query, (bug_id,))
     c.execute(adapted_query, adapted_params)
     bug = c.fetchone()
+
+    # 查询所有相关图片
+    images_query = '''
+        SELECT image_path, created_at
+        FROM bug_images
+        WHERE bug_id = %s
+        ORDER BY created_at ASC
+    '''
+    adapted_images_query, adapted_images_params = adapt_sql(images_query, (bug_id,))
+    c.execute(adapted_images_query, adapted_images_params)
+    bug_images = c.fetchall()
+
     conn.close()
     if not bug:
         return "问题不存在", 404
-    
+
     # 格式化时间 - 兼容SQLite字符串和PostgreSQL datetime
     bug_dict = dict(bug)
     if bug_dict['local_created_at']:
@@ -1490,8 +1570,37 @@ def bug_detail(bug_id):
         bug_dict['local_resolved_at'] = '--'
 
     message = request.args.get('message')
-    # 将创建者ID传递给模板
-    return render_template('bug_detail.html', bug=bug_dict, message=message, created_by=bug_dict['created_by'], user=user)
+
+    # 处理图片列表
+    images = []
+
+    # 添加主图片（向后兼容）
+    if bug_dict['image_path']:
+        images.append({'path': bug_dict['image_path']})
+        app.logger.debug(f"添加主图片: {bug_dict['image_path']}")
+
+    # 添加其他图片
+    if bug_images:
+        app.logger.debug(f"找到 {len(bug_images)} 张关联图片")
+        for img in bug_images:
+            if DB_TYPE == 'postgres':
+                img_path = img['image_path']
+            else:
+                img_path = img[0]
+
+            app.logger.debug(f"处理关联图片: {img_path}")
+
+            # 避免重复添加主图片
+            if not bug_dict['image_path'] or img_path != bug_dict['image_path']:
+                images.append({'path': img_path})
+                app.logger.debug(f"添加关联图片: {img_path}")
+
+    app.logger.debug(f"总共添加了 {len(images)} 张图片")
+
+    # 将创建者ID和图片列表传递给模板
+    return render_template('bug_detail.html', bug=bug_dict, message=message,
+                          created_by=bug_dict['created_by'], user=user,
+                          images=images)
 
 # 分配问题页面
 @app.route('/bug/assign/<int:bug_id>')
@@ -1501,7 +1610,7 @@ def assign_page(bug_id):
     user = get_current_user()
     if not user:
         return redirect('/login')
-        
+
     conn = get_db_connection()
     if DB_TYPE == 'postgres':
         c = conn.cursor(cursor_factory=DictCursor)
@@ -1524,7 +1633,7 @@ def assign_page(bug_id):
     ''', (user['team'],))
     c.execute(query, params)
     team_members = [{'id': row['id'], 'username': row['username']} for row in c.fetchall()]
-    
+
     conn.close()
     if not bug:
         return "问题不存在", 404
@@ -1539,17 +1648,17 @@ def assign_bug(bug_id):
     user = get_current_user()
     if not user:
         return jsonify({'success': False, 'message': '用户未登录'})
-    
+
     assigned_to = request.form.get('assigned_to')
     if not assigned_to:
         return jsonify({'success': False, 'message': '负责人不能为空'})
-    
+
     conn = get_db_connection()
     if DB_TYPE == 'postgres':
         c = conn.cursor(cursor_factory=DictCursor)
     else:
         c = conn.cursor()
-    
+
     # 检查被指派人是否在同一团队
     query, params = adapt_sql('SELECT team FROM users WHERE id = %s', (assigned_to,))
     c.execute(query, params)
@@ -1557,7 +1666,7 @@ def assign_bug(bug_id):
     if not assignee or assignee['team'] != user['team']:
         conn.close()
         return jsonify({'success': False, 'message': '只能指派给同团队成员'})
-    
+
     # 获取问题信息（用于通知）
     query, params = adapt_sql('SELECT title, description, created_by FROM bugs WHERE id = %s', (bug_id,))
     c.execute(query, params)
@@ -1626,7 +1735,7 @@ def resolve_page(bug_id):
     user = get_current_user()
     if not user:
         return redirect('/login')
-        
+
     conn = get_db_connection()
     if DB_TYPE == 'postgres':
         c = conn.cursor(cursor_factory=DictCursor)
@@ -1654,29 +1763,29 @@ def delete_bug(bug_id):
     user = get_current_user()
     if not user:
         return jsonify({'success': False, 'message': '用户未登录'})
-    
+
     conn = get_db_connection()
     if DB_TYPE == 'postgres':
         c = conn.cursor(cursor_factory=DictCursor)
     else:
         c = conn.cursor()
-    
+
     # 检查用户权限：管理员或问题创建者
     query, params = adapt_sql('SELECT created_by FROM bugs WHERE id = %s', (bug_id,))
     c.execute(query, params)
     bug = c.fetchone()
     if not bug:
         return jsonify({'success': False, 'message': '问题不存在'})
-    
+
     if user['role_en'] != 'gly' and user['id'] != bug['created_by']:
         return jsonify({'success': False, 'message': '无权删除此问题'})
-    
+
     # 执行删除
     query, params = adapt_sql('DELETE FROM bugs WHERE id = %s', (bug_id,))
     c.execute(query, params)
     conn.commit()
     conn.close()
-    
+
     return jsonify({'success': True})
 
 @app.route('/bug/confirm/<int:bug_id>', methods=['POST'])
@@ -1687,13 +1796,13 @@ def confirm_receive(bug_id):
     user = get_current_user()
     if not user:
         return jsonify({'success': False, 'message': '用户未登录'})
-    
+
     conn = get_db_connection()
     if DB_TYPE == 'postgres':
         c = conn.cursor(cursor_factory=DictCursor)
     else:
         c = conn.cursor()
-    
+
     # 检查问题是否已分配给当前用户
     query, params = adapt_sql('SELECT assigned_to FROM bugs WHERE id = %s', (bug_id,))
     c.execute(query, params)
@@ -1701,14 +1810,14 @@ def confirm_receive(bug_id):
     if not bug:
         conn.close()
         return jsonify({'success': False, 'message': '问题不存在'})
-    
+
     if bug['assigned_to'] != user['id']:
         conn.close()
         return jsonify({'success': False, 'message': '无权操作此问题'})
-    
+
     # 更新问题状态为"处理中"
     query, params = adapt_sql('''
-        UPDATE bugs 
+        UPDATE bugs
         SET status = '处理中'
         WHERE id = %s
     ''', (bug_id,))
@@ -1725,7 +1834,7 @@ def show_resolve_page(bug_id):
     user = get_current_user()
     if not user:
         return redirect('/login')
-        
+
     conn = get_db_connection()
     if DB_TYPE == 'postgres':
         c = conn.cursor(cursor_factory=DictCursor)
@@ -1752,11 +1861,11 @@ def resolve_bug(bug_id):
     user = get_current_user()
     if not user:
         return jsonify({'success': False, 'message': '用户未登录'})
-        
+
     resolution = request.form.get('resolution')
     if not resolution:
         return jsonify({'success': False, 'message': '处理详情不能为空'})
-    
+
     conn = get_db_connection()
     if DB_TYPE == 'postgres':
         c = conn.cursor(cursor_factory=DictCursor)
@@ -2747,14 +2856,13 @@ def user_email_settings():
             data = request.get_json()
             email = data.get('email', '').strip()
 
-            if not email:
-                return jsonify({'success': False, 'message': '邮箱地址不能为空'})
-
-            # 简单的邮箱格式验证
-            import re
-            email_pattern = r'^[^\s@]+@[^\s@]+\.[^\s@]+$'
-            if not re.match(email_pattern, email):
-                return jsonify({'success': False, 'message': '邮箱格式不正确'})
+            # 如果邮箱不为空，进行格式验证
+            if email:
+                # 简单的邮箱格式验证
+                import re
+                email_pattern = r'^[^\s@]+@[^\s@]+\.[^\s@]+$'
+                if not re.match(email_pattern, email):
+                    return jsonify({'success': False, 'message': '邮箱格式不正确'})
 
             conn = get_db_connection()
             if DB_TYPE == 'postgres':
@@ -2762,15 +2870,20 @@ def user_email_settings():
             else:
                 c = conn.cursor()
 
+            # 允许设置为空值（None）来清空邮箱
+            email_value = email if email else None
             query, params = adapt_sql(
                 'UPDATE users SET email = %s WHERE id = %s',
-                (email, user['id'])
+                (email_value, user['id'])
             )
             c.execute(query, params)
             conn.commit()
             conn.close()
 
-            return jsonify({'success': True, 'message': '邮箱设置保存成功'})
+            if email:
+                return jsonify({'success': True, 'message': '邮箱设置保存成功'})
+            else:
+                return jsonify({'success': True, 'message': '邮箱设置已清空'})
 
         except Exception as e:
             return jsonify({'success': False, 'message': str(e)})
@@ -2859,24 +2972,26 @@ def user_gotify_settings():
             data = request.get_json()
             app_token = data.get('app_token', '').strip()
 
-            if not app_token:
-                return jsonify({'success': False, 'message': 'App Token不能为空'})
-
             conn = get_db_connection()
             if DB_TYPE == 'postgres':
                 c = conn.cursor(cursor_factory=DictCursor)
             else:
                 c = conn.cursor()
 
+            # 允许设置为空值（None）来清空token
+            token_value = app_token if app_token else None
             query, params = adapt_sql(
                 'UPDATE users SET gotify_app_token = %s WHERE id = %s',
-                (app_token, user['id'])
+                (token_value, user['id'])
             )
             c.execute(query, params)
             conn.commit()
             conn.close()
 
-            return jsonify({'success': True, 'message': 'Gotify设置保存成功'})
+            if app_token:
+                return jsonify({'success': True, 'message': 'Gotify设置保存成功'})
+            else:
+                return jsonify({'success': True, 'message': 'Gotify Token已清空'})
 
         except Exception as e:
             return jsonify({'success': False, 'message': str(e)})
@@ -2969,6 +3084,842 @@ def user_notification_preferences():
         except Exception as e:
             return jsonify({'success': False, 'message': str(e)})
 
+# ==================== 报表导出功能 ====================
+
+@app.route('/admin/reports/preview', methods=['POST'])
+@login_required
+@role_required('gly')
+def admin_reports_preview():
+    """预览报表数据"""
+
+    try:
+        data = request.get_json()
+        filters = data.get('filters', {})
+        fields = data.get('fields', [])
+
+        # 构建查询
+        query_parts = []
+        params = []
+
+        # 基础查询
+        base_query = '''
+            SELECT b.id, b.title, b.description, b.status, b.project,
+                   b.created_at, b.resolved_at, b.resolution, b.image_path,
+                   u1.username as creator_username, u1.chinese_name as creator_name,
+                   u2.username as assignee_username, u2.chinese_name as assignee_name,
+                   u2.team as assignee_team,
+                   u3.username as manager_username, u3.chinese_name as manager_name
+            FROM bugs b
+            LEFT JOIN users u1 ON b.created_by = u1.id
+            LEFT JOIN users u2 ON b.assigned_to = u2.id
+            LEFT JOIN users u3 ON u2.team = u3.team AND u3.role_en = 'fzr'
+        '''
+
+        # 添加筛选条件
+        where_conditions = []
+
+        # 日期范围筛选
+        if filters.get('dateRange'):
+            date_range = filters['dateRange']
+            if date_range.get('start'):
+                where_conditions.append('DATE(b.created_at) >= %s')
+                params.append(date_range['start'])
+            if date_range.get('end'):
+                where_conditions.append('DATE(b.created_at) <= %s')
+                params.append(date_range['end'])
+
+        # 状态筛选
+        if filters.get('status'):
+            status_list = filters['status']
+            if status_list:
+                placeholders = ','.join(['%s'] * len(status_list))
+                where_conditions.append(f'b.status IN ({placeholders})')
+                params.extend(status_list)
+
+        # 项目筛选
+        if filters.get('project'):
+            where_conditions.append('b.project = %s')
+            params.append(filters['project'])
+
+        # 创建者筛选
+        if filters.get('creator'):
+            where_conditions.append('b.created_by = %s')
+            params.append(filters['creator'])
+
+        # 分配者筛选
+        if filters.get('assignee'):
+            where_conditions.append('b.assigned_to = %s')
+            params.append(filters['assignee'])
+
+        # 组合查询
+        if where_conditions:
+            query = base_query + ' WHERE ' + ' AND '.join(where_conditions)
+        else:
+            query = base_query
+
+        query += ' ORDER BY b.created_at DESC LIMIT 100'  # 预览限制100条
+
+        # 执行查询
+        conn = get_db_connection()
+        if DB_TYPE == 'postgres':
+            from psycopg2.extras import DictCursor
+            cursor = conn.cursor(cursor_factory=DictCursor)
+        else:
+            cursor = conn.cursor()
+
+        query, params = adapt_sql(query, params)
+        cursor.execute(query, params)
+
+        results = cursor.fetchall()
+        conn.close()
+
+        # 转换数据格式 - 兼容PostgreSQL和SQLite
+        preview_data = []
+        assignee_usernames = set()  # 收集所有分配者用户名
+        bug_ids = []  # 收集所有bug ID，用于查询附件数量
+
+        for row in results:
+            # 统一转换为字典格式
+            if DB_TYPE == 'postgres':
+                # PostgreSQL DictCursor 返回字典风格的行
+                row_data = dict(row)
+            else:
+                # SQLite Row 对象（已设置row_factory = sqlite3.Row）
+                if hasattr(row, 'keys'):
+                    row_data = dict(row)
+                else:
+                    # 兜底：普通tuple格式
+                    row_data = {
+                        'id': row[0],
+                        'title': row[1],
+                        'description': row[2],
+                        'status': row[3],
+                        'project': row[4],
+                        'created_at': row[5],
+                        'resolved_at': row[6],
+                        'resolution': row[7],
+                        'image_path': row[8],
+                        'creator_username': row[9],
+                        'creator_name': row[10],
+                        'assignee_username': row[11],
+                        'assignee_name': row[12],
+                        'assignee_team': row[13],
+                        'manager_username': row[14],
+                        'manager_name': row[15]
+                    }
+
+            # 添加前端需要的字段映射
+            row_data['creator'] = row_data.get('creator_name') or row_data.get('creator_username') or '未知'
+            row_data['assignee'] = row_data.get('assignee_name') or row_data.get('assignee_username') or '未分配'
+            row_data['manager'] = row_data.get('manager_name') or row_data.get('manager_username') or '未分配'
+
+            # 处理时间格式 - 转换为字符串格式
+            created_at = row_data.get('created_at')
+            if created_at:
+                if hasattr(created_at, 'strftime'):
+                    # datetime对象，转换为字符串
+                    row_data['created_at'] = created_at.strftime('%Y-%m-%d %H:%M:%S')
+                    row_data['create_time'] = row_data['created_at']
+                else:
+                    # 已经是字符串
+                    row_data['create_time'] = str(created_at)
+            else:
+                row_data['create_time'] = ''
+
+            resolved_at = row_data.get('resolved_at')
+            if resolved_at:
+                if hasattr(resolved_at, 'strftime'):
+                    # datetime对象，转换为字符串
+                    row_data['resolved_at'] = resolved_at.strftime('%Y-%m-%d %H:%M:%S')
+                    row_data['resolve_time'] = row_data['resolved_at']
+                else:
+                    # 已经是字符串
+                    row_data['resolve_time'] = str(resolved_at)
+            else:
+                row_data['resolve_time'] = ''
+
+            # 默认产品线值
+            row_data['team'] = '暂无'
+
+            # 收集分配者用户名，用于后续查询团队信息
+            if row_data.get('assignee_username'):
+                assignee_usernames.add(row_data.get('assignee_username'))
+
+            # 收集bug ID，用于查询附件数量
+            if row_data.get('id'):
+                bug_ids.append(row_data.get('id'))
+
+            # 附件数量（默认值，后续会更新）
+            row_data['attachments'] = '0'
+
+            preview_data.append(row_data)
+
+        # 批量查询用户团队信息
+        if assignee_usernames:
+            try:
+                app.logger.info(f"开始查询用户团队，用户名: {assignee_usernames}")
+
+                # 创建新的数据库连接
+                user_conn = get_db_connection()
+                if DB_TYPE == 'postgres':
+                    from psycopg2.extras import DictCursor
+                    user_cursor = user_conn.cursor(cursor_factory=DictCursor)
+                else:
+                    user_cursor = user_conn.cursor()
+
+                # 构建查询参数
+                placeholders = ', '.join(['%s'] * len(assignee_usernames))
+                user_query, user_params = adapt_sql(f"SELECT username, team FROM users WHERE username IN ({placeholders})", tuple(assignee_usernames))
+                user_cursor.execute(user_query, user_params)
+
+                # 创建用户名到团队的映射
+                user_teams = {}
+                team_results = user_cursor.fetchall()
+                app.logger.info(f"团队查询结果数量: {len(team_results)}")
+
+                for user_row in team_results:
+                    if DB_TYPE == 'postgres':
+                        username = user_row['username']
+                        team = user_row['team']
+                    else:
+                        username = user_row[0]
+                        team = user_row[1]
+
+                    user_teams[username] = team
+                    app.logger.info(f"用户团队映射: {username} -> {team}")
+
+                # 更新每条记录的团队信息
+                updated_count = 0
+                for row_data in preview_data:
+                    assignee_username = row_data.get('assignee_username')
+                    if assignee_username in user_teams and user_teams[assignee_username]:
+                        row_data['team'] = user_teams[assignee_username]
+                        updated_count += 1
+
+                app.logger.info(f"更新了 {updated_count} 条记录的团队信息")
+
+                # 关闭连接
+                user_cursor.close()
+                user_conn.close()
+
+            except Exception as e:
+                app.logger.error(f"批量获取用户团队失败: {e}")
+                import traceback
+                app.logger.error(f"详细错误: {traceback.format_exc()}")
+                # 出错时保持默认值
+
+        # 批量查询附件数量
+        if bug_ids:
+            try:
+                app.logger.info(f"开始查询附件数量，bug数量: {len(bug_ids)}")
+
+                # 创建新的数据库连接
+                attachment_conn = get_db_connection()
+                if DB_TYPE == 'postgres':
+                    from psycopg2.extras import DictCursor
+                    attachment_cursor = attachment_conn.cursor(cursor_factory=DictCursor)
+                else:
+                    attachment_cursor = attachment_conn.cursor()
+
+                # 构建查询参数
+                placeholders = ', '.join(['%s'] * len(bug_ids))
+                attachment_query, attachment_params = adapt_sql(f"""
+                    SELECT bug_id, COUNT(*) as attachment_count
+                    FROM bug_images
+                    WHERE bug_id IN ({placeholders})
+                    GROUP BY bug_id
+                """, tuple(bug_ids))
+                attachment_cursor.execute(attachment_query, attachment_params)
+
+                # 创建bug ID到附件数量的映射
+                attachment_counts = {}
+                attachment_results = attachment_cursor.fetchall()
+                app.logger.info(f"附件查询结果数量: {len(attachment_results)}")
+
+                for attachment_row in attachment_results:
+                    if DB_TYPE == 'postgres':
+                        bug_id = attachment_row['bug_id']
+                        count = attachment_row['attachment_count']
+                    else:
+                        if hasattr(attachment_row, 'keys'):
+                            attachment_dict = dict(attachment_row)
+                            bug_id = attachment_dict['bug_id']
+                            count = attachment_dict['attachment_count']
+                        else:
+                            bug_id = attachment_row[0]
+                            count = attachment_row[1]
+
+                    attachment_counts[bug_id] = count
+                    app.logger.info(f"Bug {bug_id} 附件数量: {count}")
+
+                # 更新每条记录的附件数量
+                updated_attachment_count = 0
+                for row_data in preview_data:
+                    bug_id = row_data.get('id')
+                    if bug_id in attachment_counts:
+                        row_data['attachments'] = str(attachment_counts[bug_id])
+                        updated_attachment_count += 1
+
+                app.logger.info(f"更新了 {updated_attachment_count} 条记录的附件数量")
+
+                # 关闭连接
+                attachment_cursor.close()
+                attachment_conn.close()
+
+            except Exception as e:
+                app.logger.error(f"批量获取附件数量失败: {e}")
+                import traceback
+                app.logger.error(f"详细错误: {traceback.format_exc()}")
+                # 出错时保持默认值
+
+        # 确保所有datetime对象都已转换为字符串
+        for row in preview_data:
+            for key, value in row.items():
+                if hasattr(value, 'strftime'):
+                    row[key] = value.strftime('%Y-%m-%d %H:%M:%S')
+
+        return jsonify({
+            'success': True,
+            'data': preview_data,
+            'fields': fields,
+            'count': len(preview_data)
+        })
+
+    except Exception as e:
+        app.logger.error(f"预览报表数据失败: {e}")
+        return jsonify({'error': '预览失败', 'message': str(e)}), 500
+
+@app.route('/admin/reports/chart-data', methods=['POST'])
+@login_required
+@role_required('gly')
+def admin_reports_chart_data():
+    """获取报表图表数据"""
+
+    try:
+        data = request.get_json()
+        filters = data.get('filters', {})
+
+        # 构建查询（与预览查询相同的筛选条件）
+        query_parts = []
+        params = []
+
+        # 基础查询
+        base_query = '''
+            SELECT b.id, b.title, b.status, b.project,
+                   b.created_at, b.resolved_at,
+                   u1.username as creator_username, u1.chinese_name as creator_name,
+                   u2.username as assignee_username, u2.chinese_name as assignee_name,
+                   u1.team as creator_team, u2.team as assignee_team
+            FROM bugs b
+            LEFT JOIN users u1 ON b.created_by = u1.id
+            LEFT JOIN users u2 ON b.assigned_to = u2.id
+        '''
+
+        # 添加筛选条件（与预览接口相同的逻辑）
+        where_conditions = []
+
+        # 日期范围筛选
+        if filters.get('dateRange'):
+            date_range = filters['dateRange']
+            if date_range.get('start'):
+                where_conditions.append('DATE(b.created_at) >= %s')
+                params.append(date_range['start'])
+            if date_range.get('end'):
+                where_conditions.append('DATE(b.created_at) <= %s')
+                params.append(date_range['end'])
+
+        # 状态筛选
+        if filters.get('status'):
+            status_list = filters['status']
+            if status_list:
+                placeholders = ','.join(['%s'] * len(status_list))
+                where_conditions.append(f'b.status IN ({placeholders})')
+                params.extend(status_list)
+
+        # 项目筛选
+        if filters.get('project'):
+            where_conditions.append('b.project = %s')
+            params.append(filters['project'])
+
+        # 创建者筛选
+        if filters.get('creator'):
+            where_conditions.append('b.created_by = %s')
+            params.append(filters['creator'])
+
+        # 分配者筛选
+        if filters.get('assignee'):
+            where_conditions.append('b.assigned_to = %s')
+            params.append(filters['assignee'])
+
+        # 组合查询
+        if where_conditions:
+            query = base_query + ' WHERE ' + ' AND '.join(where_conditions)
+        else:
+            query = base_query
+
+        # 执行查询
+        conn = get_db_connection()
+        if DB_TYPE == 'postgres':
+            from psycopg2.extras import DictCursor
+            cursor = conn.cursor(cursor_factory=DictCursor)
+        else:
+            cursor = conn.cursor()
+
+        query, params = adapt_sql(query, params)
+        cursor.execute(query, params)
+
+        results = cursor.fetchall()
+        conn.close()
+
+        # 统计数据（只统计已完成的问题）
+        creator_stats = {}  # 提交人统计（只统计已完成的）
+        assignee_stats = {}  # 处理人统计（只统计已完成的）
+
+        for row in results:
+            # 统一转换为字典格式
+            if DB_TYPE == 'postgres':
+                row_data = dict(row)
+            else:
+                if hasattr(row, 'keys'):
+                    row_data = dict(row)
+                else:
+                    # 兜底：普通tuple格式
+                    row_data = {
+                        'id': row[0],
+                        'title': row[1],
+                        'status': row[2],
+                        'project': row[3],
+                        'created_at': row[4],
+                        'resolved_at': row[5],
+                        'creator_username': row[6],
+                        'creator_name': row[7],
+                        'assignee_username': row[8],
+                        'assignee_name': row[9],
+                        'creator_team': row[10],
+                        'assignee_team': row[11]
+                    }
+
+            # 只统计已完成状态的问题
+            if row_data.get('status') == '已完成' and row_data.get('resolved_at'):
+                # 统计提交人数据（已完成的问题）
+                creator_name = row_data.get('creator_name') or row_data.get('creator_username') or '未知'
+                creator_stats[creator_name] = creator_stats.get(creator_name, 0) + 1
+
+                # 统计处理人数据（已完成的问题）
+                assignee_name = row_data.get('assignee_name') or row_data.get('assignee_username') or '未分配'
+                if assignee_name != '未分配':
+                    assignee_stats[assignee_name] = assignee_stats.get(assignee_name, 0) + 1
+
+        # 转换为图表数据格式
+        creator_chart_data = {
+            'labels': list(creator_stats.keys()),
+            'values': list(creator_stats.values())
+        }
+
+        assignee_chart_data = {
+            'labels': list(assignee_stats.keys()),
+            'values': list(assignee_stats.values())
+        }
+
+        chart_data = {
+            'creator': creator_chart_data,
+            'assignee': assignee_chart_data
+        }
+
+        return jsonify({'success': True, 'data': chart_data})
+
+    except Exception as e:
+        app.logger.error(f"获取图表数据失败: {e}")
+        import traceback
+        app.logger.error(f"详细错误: {traceback.format_exc()}")
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/admin/reports/export', methods=['POST'])
+@login_required
+@role_required('gly')
+def admin_reports_export():
+    """导出报表数据"""
+
+    try:
+        data = request.get_json()
+        filters = data.get('filters', {})
+        fields = data.get('fields', [])
+        format_type = data.get('format', 'excel')
+        filename = data.get('filename', '问题列表报表')
+
+        # 获取完整数据（不限制条数）
+        conn = get_db_connection()
+        if DB_TYPE == 'postgres':
+            from psycopg2.extras import DictCursor
+            cursor = conn.cursor(cursor_factory=DictCursor)
+        else:
+            cursor = conn.cursor()
+
+        # 构建查询（与预览相同，但不限制条数）
+        base_query = '''
+            SELECT b.id, b.title, b.description, b.status, b.project,
+                   b.created_at, b.resolved_at, b.resolution, b.image_path,
+                   u1.username as creator_username, u1.chinese_name as creator_name,
+                   u2.username as assignee_username, u2.chinese_name as assignee_name,
+                   u2.team as assignee_team,
+                   u3.username as manager_username, u3.chinese_name as manager_name
+            FROM bugs b
+            LEFT JOIN users u1 ON b.created_by = u1.id
+            LEFT JOIN users u2 ON b.assigned_to = u2.id
+            LEFT JOIN users u3 ON u2.team = u3.team AND u3.role_en = 'fzr'
+        '''
+
+        # 添加筛选条件
+        where_conditions = []
+        params = []
+
+        # 日期范围筛选
+        if filters.get('dateRange'):
+            date_range = filters['dateRange']
+            if date_range.get('start'):
+                where_conditions.append('DATE(b.created_at) >= %s')
+                params.append(date_range['start'])
+            if date_range.get('end'):
+                where_conditions.append('DATE(b.created_at) <= %s')
+                params.append(date_range['end'])
+
+        # 状态筛选
+        if filters.get('status'):
+            status_list = filters['status']
+            if status_list:
+                placeholders = ','.join(['%s'] * len(status_list))
+                where_conditions.append(f'b.status IN ({placeholders})')
+                params.extend(status_list)
+
+        # 项目筛选
+        if filters.get('project'):
+            where_conditions.append('b.project = %s')
+            params.append(filters['project'])
+
+        # 创建者筛选
+        if filters.get('creator'):
+            where_conditions.append('b.created_by = %s')
+            params.append(filters['creator'])
+
+        # 分配者筛选
+        if filters.get('assignee'):
+            where_conditions.append('b.assigned_to = %s')
+            params.append(filters['assignee'])
+
+        # 组合查询
+        if where_conditions:
+            query = base_query + ' WHERE ' + ' AND '.join(where_conditions)
+        else:
+            query = base_query
+
+        query += ' ORDER BY b.created_at DESC'
+
+        # 执行查询
+        query, params = adapt_sql(query, params)
+        cursor.execute(query, params)
+        results = cursor.fetchall()
+        conn.close()
+
+        # 转换数据格式 - 兼容PostgreSQL和SQLite
+        export_data = []
+        assignee_usernames = set()  # 收集所有分配者用户名
+        bug_ids = []  # 收集所有bug ID，用于查询附件数量
+
+        for row in results:
+            # 统一转换为字典格式
+            if DB_TYPE == 'postgres':
+                # PostgreSQL DictCursor 返回字典风格的行
+                row_data = dict(row)
+            else:
+                # SQLite Row 对象（已设置row_factory = sqlite3.Row）
+                if hasattr(row, 'keys'):
+                    row_data = dict(row)
+                else:
+                    # 兜底：普通tuple格式
+                    row_data = {
+                        'id': row[0],
+                        'title': row[1],
+                        'description': row[2],
+                        'status': row[3],
+                        'project': row[4],
+                        'created_at': row[5],
+                        'resolved_at': row[6],
+                        'resolution': row[7],
+                        'image_path': row[8],
+                        'creator_username': row[9],
+                        'creator_name': row[10],
+                        'assignee_username': row[11],
+                        'assignee_name': row[12]
+                    }
+
+            # 添加前端需要的字段映射
+            row_data['creator'] = row_data.get('creator_name') or row_data.get('creator_username') or '未知'
+            row_data['assignee'] = row_data.get('assignee_name') or row_data.get('assignee_username') or '未分配'
+            row_data['manager'] = row_data.get('manager_name') or row_data.get('manager_username') or '未分配'
+
+            # 处理时间格式 - 转换为字符串格式
+            created_at = row_data.get('created_at')
+            if created_at:
+                if hasattr(created_at, 'strftime'):
+                    # datetime对象，转换为字符串
+                    row_data['create_time'] = created_at.strftime('%Y-%m-%d %H:%M:%S')
+                else:
+                    # 已经是字符串
+                    row_data['create_time'] = str(created_at)
+            else:
+                row_data['create_time'] = ''
+
+            resolved_at = row_data.get('resolved_at')
+            if resolved_at:
+                if hasattr(resolved_at, 'strftime'):
+                    # datetime对象，转换为字符串
+                    row_data['resolve_time'] = resolved_at.strftime('%Y-%m-%d %H:%M:%S')
+                else:
+                    # 已经是字符串
+                    row_data['resolve_time'] = str(resolved_at)
+            else:
+                row_data['resolve_time'] = ''
+
+            # 默认产品线值
+            row_data['team'] = '暂无'
+
+            # 收集分配者用户名，用于后续查询团队信息
+            if row_data.get('assignee_username'):
+                assignee_usernames.add(row_data.get('assignee_username'))
+
+            # 收集bug ID，用于查询附件数量
+            if row_data.get('id'):
+                bug_ids.append(row_data.get('id'))
+
+            # 附件数量（默认值，后续会更新）
+            row_data['attachments'] = '0'
+
+            export_data.append(row_data)
+
+        # 批量查询用户团队信息
+        if assignee_usernames:
+            try:
+                # 创建新的数据库连接
+                user_conn = get_db_connection()
+                if DB_TYPE == 'postgres':
+                    from psycopg2.extras import DictCursor
+                    user_cursor = user_conn.cursor(cursor_factory=DictCursor)
+                else:
+                    user_cursor = user_conn.cursor()
+
+                # 构建查询参数
+                placeholders = ', '.join(['%s'] * len(assignee_usernames))
+                user_query, user_params = adapt_sql(f"SELECT username, team FROM users WHERE username IN ({placeholders})", tuple(assignee_usernames))
+                user_cursor.execute(user_query, user_params)
+
+                # 创建用户名到团队的映射
+                user_teams = {}
+                team_results = user_cursor.fetchall()
+                app.logger.info(f"导出功能团队查询结果数量: {len(team_results)}")
+
+                for user_row in team_results:
+                    if DB_TYPE == 'postgres':
+                        username = user_row['username']
+                        team = user_row['team']
+                    else:
+                        if hasattr(user_row, 'keys'):
+                            user_dict = dict(user_row)
+                            username = user_dict['username']
+                            team = user_dict['team']
+                        else:
+                            username = user_row[0]
+                            team = user_row[1]
+
+                    user_teams[username] = team
+                    app.logger.info(f"导出功能用户团队映射: {username} -> {team}")
+
+                # 更新每条记录的团队信息
+                app.logger.info(f"用户团队映射: {user_teams}")
+                updated_count = 0
+                for row_data in export_data:
+                    assignee_username = row_data.get('assignee_username')
+                    app.logger.info(f"处理记录: ID={row_data.get('id')}, 分配者={assignee_username}")
+                    if assignee_username in user_teams and user_teams[assignee_username]:
+                        row_data['team'] = user_teams[assignee_username]
+                        updated_count += 1
+                        app.logger.info(f"  ✅ 更新产品线: {user_teams[assignee_username]}")
+                    else:
+                        app.logger.info(f"  ❌ 未找到产品线: {assignee_username}")
+
+                app.logger.info(f"共更新 {updated_count}/{len(export_data)} 条记录的产品线")
+
+                # 关闭连接
+                user_cursor.close()
+                user_conn.close()
+
+            except Exception as e:
+                app.logger.error(f"批量获取用户团队失败: {e}")
+                # 出错时保持默认值
+
+        # 批量查询附件数量
+        if bug_ids:
+            try:
+                app.logger.info(f"开始查询附件数量，bug数量: {len(bug_ids)}")
+
+                # 创建新的数据库连接
+                attachment_conn = get_db_connection()
+                if DB_TYPE == 'postgres':
+                    from psycopg2.extras import DictCursor
+                    attachment_cursor = attachment_conn.cursor(cursor_factory=DictCursor)
+                else:
+                    attachment_cursor = attachment_conn.cursor()
+
+                # 构建查询参数
+                placeholders = ', '.join(['%s'] * len(bug_ids))
+                attachment_query, attachment_params = adapt_sql(f"""
+                    SELECT bug_id, COUNT(*) as attachment_count
+                    FROM bug_images
+                    WHERE bug_id IN ({placeholders})
+                    GROUP BY bug_id
+                """, tuple(bug_ids))
+                attachment_cursor.execute(attachment_query, attachment_params)
+
+                # 创建bug ID到附件数量的映射
+                attachment_counts = {}
+                attachment_results = attachment_cursor.fetchall()
+                app.logger.info(f"附件查询结果数量: {len(attachment_results)}")
+
+                for attachment_row in attachment_results:
+                    if DB_TYPE == 'postgres':
+                        bug_id = attachment_row['bug_id']
+                        count = attachment_row['attachment_count']
+                    else:
+                        if hasattr(attachment_row, 'keys'):
+                            attachment_dict = dict(attachment_row)
+                            bug_id = attachment_dict['bug_id']
+                            count = attachment_dict['attachment_count']
+                        else:
+                            bug_id = attachment_row[0]
+                            count = attachment_row[1]
+
+                    attachment_counts[bug_id] = count
+                    app.logger.info(f"Bug {bug_id} 附件数量: {count}")
+
+                # 更新每条记录的附件数量
+                updated_attachment_count = 0
+                for row_data in export_data:
+                    bug_id = row_data.get('id')
+                    if bug_id in attachment_counts:
+                        row_data['attachments'] = str(attachment_counts[bug_id])
+                        updated_attachment_count += 1
+
+                app.logger.info(f"更新了 {updated_attachment_count} 条记录的附件数量")
+
+                # 关闭连接
+                attachment_cursor.close()
+                attachment_conn.close()
+
+            except Exception as e:
+                app.logger.error(f"批量获取附件数量失败: {e}")
+                import traceback
+                app.logger.error(f"详细错误: {traceback.format_exc()}")
+                # 出错时保持默认值
+
+        # 根据格式导出
+        if format_type == 'excel':
+            return export_to_excel(export_data, fields, filename)
+        else:
+            return jsonify({'error': '不支持的导出格式'}), 400
+
+    except Exception as e:
+        app.logger.error(f"导出报表数据失败: {e}")
+        return jsonify({'error': '导出失败', 'message': str(e)}), 500
+
+def export_to_excel(data, fields, filename):
+    """导出为Excel格式（使用openpyxl）"""
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill, Alignment
+        from io import BytesIO
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "问题列表"
+
+        # 设置表头样式
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+        header_alignment = Alignment(horizontal="center", vertical="center")
+
+        # 写入表头
+        headers = [field.get('label', field.get('key', '')) for field in fields]
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_alignment
+
+        # 写入数据
+        for row_idx, row in enumerate(data, 2):
+            for col_idx, field in enumerate(fields, 1):
+                field_key = field.get('key')
+                value = row.get(field_key, '')
+                if value is None:
+                    value = ''
+                ws.cell(row=row_idx, column=col_idx, value=str(value))
+
+        # 自动调整列宽
+        for column in ws.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)  # 限制最大宽度
+            ws.column_dimensions[column_letter].width = adjusted_width
+
+        # 保存到内存
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        # 返回文件
+        from flask import Response
+        import urllib.parse
+
+        # 处理中文文件名 - 使用RFC 5987标准
+        # 生成ASCII安全的文件名作为兜底
+        import re
+        ascii_filename = re.sub(r'[^a-zA-Z0-9\-_.]', '_', filename) + '.xlsx'
+        if ascii_filename == '.xlsx' or ascii_filename == '_.xlsx':
+            ascii_filename = 'bug_report.xlsx'  # 如果文件名全是特殊字符，使用默认名称
+
+        # UTF-8编码的完整文件名
+        encoded_filename = urllib.parse.quote(f'{filename}.xlsx'.encode('utf-8'))
+
+        # 创建响应
+        response = Response(
+            output.getvalue(),
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            headers={
+                'Content-Disposition': f'attachment; filename="{ascii_filename}"; filename*=UTF-8\'\'{encoded_filename}',
+                'Cache-Control': 'no-cache'
+            }
+        )
+
+        return response
+
+    except ImportError:
+        return jsonify({'error': 'Excel导出功能需要安装openpyxl库'}), 500
+    except Exception as e:
+        app.logger.error(f"Excel导出失败: {e}")
+        return jsonify({'error': 'Excel导出失败', 'message': str(e)}), 500
+
+
+
+
+
+
+
+
 if __name__ == '__main__':
     # 检查端口是否可用
     HOST = '127.0.0.1'
@@ -3005,3 +3956,7 @@ if __name__ == '__main__':
             os.kill(os.getpid(), signal.SIGTERM)
         except:
             pass
+
+
+
+

@@ -160,6 +160,103 @@
         box-shadow: 0 8px 20px rgba(56, 249, 215, 0.4) !important;
     }
 
+    /* 新的现代化按钮样式 */
+    .btn-modern.btn-primary {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        border: none;
+        color: white !important;
+    }
+
+    .btn-modern.btn-primary:hover {
+        background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+    }
+
+    .btn-modern.btn-success {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        border: none;
+        color: white !important;
+    }
+
+    .btn-modern.btn-success:hover {
+        background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    }
+
+    .btn-modern.btn-secondary {
+        background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+        border: none;
+        color: white !important;
+    }
+
+    .btn-modern.btn-secondary:hover {
+        background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+    }
+
+    .btn-modern.btn-info {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        border: none;
+        color: white !important;
+    }
+
+    .btn-modern.btn-info:hover {
+        background: linear-gradient(135deg, #138496 0%, #117a8b 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(23, 162, 184, 0.3);
+    }
+
+    .btn-modern.btn-outline-primary {
+        background: transparent;
+        border: 2px solid #007bff;
+        color: #007bff !important;
+    }
+
+    .btn-modern.btn-outline-primary:hover {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        border-color: #007bff;
+        color: white !important;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+    }
+
+    .btn-modern.btn-outline-secondary {
+        background: transparent;
+        border: 2px solid #6c757d;
+        color: #6c757d !important;
+    }
+
+    .btn-modern.btn-outline-secondary:hover {
+        background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+        border-color: #6c757d;
+        color: white !important;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+    }
+
+    .btn-modern.btn-outline-info {
+        background: transparent;
+        border: 2px solid #17a2b8;
+        color: #17a2b8 !important;
+    }
+
+    .btn-modern.btn-outline-info:hover {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        border-color: #17a2b8;
+        color: white !important;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(23, 162, 184, 0.3);
+    }
+
+    /* 字段选择快捷操作按钮样式 */
+    .field-actions {
+        justify-content: center;
+        align-items: center;
+    }
+
     /* 通知中心样式 */
     .notification-center {
         position: relative;
@@ -937,6 +1034,336 @@
         background: #a8a8a8;
     }
 
+    /* 现代化Modal样式 */
+    .modern-modal {
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+    }
+
+    /* 确认删除Modal样式 */
+    .confirm-delete-header {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+        color: white;
+        border: none;
+        padding: 25px 30px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .confirm-delete-icon {
+        width: 50px;
+        height: 50px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+    }
+
+    .confirm-delete-body {
+        padding: 40px 30px;
+        text-align: center;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    }
+
+    .warning-animation {
+        margin-bottom: 25px;
+    }
+
+    .warning-icon {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        font-size: 40px;
+        color: white;
+        animation: pulse 2s infinite;
+    }
+
+    .confirm-delete-message {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 10px;
+    }
+
+    .warning-text {
+        color: #dc3545;
+        font-weight: 500;
+        margin: 0;
+    }
+
+    .confirm-delete-footer {
+        background: white;
+        border: none;
+        padding: 20px 30px;
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+    }
+
+    .confirm-delete-footer .btn-modern {
+        color: white !important;
+        font-weight: 600;
+        padding: 12px 24px;
+        border-radius: 25px;
+        border: none;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .confirm-delete-footer .btn-secondary {
+        background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+        color: white !important;
+    }
+
+    .confirm-delete-footer .btn-secondary:hover {
+        background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+    }
+
+    .confirm-delete-footer .btn-danger {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        color: white !important;
+    }
+
+    .confirm-delete-footer .btn-danger:hover {
+        background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+    }
+
+    /* 成功Modal样式 */
+    .success-header {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        border: none;
+        padding: 25px 30px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .success-icon {
+        width: 50px;
+        height: 50px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+    }
+
+    .success-body {
+        padding: 40px 30px;
+        text-align: center;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    }
+
+    .success-animation {
+        margin-bottom: 25px;
+    }
+
+    .checkmark {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        display: block;
+        stroke-width: 2;
+        stroke: #28a745;
+        stroke-miterlimit: 10;
+        margin: 0 auto 20px;
+        box-shadow: inset 0px 0px 0px #28a745;
+        animation: fill .4s ease-in-out .4s forwards, scale .3s ease-in-out .9s both;
+    }
+
+    .checkmark__circle {
+        stroke-dasharray: 166;
+        stroke-dashoffset: 166;
+        stroke-width: 2;
+        stroke-miterlimit: 10;
+        stroke: #28a745;
+        fill: none;
+        animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+    }
+
+    .checkmark__check {
+        transform-origin: 50% 50%;
+        stroke-dasharray: 48;
+        stroke-dashoffset: 48;
+        animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+    }
+
+    .success-message {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+        margin: 0;
+    }
+
+    .success-footer {
+        background: white;
+        border: none;
+        padding: 20px 30px;
+        text-align: center;
+    }
+
+    .success-footer .btn-modern {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white !important;
+        font-weight: 600;
+        padding: 12px 24px;
+        border-radius: 25px;
+        border: none;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .success-footer .btn-modern:hover {
+        background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    }
+
+    /* 错误Modal样式 */
+    .error-header {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        color: white;
+        border: none;
+        padding: 25px 30px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .error-icon {
+        width: 50px;
+        height: 50px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+    }
+
+    .error-body {
+        padding: 40px 30px;
+        text-align: center;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    }
+
+    .error-animation {
+        margin-bottom: 25px;
+    }
+
+    .error-icon-large {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        font-size: 40px;
+        color: white;
+        animation: shake 0.5s ease-in-out;
+    }
+
+    .error-message {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+        margin: 0;
+    }
+
+    .error-footer {
+        background: white;
+        border: none;
+        padding: 20px 30px;
+        text-align: center;
+    }
+
+    .error-footer .btn-modern {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: white !important;
+        font-weight: 600;
+        padding: 12px 24px;
+        border-radius: 25px;
+        border: none;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .error-footer .btn-modern:hover {
+        background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+    }
+
+    /* 动画效果 */
+    @keyframes stroke {
+        100% {
+            stroke-dashoffset: 0;
+        }
+    }
+
+    @keyframes scale {
+        0%, 100% {
+            transform: none;
+        }
+        50% {
+            transform: scale3d(1.1, 1.1, 1);
+        }
+    }
+
+    @keyframes fill {
+        100% {
+            box-shadow: inset 0px 0px 0px 30px #28a745;
+        }
+    }
+
+    @keyframes pulse {
+        0% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.1);
+        }
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    @keyframes shake {
+        0%, 100% {
+            transform: translateX(0);
+        }
+        10%, 30%, 50%, 70%, 90% {
+            transform: translateX(-5px);
+        }
+        20%, 40%, 60%, 80% {
+            transform: translateX(5px);
+        }
+    }
+
     /* 通知配置页面样式 */
     .notifications-theme {
         background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
@@ -1063,6 +1490,44 @@
         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
     }
 
+    /* 清理管理样式 */
+    .cleanup-stats-card {
+        transition: all 0.3s ease;
+    }
+
+    .cleanup-stats-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(25, 118, 210, 0.15);
+    }
+
+    .stat-item {
+        text-align: center;
+        padding: 10px;
+    }
+
+    .stat-value {
+        font-size: 1.8rem;
+        font-weight: bold;
+        color: #1976d2;
+        margin-bottom: 5px;
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        color: #666;
+        font-weight: 500;
+    }
+
+    .cleanup-action-card {
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+
+    .cleanup-action-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+
     /* 用户通知偏好表格样式 */
     .user-info {
         min-width: 120px;
@@ -1179,6 +1644,105 @@
         margin-bottom: 25px;
         border: 1px solid rgba(156, 39, 176, 0.2);
         overflow: hidden;
+    }
+
+    /* 图表相关样式 */
+    .chart-controls {
+        border-bottom: 1px solid rgba(156, 39, 176, 0.1);
+        padding-bottom: 20px;
+    }
+
+    .chart-container {
+        position: relative;
+        height: 300px;
+        background: white;
+        border-radius: 10px;
+        padding: 15px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .chart-container canvas {
+        max-height: 270px !important;
+    }
+
+    .btn-group .btn {
+        font-size: 0.875rem;
+        padding: 0.375rem 0.75rem;
+    }
+
+    .btn-group .btn.active {
+        background-color: var(--bs-primary);
+        border-color: var(--bs-primary);
+        color: white;
+    }
+
+    .btn-outline-success.active {
+        background-color: var(--bs-success);
+        border-color: var(--bs-success);
+        color: white;
+    }
+
+    /* 时间范围按钮自定义样式 */
+    .quick-dates .btn {
+        background-color: #fce4ec; /* 淡粉色背景 */
+        border-color: #f8bbd9;
+        color: #880e4f; /* 深粉色文字 */
+        transition: all 0.3s ease;
+    }
+
+    .quick-dates .btn:hover {
+        background-color: #f8bbd9; /* 悬停时稍深一点的粉色 */
+        border-color: #f48fb1;
+        color: #880e4f;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .quick-dates .btn:active,
+    .quick-dates .btn.active {
+        background-color: #ad1457 !important; /* 点击时的深色 */
+        border-color: #ad1457 !important;
+        color: white !important;
+        transform: translateY(0);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+
+    .quick-dates .btn:focus {
+        box-shadow: 0 0 0 0.2rem rgba(173, 20, 87, 0.25);
+    }
+
+    /* 导出背景选择弹窗样式 */
+    #exportBackgroundModal .btn {
+        min-height: 120px;
+        transition: all 0.3s ease;
+    }
+
+    #exportBackgroundModal .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    #exportBackgroundModal .btn i {
+        font-size: 2rem;
+        display: block;
+        margin-bottom: 8px;
+    }
+
+    #exportBackgroundModal .modal-content {
+        border-radius: 15px;
+        border: none;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    #exportBackgroundModal .modal-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px 15px 0 0;
+        border-bottom: none;
+    }
+
+    #exportBackgroundModal .modal-header .btn-close {
+        filter: invert(1);
     }
 
     .export-header {
@@ -1735,6 +2299,23 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div class="row mt-3">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label class="form-label">
+                                                <i class="fas fa-magic"></i>
+                                                自动清理功能
+                                            </label>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="enableAutoCleanup">
+                                                <label class="form-check-label" for="enableAutoCleanup">
+                                                    启用自动清理过期和超量通知
+                                                </label>
+                                            </div>
+                                            <small class="text-muted">开启后系统将每24小时自动清理过期和超量的通知</small>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -2130,23 +2711,109 @@
                             </div>
                         </div>
 
+                        <!-- 通知清理管理 -->
+                        <div class="config-section">
+                            <div class="config-header">
+                                <h3><i class="fas fa-broom"></i> 通知清理管理</h3>
+                                <p class="config-description">管理通知数据的清理和维护</p>
+                            </div>
+                            <div class="config-body">
+                                <!-- 清理统计信息 -->
+                                <div class="row mb-4">
+                                    <div class="col-md-12">
+                                        <div class="cleanup-stats-card" style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border-radius: 15px; padding: 20px; border: 1px solid #90caf9;">
+                                            <h5 style="color: #1976d2; margin-bottom: 15px;">
+                                                <i class="fas fa-chart-bar"></i> 清理统计信息
+                                            </h5>
+                                            <div class="row" id="cleanupStatsContainer">
+                                                <div class="col-md-2">
+                                                    <div class="stat-item">
+                                                        <div class="stat-value" id="totalNotifications">-</div>
+                                                        <div class="stat-label">总通知数</div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <div class="stat-item">
+                                                        <div class="stat-value" id="userCount">-</div>
+                                                        <div class="stat-label">用户数</div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <div class="stat-item">
+                                                        <div class="stat-value" id="retentionDays">-</div>
+                                                        <div class="stat-label">保留天数</div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <div class="stat-item">
+                                                        <div class="stat-value" id="maxPerUser">-</div>
+                                                        <div class="stat-label">每用户上限</div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <div class="stat-item">
+                                                        <div class="stat-value" id="expiredCount" style="color: #f57c00;">-</div>
+                                                        <div class="stat-label">过期记录数</div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <div class="stat-item">
+                                                        <div class="stat-value" id="excessCount" style="color: #e91e63;">-</div>
+                                                        <div class="stat-label">过量记录数</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="mt-3">
+                                                <small class="text-muted" id="oldestNotification">最旧通知: -</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 清理操作 -->
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="cleanup-action-card" style="background: #fff3e0; border: 1px solid #ffb74d; border-radius: 12px; padding: 20px; text-align: center;">
+                                            <h6 style="color: #f57c00; margin-bottom: 10px;">
+                                                <i class="fas fa-calendar-times"></i> 清理过期通知
+                                            </h6>
+                                            <p style="font-size: 0.9rem; color: #666; margin-bottom: 15px;">删除超过保留天数的通知</p>
+                                            <button class="btn btn-warning btn-sm" onclick="cleanupNotifications('expired')" style="border-radius: 20px;">
+                                                <i class="fas fa-trash-alt"></i> 清理过期
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="cleanup-action-card" style="background: #f3e5f5; border: 1px solid #ba68c8; border-radius: 12px; padding: 20px; text-align: center;">
+                                            <h6 style="color: #8e24aa; margin-bottom: 10px;">
+                                                <i class="fas fa-layer-group"></i> 清理超量通知
+                                            </h6>
+                                            <p style="font-size: 0.9rem; color: #666; margin-bottom: 15px;">删除超出数量限制的通知</p>
+                                            <button class="btn btn-secondary btn-sm" onclick="cleanupNotifications('excess')" style="border-radius: 20px; background: #8e24aa; border-color: #8e24aa;">
+                                                <i class="fas fa-compress-alt"></i> 清理超量
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="cleanup-action-card" style="background: #ffebee; border: 1px solid #f48fb1; border-radius: 12px; padding: 20px; text-align: center;">
+                                            <h6 style="color: #c2185b; margin-bottom: 10px;">
+                                                <i class="fas fa-broom"></i> 全面清理
+                                            </h6>
+                                            <p style="font-size: 0.9rem; color: #666; margin-bottom: 15px;">执行所有清理操作</p>
+                                            <button class="btn btn-danger btn-sm" onclick="cleanupNotifications('all')" style="border-radius: 20px;">
+                                                <i class="fas fa-magic"></i> 全面清理
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- 操作按钮 -->
-                        <div class="config-actions">
-                            <button class="btn btn-primary btn-lg" onclick="saveNotificationConfig()">
-                                <i class="fas fa-save"></i>
+                        <div class="config-actions text-center">
+                            <button class="btn btn-primary btn-lg" onclick="saveAllNotificationConfig()" style="padding: 15px 40px; font-size: 1.1rem; border-radius: 25px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);">
+                                <i class="fas fa-save me-2"></i>
                                 保存全局配置
-                            </button>
-                            <button class="btn btn-success btn-lg" onclick="saveAllUserPreferences()">
-                                <i class="fas fa-users-cog"></i>
-                                保存所有用户偏好
-                            </button>
-                            <button class="btn btn-secondary btn-lg" onclick="testNotification()">
-                                <i class="fas fa-paper-plane"></i>
-                                测试通知
-                            </button>
-                            <button class="btn btn-warning btn-lg" onclick="resetNotificationConfig()">
-                                <i class="fas fa-undo"></i>
-                                重置配置
                             </button>
                         </div>
                     </div>
@@ -2223,11 +2890,19 @@
                                                         <input type="date" class="form-control" id="endDate" placeholder="结束日期">
                                                     </div>
                                                 </div>
-                                                <div class="quick-dates mt-2">
-                                                    <button class="btn btn-outline-secondary btn-sm" onclick="setDateRange('today')">今天</button>
-                                                    <button class="btn btn-outline-secondary btn-sm" onclick="setDateRange('week')">本周</button>
-                                                    <button class="btn btn-outline-secondary btn-sm" onclick="setDateRange('month')">本月</button>
-                                                    <button class="btn btn-outline-secondary btn-sm" onclick="setDateRange('all')">全部</button>
+                                                <div class="quick-dates mt-2 d-flex flex-wrap gap-2">
+                                                    <button class="btn btn-outline-secondary btn-sm" onclick="setDateRange('week')">
+                                                        <i class="fas fa-calendar-week me-1"></i>本周
+                                                    </button>
+                                                    <button class="btn btn-outline-secondary btn-sm" onclick="setDateRange('month')">
+                                                        <i class="fas fa-calendar-alt me-1"></i>本月
+                                                    </button>
+                                                    <button class="btn btn-outline-secondary btn-sm" onclick="setDateRange('year')">
+                                                        <i class="fas fa-calendar me-1"></i>本年
+                                                    </button>
+                                                    <button class="btn btn-outline-secondary btn-sm" onclick="setDateRange('all')">
+                                                        <i class="fas fa-infinity me-1"></i>全部
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
@@ -2277,8 +2952,12 @@
                                                     <label class="form-check-label" for="fieldAssignee">分配给</label>
                                                 </div>
                                                 <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="fieldManager" checked>
+                                                    <label class="form-check-label" for="fieldManager">负责人</label>
+                                                </div>
+                                                <div class="form-check">
                                                     <input class="form-check-input" type="checkbox" id="fieldTeam">
-                                                    <label class="form-check-label" for="fieldTeam">团队</label>
+                                                    <label class="form-check-label" for="fieldTeam">产品线</label>
                                                 </div>
                                             </div>
                                         </div>
@@ -2290,10 +2969,6 @@
                                                     <label class="form-check-label" for="fieldCreateTime">创建时间</label>
                                                 </div>
                                                 <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" id="fieldUpdateTime">
-                                                    <label class="form-check-label" for="fieldUpdateTime">更新时间</label>
-                                                </div>
-                                                <div class="form-check">
                                                     <input class="form-check-input" type="checkbox" id="fieldResolveTime">
                                                     <label class="form-check-label" for="fieldResolveTime">解决时间</label>
                                                 </div>
@@ -2302,6 +2977,8 @@
                                         <div class="col-md-3">
                                             <h6>其他信息</h6>
                                             <div class="field-group">
+                                                <!-- 优先级和分类暂未设计，先注释掉 -->
+                                                <!--
                                                 <div class="form-check">
                                                     <input class="form-check-input" type="checkbox" id="fieldPriority">
                                                     <label class="form-check-label" for="fieldPriority">优先级</label>
@@ -2310,6 +2987,7 @@
                                                     <input class="form-check-input" type="checkbox" id="fieldCategory">
                                                     <label class="form-check-label" for="fieldCategory">分类</label>
                                                 </div>
+                                                -->
                                                 <div class="form-check">
                                                     <input class="form-check-input" type="checkbox" id="fieldAttachments">
                                                     <label class="form-check-label" for="fieldAttachments">附件数量</label>
@@ -2319,15 +2997,15 @@
                                     </div>
 
                                     <!-- 字段选择快捷操作 -->
-                                    <div class="field-actions mt-3">
-                                        <button class="btn btn-outline-primary btn-sm" onclick="selectAllFields()">
-                                            <i class="fas fa-check-square"></i> 全选
+                                    <div class="field-actions mt-3 d-flex gap-3 flex-wrap justify-content-center">
+                                        <button class="btn-modern btn-primary btn-lg" onclick="selectAllFields()">
+                                            <i class="fas fa-check-square me-2"></i>全选
                                         </button>
-                                        <button class="btn btn-outline-secondary btn-sm" onclick="selectNoneFields()">
-                                            <i class="fas fa-square"></i> 全不选
+                                        <button class="btn-modern btn-secondary btn-lg" onclick="selectNoneFields()">
+                                            <i class="fas fa-square me-2"></i>全不选
                                         </button>
-                                        <button class="btn btn-outline-info btn-sm" onclick="selectBasicFields()">
-                                            <i class="fas fa-list"></i> 基本字段
+                                        <button class="btn-modern btn-info btn-lg" onclick="selectBasicFields()">
+                                            <i class="fas fa-list me-2"></i>基本字段
                                         </button>
                                     </div>
                                 </div>
@@ -2351,18 +3029,6 @@
                                                         <i class="fas fa-file-excel text-success"></i> Excel (.xlsx)
                                                     </label>
                                                 </div>
-                                                <div class="form-check form-check-inline">
-                                                    <input class="form-check-input" type="radio" name="exportFormat" id="formatCsv" value="csv">
-                                                    <label class="form-check-label" for="formatCsv">
-                                                        <i class="fas fa-file-csv text-info"></i> CSV (.csv)
-                                                    </label>
-                                                </div>
-                                                <div class="form-check form-check-inline">
-                                                    <input class="form-check-input" type="radio" name="exportFormat" id="formatPdf" value="pdf">
-                                                    <label class="form-check-label" for="formatPdf">
-                                                        <i class="fas fa-file-pdf text-danger"></i> PDF (.pdf)
-                                                    </label>
-                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -2377,22 +3043,72 @@
 
                                 <!-- 导出按钮 -->
                                 <div class="export-actions mt-4">
-                                    <button class="btn btn-primary btn-lg" onclick="previewExport()">
-                                        <i class="fas fa-eye"></i>
+                                    <button class="btn-modern btn-primary btn-lg me-3" onclick="previewExport()">
+                                        <i class="fas fa-eye me-2"></i>
                                         预览数据
                                     </button>
-                                    <button class="btn btn-success btn-lg" onclick="exportData()">
-                                        <i class="fas fa-download"></i>
+                                    <button class="btn-modern btn-success btn-lg" onclick="exportData()">
+                                        <i class="fas fa-download me-2"></i>
                                         导出数据
                                     </button>
-                                    <button class="btn btn-info btn-lg" onclick="saveExportTemplate()">
-                                        <i class="fas fa-save"></i>
-                                        保存模板
-                                    </button>
-                                    <button class="btn btn-secondary btn-lg" onclick="loadExportTemplate()">
-                                        <i class="fas fa-folder-open"></i>
-                                        加载模板
-                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 图表展示区域 -->
+                        <div class="export-section" id="chartsSection" style="display: none;">
+                            <div class="export-header">
+                                <h3><i class="fas fa-chart-bar"></i> 数据统计图表</h3>
+                            </div>
+                            <div class="export-body">
+                                <!-- 图表切换按钮 -->
+                                <div class="chart-controls mb-4">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <h5 class="mb-0"><i class="fas fa-user-edit"></i> 提交人统计（已完成）</h5>
+                                                <button type="button" class="btn btn-outline-info btn-sm" onclick="exportChart('creator')" title="导出图表">
+                                                    <i class="fas fa-download"></i> 导出
+                                                </button>
+                                            </div>
+                                            <div class="btn-group" role="group">
+                                                <button type="button" class="btn btn-outline-primary active" onclick="switchChart('creator', 'line')">
+                                                    <i class="fas fa-chart-line"></i> 折线图
+                                                </button>
+                                                <button type="button" class="btn btn-outline-primary" onclick="switchChart('creator', 'bar')">
+                                                    <i class="fas fa-chart-bar"></i> 柱状图
+                                                </button>
+                                                <button type="button" class="btn btn-outline-primary" onclick="switchChart('creator', 'pie')">
+                                                    <i class="fas fa-chart-pie"></i> 饼状图
+                                                </button>
+                                            </div>
+                                            <div class="chart-container mt-3">
+                                                <canvas id="creatorChart" width="400" height="300"></canvas>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <h5 class="mb-0"><i class="fas fa-user-check"></i> 处理人统计（已完成）</h5>
+                                                <button type="button" class="btn btn-outline-info btn-sm" onclick="exportChart('assignee')" title="导出图表">
+                                                    <i class="fas fa-download"></i> 导出
+                                                </button>
+                                            </div>
+                                            <div class="btn-group" role="group">
+                                                <button type="button" class="btn btn-outline-success active" onclick="switchChart('assignee', 'line')">
+                                                    <i class="fas fa-chart-line"></i> 折线图
+                                                </button>
+                                                <button type="button" class="btn btn-outline-success" onclick="switchChart('assignee', 'bar')">
+                                                    <i class="fas fa-chart-bar"></i> 柱状图
+                                                </button>
+                                                <button type="button" class="btn btn-outline-success" onclick="switchChart('assignee', 'pie')">
+                                                    <i class="fas fa-chart-pie"></i> 饼状图
+                                                </button>
+                                            </div>
+                                            <div class="chart-container mt-3">
+                                                <canvas id="assigneeChart" width="400" height="300"></canvas>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -2497,6 +3213,151 @@
                 <button type="button" class="btn btn-primary" onclick="saveUserChanges()">
                     <i class="fas fa-save"></i>
                     保存更改
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 现代化确认删除Modal -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modern-modal">
+            <div class="modal-header confirm-delete-header">
+                <div class="confirm-delete-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h5 class="modal-title">确认删除</h5>
+            </div>
+            <div class="modal-body confirm-delete-body">
+                <div class="warning-animation">
+                    <div class="warning-icon">
+                        <i class="fas fa-user-times"></i>
+                    </div>
+                </div>
+                <p class="confirm-delete-message">确定要删除这个用户吗？</p>
+                <p class="warning-text">此操作不可撤销！</p>
+            </div>
+            <div class="modal-footer confirm-delete-footer">
+                <button type="button" class="btn-modern btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>取消
+                </button>
+                <button type="button" class="btn-modern btn-danger" id="confirmDeleteBtn">
+                    <i class="fas fa-trash me-2"></i>确认删除
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 现代化成功提示Modal -->
+<div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modern-modal">
+            <div class="modal-header success-header">
+                <div class="success-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h5 class="modal-title" id="successModalTitle">操作成功！</h5>
+            </div>
+            <div class="modal-body success-body">
+                <div class="success-animation">
+                    <div class="checkmark">
+                        <svg class="checkmark__svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                            <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none"/>
+                            <path class="checkmark__check" fill="none" d="m14.1 27.2l7.1 7.2 16.7-16.8"/>
+                        </svg>
+                    </div>
+                </div>
+                <p class="success-message" id="successModalMessage">操作已成功完成</p>
+            </div>
+            <div class="modal-footer success-footer">
+                <button type="button" class="btn-modern btn-primary" data-bs-dismiss="modal">
+                    <i class="fas fa-check me-2"></i>确定
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 现代化错误提示Modal -->
+<div class="modal fade" id="errorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modern-modal">
+            <div class="modal-header error-header">
+                <div class="error-icon">
+                    <i class="fas fa-exclamation-circle"></i>
+                </div>
+                <h5 class="modal-title">操作失败</h5>
+            </div>
+            <div class="modal-body error-body">
+                <div class="error-animation">
+                    <div class="error-icon-large">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                </div>
+                <p class="error-message" id="errorModalMessage">操作失败，请稍后重试</p>
+            </div>
+            <div class="modal-footer error-footer">
+                <button type="button" class="btn-modern btn-primary" data-bs-dismiss="modal">
+                    <i class="fas fa-check me-2"></i>确定
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 导出成功Modal -->
+<div class="modal fade" id="exportSuccessModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modern-modal">
+            <div class="modal-header success-header">
+                <div class="success-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h5 class="modal-title">导出成功！</h5>
+            </div>
+            <div class="modal-body success-body">
+                <div class="success-animation">
+                    <div class="checkmark">
+                        <svg class="checkmark__svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                            <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none"/>
+                            <path class="checkmark__check" fill="none" d="m14.1 27.2l7.1 7.2 16.7-16.8"/>
+                        </svg>
+                    </div>
+                </div>
+                <p class="success-message" id="exportSuccessMessage">Excel文件已成功生成并开始下载</p>
+            </div>
+            <div class="modal-footer success-footer">
+                <button type="button" class="btn-modern btn-primary" data-bs-dismiss="modal">
+                    <i class="fas fa-check me-2"></i>确定
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 导出失败Modal -->
+<div class="modal fade" id="exportErrorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modern-modal">
+            <div class="modal-header error-header">
+                <div class="error-icon">
+                    <i class="fas fa-exclamation-circle"></i>
+                </div>
+                <h5 class="modal-title">导出失败</h5>
+            </div>
+            <div class="modal-body error-body">
+                <div class="error-animation">
+                    <div class="error-icon-large">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                </div>
+                <p class="error-message" id="exportErrorMessage">导出失败，请稍后重试</p>
+            </div>
+            <div class="modal-footer error-footer">
+                <button type="button" class="btn-modern btn-primary" data-bs-dismiss="modal">
+                    <i class="fas fa-check me-2"></i>确定
                 </button>
             </div>
         </div>
@@ -2865,23 +3726,36 @@ async function saveUserChanges() {
             // 刷新页面
             location.reload();
         } else {
-            alert('更新失败：' + result.message);
+            document.getElementById('errorModalMessage').textContent = '更新失败：' + result.message;
+            const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+            errorModal.show();
         }
 
     } catch (error) {
         console.error('保存用户更改错误:', error);
-        alert('保存失败：' + error.message);
+        document.getElementById('errorModalMessage').textContent = '保存失败：' + error.message;
+        const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+        errorModal.show();
     }
 }
 
 // 删除用户
-async function deleteUser(userId) {
-    if (!confirm('确定要删除这个用户吗？此操作不可撤销！')) {
-        return;
-    }
+let currentDeleteUserId = null;
+
+function deleteUser(userId) {
+    currentDeleteUserId = userId;
+
+    // 显示确认删除Modal
+    const modal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+    modal.show();
+}
+
+// 确认删除用户
+async function confirmDeleteUser() {
+    if (!currentDeleteUserId) return;
 
     try {
-        const response = await fetch(`/admin/users/${userId}`, {
+        const response = await fetch(`/admin/users/${currentDeleteUserId}`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
@@ -2890,21 +3764,60 @@ async function deleteUser(userId) {
 
         const result = await response.json();
 
+        // 关闭确认Modal
+        const confirmModal = bootstrap.Modal.getInstance(document.getElementById('confirmDeleteModal'));
+        confirmModal.hide();
+
         if (result.success) {
-            // 刷新页面
-            location.reload();
+            // 显示成功Modal
+            document.getElementById('successModalTitle').textContent = '删除成功！';
+            document.getElementById('successModalMessage').textContent = '用户已成功删除';
+            const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+            successModal.show();
+
+            // 2秒后刷新页面
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
         } else {
-            alert('删除失败：' + result.message);
+            // 显示错误Modal
+            document.getElementById('errorModalMessage').textContent = '删除失败：' + result.message;
+            const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+            errorModal.show();
         }
 
     } catch (error) {
         console.error('删除用户错误:', error);
-        alert('删除失败：' + error.message);
+
+        // 关闭确认Modal
+        const confirmModal = bootstrap.Modal.getInstance(document.getElementById('confirmDeleteModal'));
+        if (confirmModal) confirmModal.hide();
+
+        // 显示错误Modal
+        document.getElementById('errorModalMessage').textContent = '删除失败：' + error.message;
+        const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+        errorModal.show();
     }
+
+    currentDeleteUserId = null;
 }
 
 function deleteBugAdmin(bugId) {
-    if (confirm('确定要删除这个问题吗？')) {
+    // 使用现有的确认删除Modal
+    currentDeleteUserId = null; // 清除用户删除状态
+
+    // 修改Modal内容为删除问题
+    document.querySelector('#confirmDeleteModal .modal-title').textContent = '确认删除问题';
+    document.querySelector('#confirmDeleteModal .confirm-delete-message').textContent = '确定要删除这个问题吗？';
+    document.querySelector('#confirmDeleteModal .warning-text').textContent = '此操作不可撤销！';
+
+    const modal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+    modal.show();
+
+    // 重新绑定确认按钮事件
+    document.getElementById('confirmDeleteBtn').onclick = function() {
+        modal.hide();
+
         fetch(`/bug/delete/${bugId}`, {
             method: 'POST',
             headers: {
@@ -2914,16 +3827,27 @@ function deleteBugAdmin(bugId) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                location.reload();
+                document.getElementById('successModalTitle').textContent = '删除成功！';
+                document.getElementById('successModalMessage').textContent = '问题已成功删除';
+                const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                successModal.show();
+
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
             } else {
-                alert('删除失败：' + data.message);
+                document.getElementById('errorModalMessage').textContent = '删除失败：' + data.message;
+                const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                errorModal.show();
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('删除失败，请重试');
+            document.getElementById('errorModalMessage').textContent = '删除失败，请重试';
+            const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+            errorModal.show();
         });
-    }
+    };
 }
 
 // 初始化
@@ -2954,6 +3878,12 @@ document.addEventListener('DOMContentLoaded', function() {
             dropdown.style.display = 'none';
         }
     });
+
+    // 绑定确认删除按钮事件
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+    if (confirmDeleteBtn) {
+        confirmDeleteBtn.addEventListener('click', confirmDeleteUser);
+    }
 });
 
 // 添加动画样式
@@ -3030,6 +3960,7 @@ async function loadNotificationConfig() {
             if (data.server) {
                 document.getElementById('enableServerNotifications').checked = data.server.enabled !== false;
                 document.getElementById('notificationRetention').value = data.server.retention_days || 30;
+                document.getElementById('enableAutoCleanup').checked = data.server.auto_cleanup_enabled !== false;
             }
 
             // 应用内通知
@@ -3075,6 +4006,9 @@ async function loadNotificationConfig() {
         // 同时加载用户通知偏好
         await loadUserNotificationPreferences();
 
+        // 加载清理统计信息
+        await loadCleanupStats();
+
     } catch (error) {
         console.error('加载通知配置错误:', error);
         console.log('使用默认配置');
@@ -3086,7 +4020,8 @@ async function saveNotificationConfig() {
         // 全局设置
         server: {
             enabled: document.getElementById('enableServerNotifications').checked,
-            retention_days: parseInt(document.getElementById('notificationRetention').value)
+            retention_days: parseInt(document.getElementById('notificationRetention').value),
+            auto_cleanup_enabled: document.getElementById('enableAutoCleanup').checked
         },
 
         // 应用内通知
@@ -3140,13 +4075,66 @@ async function saveNotificationConfig() {
         const result = await response.json();
 
         if (result.success) {
-            alert('通知配置已保存成功！');
+            return { success: true, message: '全局配置保存成功' };
         } else {
-            alert('保存失败：' + (result.message || '未知错误'));
+            return { success: false, message: '全局配置保存失败：' + (result.message || '未知错误') };
         }
     } catch (error) {
         console.error('保存通知配置错误:', error);
-        alert('保存失败：网络错误');
+        return { success: false, message: '全局配置保存失败：网络错误' };
+    }
+}
+
+// 新的统一保存函数
+async function saveAllNotificationConfig() {
+    console.log('开始保存所有通知配置...');
+
+    // 显示加载状态
+    const saveButton = document.querySelector('.config-actions button');
+    const originalText = saveButton.innerHTML;
+    saveButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>保存中...';
+    saveButton.disabled = true;
+
+    try {
+        // 1. 保存全局配置
+        console.log('保存全局配置...');
+        const globalResult = await saveNotificationConfig();
+
+        // 2. 保存所有用户偏好
+        console.log('保存用户偏好...');
+        const userResult = await saveAllUserPreferences();
+
+        // 3. 显示结果
+        if (globalResult.success && userResult.success) {
+            // 显示成功Modal
+            document.getElementById('successModalTitle').textContent = '保存成功！';
+            document.getElementById('successModalMessage').textContent = '全局配置和用户偏好已全部保存成功';
+            const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+            successModal.show();
+        } else {
+            // 显示错误信息
+            let errorMessage = '保存过程中出现问题：\n';
+            if (!globalResult.success) {
+                errorMessage += '• ' + globalResult.message + '\n';
+            }
+            if (!userResult.success) {
+                errorMessage += '• ' + userResult.message + '\n';
+            }
+
+            document.getElementById('errorModalMessage').textContent = errorMessage;
+            const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+            errorModal.show();
+        }
+
+    } catch (error) {
+        console.error('保存配置时发生错误:', error);
+        document.getElementById('errorModalMessage').textContent = '保存失败：' + error.message;
+        const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+        errorModal.show();
+    } finally {
+        // 恢复按钮状态
+        saveButton.innerHTML = originalText;
+        saveButton.disabled = false;
     }
 }
 
@@ -3168,13 +4156,20 @@ async function testNotification() {
         const result = await response.json();
 
         if (result.success) {
-            alert(`测试通知已发送！\n成功渠道：${result.successful_channels.join(', ')}\n失败渠道：${result.failed_channels.join(', ')}`);
+            document.getElementById('successModalTitle').textContent = '测试通知已发送！';
+            document.getElementById('successModalMessage').textContent = `成功渠道：${result.successful_channels.join(', ')}\n失败渠道：${result.failed_channels.join(', ')}`;
+            const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+            successModal.show();
         } else {
-            alert('测试通知发送失败：' + (result.message || '未知错误'));
+            document.getElementById('errorModalMessage').textContent = '测试通知发送失败：' + (result.message || '未知错误');
+            const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+            errorModal.show();
         }
     } catch (error) {
         console.error('测试通知错误:', error);
-        alert('测试通知发送失败：网络错误');
+        document.getElementById('errorModalMessage').textContent = '测试通知发送失败：网络错误';
+        const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+        errorModal.show();
     }
 }
 
@@ -3184,6 +4179,7 @@ function resetNotificationConfig() {
         // 全局设置
         document.getElementById('enableServerNotifications').checked = true;
         document.getElementById('notificationRetention').value = '30';
+        document.getElementById('enableAutoCleanup').checked = false;
 
         // 应用内通知
         document.getElementById('enableInAppNotifications').checked = true;
@@ -3343,13 +4339,13 @@ async function saveAllUserPreferences() {
         const result = await response.json();
 
         if (result.success) {
-            alert(`成功保存 ${result.updated_count} 个用户的通知偏好！`);
+            return { success: true, message: `成功保存 ${result.updated_count} 个用户的通知偏好` };
         } else {
-            alert('批量保存失败：' + (result.message || '未知错误'));
+            return { success: false, message: '批量保存失败：' + (result.message || '未知错误') };
         }
     } catch (error) {
         console.error('批量保存用户通知偏好错误:', error);
-        alert('批量保存失败：网络错误');
+        return { success: false, message: '批量保存失败：网络错误' };
     }
 }
 
@@ -3400,21 +4396,35 @@ function setDateRange(range) {
     const startDate = document.getElementById('startDate');
     const endDate = document.getElementById('endDate');
 
+    // 移除所有按钮的激活状态
+    const quickDateButtons = document.querySelectorAll('.quick-dates .btn');
+    quickDateButtons.forEach(btn => btn.classList.remove('active'));
+
+    // 设置当前点击按钮为激活状态
+    const currentButton = event.target.closest('button');
+    if (currentButton) {
+        currentButton.classList.add('active');
+    }
+
     // 设置结束日期为今天
     endDate.value = today.toISOString().split('T')[0];
 
     let startDateValue;
     switch(range) {
-        case 'today':
-            startDateValue = today;
-            break;
         case 'week':
+            // 本周：从本周一开始
             startDateValue = new Date(today);
-            startDateValue.setDate(today.getDate() - 7);
+            const dayOfWeek = today.getDay();
+            const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // 周日为0，需要特殊处理
+            startDateValue.setDate(today.getDate() - daysToMonday);
             break;
         case 'month':
-            startDateValue = new Date(today);
-            startDateValue.setMonth(today.getMonth() - 1);
+            // 本月：从本月1号开始
+            startDateValue = new Date(today.getFullYear(), today.getMonth(), 1);
+            break;
+        case 'year':
+            // 本年：从今年1月1号开始
+            startDateValue = new Date(today.getFullYear(), 0, 1);
             break;
         case 'all':
             startDate.value = '';
@@ -3467,6 +4477,8 @@ async function previewExport() {
 
         if (result.success) {
             displayPreview(result.data, result.fields);
+            // 同时加载图表数据
+            loadChartData();
         } else {
             alert('预览失败：' + (result.message || '未知错误'));
         }
@@ -3525,10 +4537,26 @@ async function exportData() {
             const contentDisposition = response.headers.get('Content-Disposition');
             let filename = exportConfig.filename || '问题列表报表';
             if (contentDisposition) {
-                const filenameMatch = contentDisposition.match(/filename="(.+)"/);
-                if (filenameMatch) {
-                    filename = filenameMatch[1];
+                // 优先解析UTF-8编码的文件名
+                const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/);
+                if (utf8Match) {
+                    try {
+                        filename = decodeURIComponent(utf8Match[1]);
+                    } catch (e) {
+                        console.warn('UTF-8文件名解码失败:', e);
+                    }
+                } else {
+                    // 兜底使用ASCII文件名
+                    const asciiMatch = contentDisposition.match(/filename="([^"]+)"/);
+                    if (asciiMatch) {
+                        filename = asciiMatch[1];
+                    }
                 }
+            }
+
+            // 确保文件名有扩展名
+            if (!filename.endsWith('.xlsx')) {
+                filename += '.xlsx';
             }
 
             // 下载文件
@@ -3542,14 +4570,24 @@ async function exportData() {
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
 
-            alert('导出成功！文件已开始下载。');
+            // 显示成功Modal
+            document.getElementById('exportSuccessMessage').textContent = `Excel文件 "${filename}" 已成功生成并开始下载`;
+            const successModal = new bootstrap.Modal(document.getElementById('exportSuccessModal'));
+            successModal.show();
         } else {
             const result = await response.json();
-            alert('导出失败：' + (result.message || '未知错误'));
+            // 显示错误Modal
+            document.getElementById('exportErrorMessage').textContent = '导出失败：' + (result.message || '未知错误');
+            const errorModal = new bootstrap.Modal(document.getElementById('exportErrorModal'));
+            errorModal.show();
         }
     } catch (error) {
         console.error('导出数据错误:', error);
-        alert('导出失败：网络错误');
+
+        // 显示错误Modal
+        document.getElementById('exportErrorMessage').textContent = '导出失败：网络错误';
+        const errorModal = new bootstrap.Modal(document.getElementById('exportErrorModal'));
+        errorModal.show();
     }
 }
 
@@ -3581,13 +4619,15 @@ function getExportConfig() {
         'fieldStatus': { key: 'status', label: '状态' },
         'fieldCreator': { key: 'creator', label: '创建人' },
         'fieldAssignee': { key: 'assignee', label: '分配给' },
-        'fieldTeam': { key: 'team', label: '团队' },
+        'fieldManager': { key: 'manager', label: '负责人' },
+        'fieldTeam': { key: 'team', label: '产品线' },
         'fieldCreateTime': { key: 'create_time', label: '创建时间' },
-        'fieldUpdateTime': { key: 'update_time', label: '更新时间' },
         'fieldResolveTime': { key: 'resolve_time', label: '解决时间' },
-        'fieldPriority': { key: 'priority', label: '优先级' },
-        'fieldCategory': { key: 'category', label: '分类' },
         'fieldAttachments': { key: 'attachments', label: '附件数量' }
+        // 优先级和分类暂未设计，先注释掉
+        // 'fieldUpdateTime': { key: 'update_time', label: '更新时间' },
+        // 'fieldPriority': { key: 'priority', label: '优先级' },
+        // 'fieldCategory': { key: 'category', label: '分类' }
     };
 
     Object.keys(fieldMapping).forEach(fieldId => {
@@ -3610,84 +4650,418 @@ function getExportConfig() {
     };
 }
 
-function saveExportTemplate() {
-    const config = getExportConfig();
-    const templateName = prompt('请输入模板名称：');
+// 清理管理相关函数
+async function loadCleanupStats() {
+    console.log('加载清理统计信息...');
 
-    if (templateName) {
-        const templates = JSON.parse(localStorage.getItem('exportTemplates') || '{}');
-        templates[templateName] = config;
-        localStorage.setItem('exportTemplates', JSON.stringify(templates));
-        alert(`模板 "${templateName}" 已保存！`);
+    try {
+        const response = await fetch('/admin/notifications/cleanup/stats');
+        const result = await response.json();
+
+        if (result.success) {
+            const stats = result.data;
+
+            // 更新统计显示
+            document.getElementById('totalNotifications').textContent = stats.total_notifications || 0;
+            document.getElementById('userCount').textContent = stats.user_count || 0;
+            document.getElementById('retentionDays').textContent = stats.retention_days || 30;
+            document.getElementById('maxPerUser').textContent = stats.max_per_user || 100;
+            document.getElementById('expiredCount').textContent = stats.expired_count || 0;
+            document.getElementById('excessCount').textContent = stats.excess_count || 0;
+
+            if (stats.oldest_notification) {
+                const oldestDate = new Date(stats.oldest_notification);
+                document.getElementById('oldestNotification').textContent =
+                    `最旧通知: ${oldestDate.toLocaleDateString()} ${oldestDate.toLocaleTimeString()}`;
+            } else {
+                document.getElementById('oldestNotification').textContent = '最旧通知: 无通知记录';
+            }
+
+            console.log('清理统计信息加载成功');
+        } else {
+            console.warn('加载清理统计失败:', result.message);
+        }
+
+    } catch (error) {
+        console.error('加载清理统计错误:', error);
     }
 }
 
-function loadExportTemplate() {
-    const templates = JSON.parse(localStorage.getItem('exportTemplates') || '{}');
-    const templateNames = Object.keys(templates);
+async function cleanupNotifications(type) {
+    const typeNames = {
+        'expired': '过期通知',
+        'excess': '超量通知',
+        'all': '所有通知'
+    };
 
-    if (templateNames.length === 0) {
-        alert('没有保存的模板！');
+    const typeName = typeNames[type] || '通知';
+
+    if (!confirm(`确定要清理${typeName}吗？此操作不可撤销。`)) {
         return;
     }
 
-    const templateName = prompt('请选择要加载的模板：\n' + templateNames.map((name, index) => `${index + 1}. ${name}`).join('\n'));
+    // 找到对应的按钮并显示加载状态
+    const buttons = document.querySelectorAll('.cleanup-action-card button');
+    let targetButton = null;
 
-    if (templateName && templates[templateName]) {
-        applyExportTemplate(templates[templateName]);
-        alert(`模板 "${templateName}" 已加载！`);
-    }
-}
-
-function applyExportTemplate(config) {
-    // 应用筛选条件
-    if (config.filters.status) {
-        document.getElementById('filterByStatus').checked = true;
-        document.getElementById('statusFilters').style.display = 'block';
-
-        // 重置所有状态选择
-        document.getElementById('statusPending').checked = config.filters.status.includes('待处理');
-        document.getElementById('statusAssigned').checked = config.filters.status.includes('已分配');
-        document.getElementById('statusInProgress').checked = config.filters.status.includes('处理中');
-        document.getElementById('statusResolved').checked = config.filters.status.includes('已解决');
-        document.getElementById('statusCompleted').checked = config.filters.status.includes('已完成');
-    }
-
-    if (config.filters.startDate) document.getElementById('startDate').value = config.filters.startDate;
-    if (config.filters.endDate) document.getElementById('endDate').value = config.filters.endDate;
-
-    // 应用字段选择
-    selectNoneFields();
-    config.fields.forEach(field => {
-        const fieldId = Object.keys({
-            'id': 'fieldId',
-            'title': 'fieldTitle',
-            'description': 'fieldDescription',
-            'status': 'fieldStatus',
-            'creator': 'fieldCreator',
-            'assignee': 'fieldAssignee',
-            'team': 'fieldTeam',
-            'create_time': 'fieldCreateTime',
-            'update_time': 'fieldUpdateTime',
-            'resolve_time': 'fieldResolveTime',
-            'priority': 'fieldPriority',
-            'category': 'fieldCategory',
-            'attachments': 'fieldAttachments'
-        }).find(key => key === field.key);
-
-        if (fieldId) {
-            const checkbox = document.getElementById(fieldId);
-            if (checkbox) checkbox.checked = true;
+    buttons.forEach(btn => {
+        if ((type === 'expired' && btn.textContent.includes('清理过期')) ||
+            (type === 'excess' && btn.textContent.includes('清理超量')) ||
+            (type === 'all' && btn.textContent.includes('全面清理'))) {
+            targetButton = btn;
         }
     });
 
-    // 应用导出格式
-    const formatRadio = document.querySelector(`input[name="exportFormat"][value="${config.format}"]`);
-    if (formatRadio) formatRadio.checked = true;
+    if (targetButton) {
+        const originalText = targetButton.innerHTML;
+        targetButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 清理中...';
+        targetButton.disabled = true;
+    }
 
-    // 应用文件名
-    if (config.filename) document.getElementById('exportFileName').value = config.filename;
+    try {
+        const response = await fetch('/admin/notifications/cleanup', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ type: type })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // 显示成功Modal
+            document.getElementById('successModalTitle').textContent = '清理完成！';
+            document.getElementById('successModalMessage').textContent = result.message;
+            const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+            successModal.show();
+
+            // 重新加载统计信息
+            await loadCleanupStats();
+
+        } else {
+            // 显示错误Modal
+            document.getElementById('errorModalMessage').textContent = '清理失败：' + result.message;
+            const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+            errorModal.show();
+        }
+
+    } catch (error) {
+        console.error('清理通知错误:', error);
+        document.getElementById('errorModalMessage').textContent = '清理失败：网络错误';
+        const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+        errorModal.show();
+    } finally {
+        // 恢复按钮状态
+        if (targetButton) {
+            targetButton.innerHTML = targetButton.dataset.originalText ||
+                (type === 'expired' ? '<i class="fas fa-trash-alt"></i> 清理过期' :
+                 type === 'excess' ? '<i class="fas fa-compress-alt"></i> 清理超量' :
+                 '<i class="fas fa-magic"></i> 全面清理');
+            targetButton.disabled = false;
+        }
+    }
 }
+
+// 图表相关变量
+let creatorChart = null;
+let assigneeChart = null;
+let chartData = null;
+
+// 图表切换函数
+function switchChart(type, chartType) {
+    if (!chartData) return;
+
+    // 更新按钮状态
+    const buttons = document.querySelectorAll(`button[onclick*="${type}"]`);
+    buttons.forEach(btn => btn.classList.remove('active'));
+
+    // 找到当前点击的按钮并设置为活动状态
+    const currentButton = document.querySelector(`button[onclick="switchChart('${type}', '${chartType}')"]`);
+    if (currentButton) {
+        currentButton.classList.add('active');
+    }
+
+    // 获取对应的图表实例和数据
+    const chart = type === 'creator' ? creatorChart : assigneeChart;
+    const data = type === 'creator' ? chartData.creator : chartData.assignee;
+
+    if (chart) {
+        chart.destroy();
+    }
+
+    // 创建新图表
+    if (type === 'creator') {
+        creatorChart = createChart('creatorChart', data, chartType, '已完成需求数量（提交人）');
+    } else {
+        assigneeChart = createChart('assigneeChart', data, chartType, '已完成需求数量（处理人）');
+    }
+}
+
+// 创建图表函数
+function createChart(canvasId, data, type, label) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+
+    const colors = [
+        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+        '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0', '#FF6384'
+    ];
+
+    let config = {
+        type: type,
+        data: {
+            labels: data.labels,
+            datasets: [{
+                label: label,
+                data: data.values,
+                backgroundColor: type === 'pie' ? colors.slice(0, data.labels.length) : 'rgba(54, 162, 235, 0.6)',
+                borderColor: type === 'pie' ? colors.slice(0, data.labels.length) : 'rgba(54, 162, 235, 1)',
+                borderWidth: 2,
+                fill: type === 'line' ? false : true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: type === 'pie',
+                    position: 'right'
+                },
+                title: {
+                    display: true,
+                    text: label
+                }
+            },
+            scales: type === 'pie' ? {} : {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    },
+                    grid: {
+                        color: '#f0f0f0' // 设置网格线颜色为浅灰色
+                    }
+                },
+                x: {
+                    grid: {
+                        color: '#f0f0f0' // 设置网格线颜色为浅灰色
+                    }
+                }
+            },
+            layout: {
+                padding: 10 // 添加一些内边距
+            }
+        }
+    };
+
+    return new Chart(ctx, config);
+}
+
+// 加载图表数据
+async function loadChartData() {
+    try {
+        const exportConfig = getExportConfig();
+
+        const response = await fetch('/admin/reports/chart-data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(exportConfig)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            chartData = result.data;
+
+            // 创建初始图表（折线图）
+            creatorChart = createChart('creatorChart', chartData.creator, 'line', '已完成需求数量（提交人）');
+            assigneeChart = createChart('assigneeChart', chartData.assignee, 'line', '已完成需求数量（处理人）');
+
+            // 显示图表区域
+            document.getElementById('chartsSection').style.display = 'block';
+            document.getElementById('chartsSection').scrollIntoView({ behavior: 'smooth' });
+        } else {
+            console.error('加载图表数据失败:', result.message);
+        }
+    } catch (error) {
+        console.error('加载图表数据错误:', error);
+    }
+}
+
+// 导出图表为图片
+function exportChart(type) {
+    try {
+        const chart = type === 'creator' ? creatorChart : assigneeChart;
+        const chartTitle = type === 'creator' ? '提交人统计（已完成）' : '处理人统计（已完成）';
+
+        if (!chart) {
+            alert('图表尚未加载，请先预览数据');
+            return;
+        }
+
+        // 显示背景选择弹窗
+        showBackgroundChoiceModal(chart, chartTitle);
+
+    } catch (error) {
+        console.error('导出图表失败:', error);
+        alert('导出图表失败，请重试');
+    }
+}
+
+// 显示背景选择弹窗
+function showBackgroundChoiceModal(chart, chartTitle) {
+    // 创建模态框HTML
+    const modalHtml = `
+        <div class="modal fade" id="exportBackgroundModal" tabindex="-1" aria-labelledby="exportBackgroundModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exportBackgroundModalLabel">
+                            <i class="fas fa-download me-2"></i>选择导出背景
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <p class="mb-4">请选择图表导出的背景样式：</p>
+                        <div class="row">
+                            <div class="col-6">
+                                <button type="button" class="btn btn-outline-primary w-100 h-100 py-4" onclick="downloadChart('${chart.canvas.id}', '${chartTitle}', true)">
+                                    <i class="fas fa-square text-white bg-primary p-2 rounded mb-2"></i><br>
+                                    <strong>白色背景</strong><br>
+                                    <small class="text-muted">适合打印和文档</small>
+                                </button>
+                            </div>
+                            <div class="col-6">
+                                <button type="button" class="btn btn-outline-secondary w-100 h-100 py-4" onclick="downloadChart('${chart.canvas.id}', '${chartTitle}', false)">
+                                    <i class="fas fa-square-full text-secondary mb-2" style="background: linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%); background-size: 8px 8px; background-position: 0 0, 0 4px, 4px -4px, -4px 0px;"></i><br>
+                                    <strong>透明背景</strong><br>
+                                    <small class="text-muted">适合网页和设计</small>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // 移除已存在的模态框
+    const existingModal = document.getElementById('exportBackgroundModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    // 添加模态框到页面
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // 显示模态框
+    const modal = new bootstrap.Modal(document.getElementById('exportBackgroundModal'));
+    modal.show();
+
+    // 模态框关闭后移除DOM元素
+    document.getElementById('exportBackgroundModal').addEventListener('hidden.bs.modal', function () {
+        this.remove();
+    });
+}
+
+// 下载图表
+function downloadChart(canvasId, chartTitle, withWhiteBackground) {
+    try {
+        const originalCanvas = document.getElementById(canvasId);
+
+        // 获取当前时间作为文件名的一部分
+        const now = new Date();
+        const timestamp = now.getFullYear() +
+                         String(now.getMonth() + 1).padStart(2, '0') +
+                         String(now.getDate()).padStart(2, '0') + '_' +
+                         String(now.getHours()).padStart(2, '0') +
+                         String(now.getMinutes()).padStart(2, '0') +
+                         String(now.getSeconds()).padStart(2, '0');
+
+        // 生成文件名
+        const backgroundType = withWhiteBackground ? '白底' : '透明';
+        const filename = `${chartTitle}_${backgroundType}_${timestamp}.png`;
+
+        // 创建一个新的Canvas
+        const newCanvas = document.createElement('canvas');
+        const newCtx = newCanvas.getContext('2d');
+
+        // 设置新Canvas的尺寸与原Canvas相同
+        newCanvas.width = originalCanvas.width;
+        newCanvas.height = originalCanvas.height;
+
+        let url;
+
+        if (withWhiteBackground) {
+            // 填充白色背景
+            newCtx.fillStyle = '#FFFFFF';
+            newCtx.fillRect(0, 0, newCanvas.width, newCanvas.height);
+
+            // 将原图表绘制到新Canvas上
+            newCtx.drawImage(originalCanvas, 0, 0);
+
+            // 将新Canvas转换为图片
+            url = newCanvas.toDataURL('image/png');
+        } else {
+            // 对于透明背景，不填充任何背景色，直接绘制图表
+            // 这样背景就是透明的
+            newCtx.drawImage(originalCanvas, 0, 0);
+            url = newCanvas.toDataURL('image/png');
+        }
+
+        // 创建下载链接
+        const link = document.createElement('a');
+        link.download = filename;
+        link.href = url;
+
+        // 触发下载
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // 关闭模态框
+        const modal = bootstrap.Modal.getInstance(document.getElementById('exportBackgroundModal'));
+        if (modal) {
+            modal.hide();
+        }
+
+        // 显示成功提示
+        showSuccessMessage(`图表已导出为 ${filename}`);
+
+    } catch (error) {
+        console.error('下载图表失败:', error);
+        alert('下载图表失败，请重试');
+    }
+}
+
+// 显示成功消息
+function showSuccessMessage(message) {
+    // 创建提示元素
+    const toast = document.createElement('div');
+    toast.className = 'alert alert-success alert-dismissible fade show position-fixed';
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    toast.innerHTML = `
+        <i class="fas fa-check-circle me-2"></i>${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    // 添加到页面
+    document.body.appendChild(toast);
+
+    // 3秒后自动移除
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+        }
+    }, 3000);
+}
+
 </script>
+
+<!-- Chart.js 库 -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 {% endblock %}

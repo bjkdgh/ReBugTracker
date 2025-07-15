@@ -6,3 +6,7 @@ gunicorn==21.2.0
 
 # 通知系统依赖
 requests==2.32.4
+
+# 报表导出依赖
+openpyxl==3.1.2
+reportlab==4.0.4

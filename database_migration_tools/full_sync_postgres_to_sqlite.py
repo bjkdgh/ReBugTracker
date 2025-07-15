@@ -33,8 +33,8 @@ def recreate_sqlite_tables(conn):
     
     print("🔄 同步PostgreSQL表结构到SQLite...")
     
-    # 删除现有表
-    tables_to_drop = ['notifications', 'user_notification_preferences', 'system_config', 'bugs', 'users']
+    # 删除现有表（按依赖关系顺序）
+    tables_to_drop = ['notifications', 'user_notification_preferences', 'system_config', 'bug_images', 'bugs', 'users']
     
     for table in tables_to_drop:
         try:
@@ -76,7 +76,18 @@ def recreate_sqlite_tables(conn):
             image_path TEXT
         )
     ''')
-    
+
+    # 创建bug_images表
+    cursor.execute('''
+        CREATE TABLE bug_images (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            bug_id INTEGER NOT NULL,
+            image_path TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (bug_id) REFERENCES bugs(id)
+        )
+    ''')
+
     # 创建system_config表
     cursor.execute('''
         CREATE TABLE system_config (
@@ -166,18 +177,29 @@ def sync_all_data(pg_cursor, sqlite_conn):
     )
     total_records += count
     
-    # 同步bugs表
+    # 同步bugs表（保持原始ID）
     count = sync_table_data(
         pg_cursor, sqlite_conn, "bugs",
         "SELECT * FROM bugs ORDER BY id",
-        '''INSERT INTO bugs 
-           (title, description, status, assigned_to, created_by, project,
+        '''INSERT INTO bugs
+           (id, title, description, status, assigned_to, created_by, project,
             created_at, resolved_at, resolution, image_path)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]  # 跳过id字段
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]  # 包含id字段
     )
     total_records += count
-    
+
+    # 同步bug_images表（保持原始ID）
+    count = sync_table_data(
+        pg_cursor, sqlite_conn, "bug_images",
+        "SELECT * FROM bug_images ORDER BY id",
+        '''INSERT INTO bug_images
+           (id, bug_id, image_path, created_at)
+           VALUES (?, ?, ?, ?)''',
+        [0, 1, 2, 3]  # 包含id字段
+    )
+    total_records += count
+
     # 同步system_config表
     count = sync_table_data(
         pg_cursor, sqlite_conn, "system_config",
@@ -219,7 +241,7 @@ def verify_sync_result(sqlite_conn):
     print("\n📊 验证同步结果:")
     cursor = sqlite_conn.cursor()
     
-    tables = ['users', 'bugs', 'system_config', 'user_notification_preferences', 'notifications']
+    tables = ['users', 'bugs', 'bug_images', 'system_config', 'user_notification_preferences', 'notifications']
     for table in tables:
         cursor.execute(f"SELECT COUNT(*) FROM {table}")
         count = cursor.fetchone()[0]

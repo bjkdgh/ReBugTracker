@@ -897,32 +897,41 @@
             </div>
 
             <!-- 附件 -->
-            {% if bug.image_path or bug.attachments %}
+            {% if images %}
             <div class="content-card">
                 <div class="section-title">
                     <i class="fas fa-paperclip"></i>
-                    附件
+                    附件 ({{ images|length }} 张图片)
                 </div>
-                <div class="attachment-grid">
-                    {% if bug.image_path %}
-                    <div class="attachment-item">
-                        <img src="{{ bug.image_path }}" alt="问题截图">
-                    </div>
-                    {% endif %}
-                    {% if bug.attachments %}
-                        {% for attachment in bug.attachments %}
-                        <div class="attachment-item">
-                            {% if attachment.type == 'image' %}
-                                <img src="{{ attachment.path }}" alt="附件图片">
-                            {% else %}
-                                <a href="{{ attachment.path }}" download>
-                                    <i class="fas fa-download"></i>
-                                    下载附件: {{ attachment.name }}
-                                </a>
-                            {% endif %}
+                <div class="attachment-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
+                    {% for image in images %}
+                    <div class="attachment-item" style="position: relative; border-radius: 8px; overflow: hidden; box-shadow: 0 3px 10px rgba(0,0,0,0.1);">
+                        <img src="{{ image.path }}" alt="问题截图"
+                             style="width: 100%; height: 150px; object-fit: cover; cursor: pointer; transition: transform 0.3s ease;"
+                             onclick="showImage('{{ image.path }}')">
+                        <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; padding: 5px; font-size: 12px; text-align: center;">
+                            图片 {{ loop.index }}
                         </div>
-                        {% endfor %}
-                    {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- 自定义图片查看器 -->
+                <div id="customImageViewer" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255,255,255,0.95); z-index: 9999; overflow: hidden;">
+                    <div style="position: absolute; top: 20px; right: 20px; z-index: 10000;">
+                        <button id="closeImageBtn" type="button" style="background-color: #dc3545; color: white; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 20px; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.3);">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div id="imageContainer" style="display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; padding: 20px; overflow: hidden;">
+                        <img id="viewerImage" src="" alt="问题截图" style="max-width: 95%; max-height: 90vh; object-fit: contain; cursor: grab; transition: transform 0.2s ease;">
+                    </div>
+                    <div style="position: absolute; bottom: 20px; left: 0; right: 0; text-align: center; color: #333; font-size: 14px;">
+                        <i class="fas fa-info-circle me-1"></i>点击图片、背景或按ESC键关闭 | 滚轮缩放 | 拖拽移动
+                    </div>
+                    <div id="zoomInfo" style="position: absolute; top: 70px; right: 20px; color: #333; background: rgba(240,240,240,0.8); padding: 8px 12px; border-radius: 4px; font-size: 14px; display: none;">
+                        缩放: <span id="zoomLevel">100%</span>
+                    </div>
                 </div>
             </div>
             {% endif %}
@@ -1201,6 +1210,145 @@
             });
         };
     }
+    // 自定义图片查看器
+    let currentScale = 1;
+    let isDragging = false;
+    let startX, startY, translateX = 0, translateY = 0;
+
+    function showImage(imageSrc) {
+        const viewer = document.getElementById('customImageViewer');
+        const image = document.getElementById('viewerImage');
+        const zoomInfo = document.getElementById('zoomInfo');
+
+        // 重置缩放和位置
+        currentScale = 1;
+        translateX = 0;
+        translateY = 0;
+        updateImageTransform();
+
+        image.src = imageSrc;
+        viewer.style.display = 'block';
+        zoomInfo.style.display = 'none';
+
+        // 禁止页面滚动
+        document.body.style.overflow = 'hidden';
+    }
+
+    function hideImage() {
+        const viewer = document.getElementById('customImageViewer');
+        viewer.style.display = 'none';
+
+        // 恢复页面滚动
+        document.body.style.overflow = 'auto';
+    }
+
+    function updateImageTransform() {
+        const image = document.getElementById('viewerImage');
+        const zoomLevel = document.getElementById('zoomLevel');
+
+        image.style.transform = `translate(${translateX}px, ${translateY}px) scale(${currentScale})`;
+        zoomLevel.textContent = `${Math.round(currentScale * 100)}%`;
+    }
+
+    function showZoomInfo() {
+        const zoomInfo = document.getElementById('zoomInfo');
+        zoomInfo.style.display = 'block';
+
+        // 3秒后隐藏缩放信息
+        clearTimeout(window.zoomInfoTimeout);
+        window.zoomInfoTimeout = setTimeout(() => {
+            zoomInfo.style.display = 'none';
+        }, 3000);
+    }
+
+    // 绑定事件
+    document.addEventListener('DOMContentLoaded', function() {
+        const viewer = document.getElementById('customImageViewer');
+        const closeBtn = document.getElementById('closeImageBtn');
+        const image = document.getElementById('viewerImage');
+        const container = document.getElementById('imageContainer');
+
+        // 点击关闭按钮
+        closeBtn.addEventListener('click', hideImage);
+
+        // 点击背景关闭
+        viewer.addEventListener('click', function(e) {
+            if (e.target === viewer || e.target === container) {
+                hideImage();
+            }
+        });
+
+        // 点击图片关闭 - 改为双击关闭，单击不关闭
+        image.addEventListener('dblclick', hideImage);
+
+        // 阻止单击图片事件冒泡，避免点击图片时关闭查看器
+        image.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+
+        // 滚轮缩放
+        container.addEventListener('wheel', function(e) {
+            e.preventDefault();
+
+            // 确定缩放方向和缩放步长
+            const delta = e.deltaY > 0 ? -0.1 : 0.1;
+
+            // 限制缩放范围
+            const newScale = Math.max(0.1, Math.min(5, currentScale + delta));
+
+            // 计算缩放前后的差值，用于调整位置
+            const scaleDiff = newScale - currentScale;
+
+            // 计算鼠标相对于图片的位置
+            const rect = image.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            // 根据鼠标位置调整图片位置，实现以鼠标为中心的缩放
+            translateX -= (mouseX * scaleDiff) / currentScale;
+            translateY -= (mouseY * scaleDiff) / currentScale;
+
+            // 更新缩放比例
+            currentScale = newScale;
+
+            // 更新图片变换
+            updateImageTransform();
+
+            // 显示缩放信息
+            showZoomInfo();
+        });
+
+        // 拖拽移动
+        image.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            isDragging = true;
+            startX = e.clientX - translateX;
+            startY = e.clientY - translateY;
+            image.style.cursor = 'grabbing';
+        });
+
+        document.addEventListener('mousemove', function(e) {
+            if (!isDragging) return;
+
+            translateX = e.clientX - startX;
+            translateY = e.clientY - startY;
+            updateImageTransform();
+        });
+
+        document.addEventListener('mouseup', function() {
+            if (isDragging) {
+                isDragging = false;
+                image.style.cursor = 'grab';
+            }
+        });
+
+        // ESC键关闭
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && viewer.style.display === 'block') {
+                hideImage();
+            }
+        });
+    });
     </script>
 </body>
 </html>

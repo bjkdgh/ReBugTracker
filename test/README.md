@@ -16,6 +16,7 @@
 - Gotify推送测试
 - 通知界面测试
 - 异步通知测试
+- 通知流转规则测试
 
 ### 🎨 用户界面测试 (`ui_tests/`)
 用户界面相关测试脚本
@@ -65,6 +66,11 @@ python test/email_tests/test_fixed_ssl_email.py
 python test/notification_tests/test_notification_system.py
 python test/notification_tests/simple_gotify_test.py
 
+# 完整通知流转规则测试（三种通知方式）
+python test_email_notification_real.py      # 邮件通知测试
+python test_gotify_notification_real.py     # Gotify推送测试
+python test_inapp_notification_real.py      # 应用内通知测试
+
 # 界面测试
 python test/ui_tests/test_beautiful_login.py
 python test/ui_tests/test_index_layout.py
@@ -113,6 +119,7 @@ python test/verification/verify_admin_changes.py
 - 邮件通知
 - Gotify通知
 - 通知配置
+- 通知流转规则验证
 
 ## 📋 测试环境要求
 
@@ -142,8 +149,71 @@ python test/verification/verify_admin_changes.py
 3. **邮件测试失败**：检查邮件服务器配置
 4. **界面测试异常**：确认页面元素是否存在
 
+## 🔔 通知流转规则完整测试
+
+### 📋 测试脚本说明
+项目根目录下有三个专门的通知测试脚本，用于验证完整的通知流转规则：
+
+#### 📧 `test_email_notification_real.py`
+**功能**: 测试邮件通知的实际发送
+- 验证SMTP配置和连接
+- 测试五个通知规则的邮件发送
+- 支持多种邮箱服务商（163、QQ等）
+- 验证邮件模板和优先级颜色
+
+#### 🔔 `test_gotify_notification_real.py`
+**功能**: 测试Gotify推送通知的实际发送
+- 验证Gotify服务器连接
+- 测试用户专属Token和全局Token
+- 所有推送使用优先级10（最高）
+- 支持个人Token回退到全局Token
+
+#### 📱 `test_inapp_notification_real.py`
+**功能**: 测试应用内通知的实际创建
+- 验证数据库通知表操作
+- 测试通知记录的创建和验证
+- 提供通知统计信息
+- 验证已读/未读状态
+
+### 🎯 测试的五个通知规则
+
+每个脚本都会测试以下完整的通知流转规则：
+
+1. **规则1**: gh(实施组) 创建问题 → 通知 zjn(负责人)
+2. **规则2**: zjn(负责人) 分配问题 → 通知 wbx(组内成员)
+3. **规则3**: wbx(组内成员) 更新状态 → 通知 gh(创建者) + wbx(分配者)
+4. **规则4**: wbx(组内成员) 解决问题 → 通知 gh(创建者) + zjn(负责人)
+5. **规则5**: gh(实施组) 确认闭环 → 通知 gh(创建者) + wbx(分配者) + zjn(负责人)
+
+### 📊 测试用户
+- **gh(郭浩)**: 实施组用户，问题创建者和闭环确认者
+- **zjn(张佳楠)**: 负责人，问题分配决策者
+- **wbx(王柏翔)**: 组内成员，问题处理执行者
+
+### 🚀 运行方法
+```bash
+# 激活虚拟环境
+.\.venv\Scripts\Activate.ps1
+
+# 分别测试三种通知方式
+python test_email_notification_real.py      # 邮件通知
+python test_gotify_notification_real.py     # Gotify推送
+python test_inapp_notification_real.py      # 应用内通知
+```
+
+### ✅ 预期结果
+- **邮件测试**: 9封邮件发送到3个不同邮箱
+- **Gotify测试**: 9条推送通知（取决于Token配置）
+- **应用内测试**: 9条通知记录写入数据库
+
+### 💡 测试价值
+- 验证通知系统的完整性和可靠性
+- 确保所有通知渠道正常工作
+- 验证通知流转规则的正确性
+- 提供真实的端到端测试
+
 ---
 
 **维护者**: ReBugTracker开发团队
 **最后更新**: 2025-07-14
-**版本**: 2.0（分类整理版）
+**版本**: 2.1（新增通知流转规则测试）
