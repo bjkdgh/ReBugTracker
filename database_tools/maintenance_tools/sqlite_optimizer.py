@@ -17,7 +17,7 @@ def optimize_sqlite_database():
         print("🔧 开始优化SQLite数据库...")
         
         # 连接数据库
-        db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'rebugtracker.db')
+        db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'rebugtracker.db')
         
         if not os.path.exists(db_path):
             print(f"❌ SQLite数据库文件不存在: {db_path}")

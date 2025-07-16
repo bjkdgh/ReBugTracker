@@ -12,14 +12,21 @@ def run_production_server():
     """使用Waitress运行生产环境服务器"""
     try:
         print("🚀 启动ReBugTracker生产环境服务器...")
-        
+
+        # 加载环境变量
+        try:
+            from dotenv import load_dotenv
+            load_dotenv()
+        except ImportError:
+            pass  # 如果没有python-dotenv，继续运行
+
         from waitress import serve
         from rebugtracker import app
         
         # 配置参数
         HOST = '0.0.0.0'  # 监听所有网络接口
-        PORT = 8000       # 生产环境端口
-        THREADS = 4       # 线程数
+        PORT = int(os.getenv('APP_PORT', 8000))  # 从环境变量读取端口，默认8000
+        THREADS = int(os.getenv('WAITRESS_THREADS', 4))  # 线程数
         
         print(f"📡 服务器配置:")
         print(f"   主机: {HOST}")

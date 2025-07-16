@@ -9,11 +9,16 @@ import os
 import sys
 import sqlite3
 
-# 添加项目根目录到Python路径
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# PostgreSQL配置
+POSTGRES_CONFIG = {
+    'dbname': 'postgres',
+    'user': 'postgres',
+    'password': '$RFV5tgb',
+    'host': '192.168.1.5',
+    'port': 5432
+}
 
 try:
-    from config import POSTGRES_CONFIG
     import psycopg2
     from psycopg2.extras import DictCursor
 except ImportError as e:
@@ -26,7 +31,7 @@ def test_sqlite_connection():
     
     try:
         # SQLite数据库路径
-        db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'rebugtracker.db')
+        db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'rebugtracker.db')
         
         if not os.path.exists(db_path):
             print(f"❌ SQLite数据库文件不存在: {db_path}")

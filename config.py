@@ -2,7 +2,7 @@
 import os
 
 # 数据库类型配置
-DB_TYPE = os.getenv('DB_TYPE', 'postgres')  # postgres/sqlite
+DB_TYPE = os.getenv('DB_TYPE', 'sqlite')  # postgres/sqlite
 
 # PostgreSQL配置
 POSTGRES_CONFIG = {

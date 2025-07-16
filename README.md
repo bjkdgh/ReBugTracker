@@ -19,15 +19,14 @@
 
 ReBugTracker 提供了丰富的工具集来支持开发、部署和维护：
 
-### 数据库工具 (`database_tools/`)
-- **sqlite_optimizer.py** - SQLite数据库性能优化
-- **comprehensive_db_check.py** - 数据库完整性检查
-- **create_notification_tables.py** - 通知表结构创建
-
-### 数据库迁移工具 (`database_migration_tools/`)
-- **sync_postgres_to_sqlite.py** - PostgreSQL到SQLite数据同步
-- **sync_sqlite_to_postgres_data.py** - SQLite到PostgreSQL数据同步
-- **verify_migration.py** - 迁移验证工具
+### 数据库工具集 (`database_tools/`)
+- **quick_start.bat** - Windows快速启动工具选择器
+- **tool_index.py** - 交互式工具选择器
+- **sync_status_checker.py** - 数据库同步状态检查
+- **comprehensive_db_check.py** - 综合数据库健康检查
+- **sync_tools/** - 数据库同步工具（PostgreSQL ↔ SQLite）
+- **check_tools/** - 数据库检查和验证工具
+- **maintenance_tools/** - 数据库维护和优化工具
 
 ### 部署工具 (`deployment_tools/`)
 - **run_waitress.py** - Waitress WSGI服务器启动脚本
@@ -88,13 +87,13 @@ ReBugTracker/
 │   └── rbt_title.ico       # 标题栏图标
 ├── uploads/                 # 文件上传目录
 ├── database_tools/          # 数据库工具集
-│   ├── README.md           # 工具说明文档
-│   ├── sqlite_optimizer.py # SQLite优化工具
-│   └── ...                 # 其他数据库工具
-├── database_migration_tools/ # 数据库迁移工具
-│   ├── README.md           # 迁移工具说明
-│   ├── sync_postgres_to_sqlite.py # PostgreSQL到SQLite同步
-│   └── ...                 # 其他迁移工具
+│   ├── README.md           # 完整使用指南
+│   ├── quick_start.bat     # Windows快速启动
+│   ├── tool_index.py       # 交互式工具选择器
+│   ├── sync_tools/         # 数据库同步工具
+│   ├── check_tools/        # 数据库检查工具
+│   ├── maintenance_tools/  # 数据库维护工具
+│   └── archive/            # 归档工具
 ├── deployment_tools/        # 部署工具
 │   ├── README.md           # 部署说明
 │   └── run_waitress.py     # Waitress服务器启动脚本
@@ -128,7 +127,7 @@ ReBugTracker/
 
 1. **克隆项目**
 ```bash
-git clone https://github.com/your-repo/ReBugTracker.git
+git clone https://github.com/bjkdgh/ReBugTracker.git
 cd ReBugTracker
 ```
 
@@ -436,12 +435,41 @@ CREATE TABLE bugs (
 );
 ```
 
-## 🚀 部署指南
+## 🚀 快速部署
 
-### 生产环境部署
+### 一键部署 (推荐)
 
-#### 1. 服务器要求
-- **操作系统**: Ubuntu 20.04+ / CentOS 8+ / Windows Server 2019+
+**Linux/macOS:**
+```bash
+chmod +x deploy.sh
+./deploy.sh
+```
+
+**Windows:**
+```cmd
+deploy.bat
+```
+
+**智能选择器:**
+```bash
+python deploy.py
+```
+
+### 部署特性
+- ✅ **交互式引导** - 全程图形化选择，无需手动配置
+- ✅ **多种部署方式** - Docker容器化 / 本地虚拟环境
+- ✅ **数据库选择** - PostgreSQL高性能 / SQLite轻量级
+- ✅ **环境隔离** - 完全不干扰主机环境
+- ✅ **跨平台支持** - Linux/macOS/Windows全支持
+
+### 详细部署指南
+请参考 [README_DEPLOYMENT.md](README_DEPLOYMENT.md) 获取完整的部署说明。
+
+---
+
+## 🏗️ 手动部署 (高级用户)
+
+### 服务器要求
 - **内存**: 4GB+ RAM
 - **存储**: 20GB+ 可用空间
 - **网络**: 稳定的网络连接

@@ -1,8 +1,9 @@
 flask==2.3.3
 Werkzeug==2.3.7
 psycopg2-binary==2.9.10
-waitress==2.1.2
+waitress==3.0.2
 gunicorn==21.2.0
+python-dotenv==1.1.1
 
 # 通知系统依赖
 requests==2.32.4
@@ -10,3 +11,9 @@ requests==2.32.4
 # 报表导出依赖
 openpyxl==3.1.2
 reportlab==4.0.4
+
+# 图像处理依赖
+pillow==11.3.0
+
+# 数据库ORM
+Flask-SQLAlchemy==3.1.1

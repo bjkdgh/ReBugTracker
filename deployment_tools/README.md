@@ -24,6 +24,43 @@ python deployment_tools/run_waitress.py
 - 🔧 **可配置**：支持自定义端口、线程数等参数
 - 📊 **监控**：提供基本的性能监控
 
+### 2. Windows服务管理 (NSSM)
+
+#### `install_windows_service.bat`
+**Windows服务安装工具** - 将ReBugTracker安装为Windows服务
+- 使用NSSM (Non-Sucking Service Manager)
+- 自动配置服务参数
+- 支持开机自启动
+- 完整的日志记录
+
+#### `uninstall_windows_service.bat`
+**Windows服务卸载工具** - 卸载ReBugTracker Windows服务
+- 安全停止和卸载服务
+- 保留日志和配置文件
+- 完整性验证
+
+#### `manage_windows_service.bat`
+**Windows服务管理工具** - 图形化服务管理界面
+- 启动/停止/重启服务
+- 查看服务状态和日志
+- 配置服务参数
+- 快速访问Web界面
+
+### 3. 数据库工具
+
+#### `postgresql-17.5-3-windows-x64.exe`
+**PostgreSQL数据库安装包** - Windows版PostgreSQL 17.5
+- 完整的PostgreSQL数据库系统
+- 适用于Windows x64系统
+- 包含管理工具和驱动程序
+
+#### `nssm-2.24.zip`
+**NSSM工具包** - Windows服务管理器
+- 将任何程序转换为Windows服务
+- 支持服务依赖和恢复
+- 完整的日志管理
+- 图形化配置界面
+
 ## 🚀 部署方案
 
 ### 1. 开发环境
@@ -38,13 +75,25 @@ python rebugtracker.py
 python deployment_tools/run_waitress.py
 ```
 
-### 3. Docker部署
+### 3. Windows服务部署
+```cmd
+# 安装为Windows服务（推荐生产环境）
+deployment_tools\install_windows_service.bat
+
+# 管理Windows服务
+deployment_tools\manage_windows_service.bat
+
+# 卸载Windows服务
+deployment_tools\uninstall_windows_service.bat
+```
+
+### 4. Docker部署
 ```bash
 # 使用Docker容器部署
 docker-compose up -d
 ```
 
-### 4. Nginx反向代理
+### 5. Nginx反向代理
 ```bash
 # 配置Nginx反向代理
 # 参考项目根目录的nginx配置文件
