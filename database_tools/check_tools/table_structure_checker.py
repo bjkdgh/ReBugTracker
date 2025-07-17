@@ -23,54 +23,61 @@ POSTGRES_CONFIG = {
 
 def get_postgres_table_info():
     """获取PostgreSQL表详细信息"""
+    conn = None
     try:
         conn = psycopg2.connect(**POSTGRES_CONFIG)
         cursor = conn.cursor(cursor_factory=DictCursor)
-        
+
         tables_info = {}
-        
+
         # 获取所有表名（排除备份表）
         cursor.execute("""
-            SELECT table_name 
-            FROM information_schema.tables 
-            WHERE table_schema = 'public' 
+            SELECT table_name
+            FROM information_schema.tables
+            WHERE table_schema = 'public'
             AND table_type = 'BASE TABLE'
             AND table_name NOT LIKE '%_bak'
             ORDER BY table_name
         """)
         tables = [row[0] for row in cursor.fetchall()]
-        
+
         for table in tables:
             # 获取表的列信息
             cursor.execute("""
-                SELECT 
-                    column_name, 
-                    data_type, 
+                SELECT
+                    column_name,
+                    data_type,
                     is_nullable,
                     column_default,
                     ordinal_position
-                FROM information_schema.columns 
-                WHERE table_name = %s 
+                FROM information_schema.columns
+                WHERE table_name = %s
                 ORDER BY ordinal_position
             """, (table,))
-            
+
             columns = cursor.fetchall()
             tables_info[table] = {
                 'columns': [(col[0], col[1], col[2], col[3]) for col in columns],
                 'column_count': len(columns)
             }
-        
-        conn.close()
+
         return tables_info
     except Exception as e:
         print(f"❌ 获取PostgreSQL表信息失败: {e}")
         return {}
+    finally:
+        if conn:
+            try:
+                conn.close()
+            except:
+                pass
 
 def get_sqlite_table_info():
     """获取SQLite表详细信息"""
+    conn = None
     try:
         # 确定数据库路径
-        db_path = '../rebugtracker.db'
+        db_path = 'rebugtracker.db'
 
         if not os.path.exists(db_path):
             print(f"❌ SQLite数据库文件不存在: {db_path}")
@@ -78,30 +85,35 @@ def get_sqlite_table_info():
 
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
-        
+
         tables_info = {}
-        
+
         # 获取所有表名
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")
         tables = [row[0] for row in cursor.fetchall()]
-        
+
         for table in tables:
             # 获取表的列信息
             cursor.execute(f'PRAGMA table_info({table})')
             columns = cursor.fetchall()
-            
+
             tables_info[table] = {
                 'columns': [(col[1], col[2], 'YES' if not col[3] else 'NO', col[4]) for col in columns],
                 'column_count': len(columns)
             }
-        
-        conn.close()
+
         return tables_info
     except Exception as e:
         print(f"❌ 获取SQLite表信息失败: {e}")
         import traceback
         traceback.print_exc()
         return {}
+    finally:
+        if conn:
+            try:
+                conn.close()
+            except:
+                pass
 
 def compare_table_structures():
     """对比表结构"""

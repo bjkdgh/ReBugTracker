@@ -212,8 +212,14 @@ def init_db():
     """初始化数据库结构
 
     功能：
-    - 根据数据库类型创建users表和bugs表
-    - 添加缺失的字段（如role_en, team_en, chinese_name）
+    - 根据数据库类型创建完整的数据库表结构
+    - 创建users表（包含通知相关字段）
+    - 创建bugs表（包含外键约束）
+    - 创建bug_images表（问题图片）
+    - 创建system_config表（系统配置）
+    - 创建user_notification_preferences表（用户通知偏好）
+    - 创建notifications表（通知记录）
+    - 添加缺失的字段（如role_en, team_en, chinese_name, email, phone等）
     - 更新现有数据的角色英文标识
     - 创建表达式索引以实现大小写不敏感的用户名唯一约束
     - 确保存在默认管理员账户
@@ -236,11 +242,15 @@ def init_db():
                 username TEXT UNIQUE NOT NULL,
                 password TEXT NOT NULL,
                 chinese_name TEXT,
-                role TEXT NOT NULL DEFAULT 'user',
+                role TEXT NOT NULL,
                 role_en TEXT,
                 team TEXT,
-                team_en TEXT
-            ) WITH (ENCODING = 'UTF8')
+                team_en TEXT,
+                email CHARACTER VARYING(255),
+                phone CHARACTER VARYING(20),
+                gotify_app_token CHARACTER VARYING(255),
+                gotify_user_id CHARACTER VARYING(255)
+            )
         ''')
     else:
         # SQLite建表语句
@@ -250,26 +260,36 @@ def init_db():
                 username TEXT UNIQUE NOT NULL,
                 password TEXT NOT NULL,
                 chinese_name TEXT,
-                role TEXT NOT NULL DEFAULT 'user',
-                role_en TEXT,
+                role TEXT DEFAULT 'zncy',
+                role_en TEXT DEFAULT 'zncy',
                 team TEXT,
-                team_en TEXT
+                team_en TEXT,
+                email TEXT,
+                phone TEXT,
+                gotify_app_token TEXT,
+                gotify_user_id TEXT
             )
         ''')
 
     # 添加新列(如果不存在) - 兼容SQLite和PostgreSQL
-    columns_to_add = ['role_en', 'team_en', 'chinese_name']
+    columns_to_add = ['role_en', 'team_en', 'chinese_name', 'email', 'phone', 'gotify_app_token', 'gotify_user_id']
     for col in columns_to_add:
         try:
             if DB_TYPE == 'postgres':
                 # 使用IF NOT EXISTS语法添加列（PostgreSQL特性）
-                c.execute(f'ALTER TABLE users ADD COLUMN IF NOT EXISTS {col} TEXT')
+                if col in ['role_en']:
+                    c.execute(f'ALTER TABLE users ADD COLUMN IF NOT EXISTS {col} TEXT DEFAULT \'zncy\'')
+                else:
+                    c.execute(f'ALTER TABLE users ADD COLUMN IF NOT EXISTS {col} TEXT')
             else:
                 # SQLite不支持ADD COLUMN IF NOT EXISTS，需要先检查列是否存在
                 c.execute(f"PRAGMA table_info(users)")
                 columns = [info[1] for info in c.fetchall()]
                 if col not in columns:
-                    c.execute(f'ALTER TABLE users ADD COLUMN {col} TEXT')
+                    if col in ['role_en']:
+                        c.execute(f'ALTER TABLE users ADD COLUMN {col} TEXT DEFAULT \'zncy\'')
+                    else:
+                        c.execute(f'ALTER TABLE users ADD COLUMN {col} TEXT')
         except Exception as e:
             print(f"添加列{col}时出错: {str(e)}")
             if DB_TYPE == 'postgres':
@@ -317,10 +337,17 @@ def init_db():
         # 如果不存在则创建默认管理员账户
         hashed_password = generate_password_hash('admin')
         query, params = adapt_sql('''
-            INSERT INTO users (username, password, role)
-            VALUES (%s, %s, '管理员')
+            INSERT INTO users (username, password, role, role_en)
+            VALUES (%s, %s, '管理员', 'gly')
         ''', ('admin', hashed_password))
         c.execute(query, params)
+
+    # 确保admin用户的role_en字段正确设置
+    query, params = adapt_sql('''
+        UPDATE users SET role_en = 'gly'
+        WHERE username = 'admin' AND (role_en IS NULL OR role_en = '')
+    ''', ())
+    c.execute(query, params)
 
     # PostgreSQL: 确保角色类型存在
     if DB_TYPE == 'postgres':
@@ -341,15 +368,15 @@ def init_db():
                 id SERIAL PRIMARY KEY,
                 title TEXT NOT NULL,
                 description TEXT,
-                status TEXT DEFAULT '待处理',  -- 待处理/已分配/处理中/已解决/已完成
-                assigned_to INTEGER,         -- 负责人ID
-                created_by INTEGER,          -- 提交人ID
-                project TEXT,               -- 所属项目名称
+                status TEXT DEFAULT '待处理',
+                assigned_to INTEGER,
+                created_by INTEGER,
+                project TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 resolved_at TIMESTAMP,
-                resolution TEXT,            -- 处理详情
-                image_path TEXT             -- 图片路径
-            ) WITH (ENCODING = 'UTF8')
+                resolution TEXT,
+                image_path TEXT
+            )
         ''')
     else:
         c.execute('''
@@ -357,14 +384,16 @@ def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 title TEXT NOT NULL,
                 description TEXT,
-                status TEXT DEFAULT '待处理',  -- 待处理/已分配/处理中/已解决/已完成
+                status TEXT DEFAULT 'open',
                 assigned_to INTEGER,         -- 负责人ID
                 created_by INTEGER,          -- 提交人ID
                 project TEXT,               -- 所属项目名称
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 resolved_at TIMESTAMP,
                 resolution TEXT,            -- 处理详情
-                image_path TEXT             -- 图片路径
+                image_path TEXT,            -- 图片路径
+                FOREIGN KEY (assigned_to) REFERENCES users (id),
+                FOREIGN KEY (created_by) REFERENCES users (id)
             )
         ''')
 
@@ -373,10 +402,9 @@ def init_db():
         c.execute('''
             CREATE TABLE IF NOT EXISTS bug_images (
                 id SERIAL PRIMARY KEY,
-                bug_id INTEGER NOT NULL,
+                bug_id INTEGER NOT NULL REFERENCES bugs (id) ON DELETE CASCADE,
                 image_path TEXT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (bug_id) REFERENCES bugs (id) ON DELETE CASCADE
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
     else:
@@ -387,6 +415,83 @@ def init_db():
                 image_path TEXT NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (bug_id) REFERENCES bugs (id) ON DELETE CASCADE
+            )
+        ''')
+
+    # 创建系统配置表
+    if DB_TYPE == 'postgres':
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS system_config (
+                config_key CHARACTER VARYING(50) PRIMARY KEY,
+                config_value TEXT NOT NULL,
+                description TEXT,
+                updated_by INTEGER,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+    else:
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS system_config (
+                config_key TEXT PRIMARY KEY,
+                config_value TEXT,
+                description TEXT,
+                updated_by INTEGER,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+
+    # 创建用户通知偏好表
+    if DB_TYPE == 'postgres':
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS user_notification_preferences (
+                user_id INTEGER PRIMARY KEY REFERENCES users (id) ON DELETE CASCADE,
+                email_enabled BOOLEAN DEFAULT TRUE,
+                inapp_enabled BOOLEAN DEFAULT TRUE,
+                gotify_enabled BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+    else:
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS user_notification_preferences (
+                user_id INTEGER PRIMARY KEY,
+                email_enabled BOOLEAN DEFAULT 1,
+                inapp_enabled BOOLEAN DEFAULT 1,
+                gotify_enabled BOOLEAN DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+            )
+        ''')
+
+    # 创建通知表
+    if DB_TYPE == 'postgres':
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS notifications (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                title CHARACTER VARYING(200) NOT NULL,
+                content TEXT NOT NULL,
+                read_status BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                read_at TIMESTAMP,
+                related_bug_id INTEGER
+            )
+        ''')
+    else:
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS notifications (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                title TEXT NOT NULL,
+                content TEXT,
+                read_status BOOLEAN DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                read_at TIMESTAMP,
+                related_bug_id INTEGER,
+                FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+                FOREIGN KEY (related_bug_id) REFERENCES bugs (id) ON DELETE SET NULL
             )
         ''')
 
@@ -3927,6 +4032,11 @@ if __name__ == '__main__':
 
     print("🚀 ReBugTracker 启动中...")
     check_port_available(HOST, PORT)
+
+    # 初始化数据库
+    print("🗄️ 初始化数据库...")
+    init_db()
+    print("✅ 数据库初始化完成")
 
     try:
         # 启动通知清理调度器

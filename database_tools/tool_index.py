@@ -64,22 +64,37 @@ def show_check_tools():
     print("   - 连接测试 + 表结构对比 + 数据统计")
     print("   💡 建议：日常检查、同步前诊断")
     print()
-    print("2. table_structure_checker.py - 专门表结构对比")
+    print("2. table_structure_checker.py - 表结构对比")
     print("   - 详细的字段级对比分析")
     print("   💡 建议：表结构问题深度诊断")
     print()
-    print("3. test_db_connection_new.py - 连接测试")
+    print("3. postgres_structure_inspector.py - PostgreSQL详细检查 🆕")
+    print("   - PostgreSQL表结构、外键、索引详细分析")
+    print("   💡 建议：PostgreSQL结构深度分析")
+    print()
+    print("4. sqlite_structure_inspector.py - SQLite详细检查 🆕")
+    print("   - SQLite表结构、外键、索引详细分析")
+    print("   💡 建议：SQLite结构深度分析")
+    print()
+    print("5. database_structure_validator.py - 结构验证工具 🆕")
+    print("   - 验证数据库结构是否符合规范")
+    print("   💡 建议：结构规范性检查")
+    print()
+    print("6. test_db_connection_new.py - 连接测试")
     print("   - 验证数据库连接")
     print("   💡 建议：连接问题排查")
     print()
     print("0. 返回主菜单")
 
-    choice = input("\n请选择工具 (0-3): ").strip()
+    choice = input("\n请选择工具 (0-6): ").strip()
 
     tools = {
         "1": "check_tools/sync_status_checker.py",
         "2": "check_tools/table_structure_checker.py",
-        "3": "check_tools/test_db_connection_new.py"
+        "3": "check_tools/postgres_structure_inspector.py",
+        "4": "check_tools/sqlite_structure_inspector.py",
+        "5": "check_tools/database_structure_validator.py",
+        "6": "check_tools/test_db_connection_new.py"
     }
     
     if choice in tools:

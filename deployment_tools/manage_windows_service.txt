@@ -1,57 +1,57 @@
 @echo off
-REM ReBugTracker Windows·þÎñ¹ÜÀí½Å±¾
-REM Ìá¹©Æô¶¯¡¢Í£Ö¹¡¢ÖØÆô¡¢×´Ì¬²é¿´µÈ¹¦ÄÜ
+REM ReBugTracker WindowsæœåŠ¡ç®¡ç†è„šæœ¬
+REM æä¾›å¯åŠ¨ã€åœæ­¢ã€é‡å¯ã€çŠ¶æ€æŸ¥çœ‹ç­‰åŠŸèƒ½
 
 setlocal enabledelayedexpansion
 
-REM ·þÎñÅäÖÃ
+REM æœåŠ¡é…ç½®
 set "SERVICE_NAME=ReBugTracker"
 set "PROJECT_DIR=%~dp0.."
 
 :main_menu
 cls
-echo ReBugTracker Windows·þÎñ¹ÜÀí¹¤¾ß
+echo ReBugTracker WindowsæœåŠ¡ç®¡ç†å·¥å…·
 echo ==========================================
 echo.
 
-REM ¼ì²é·þÎñÊÇ·ñ´æÔÚ
+REM æ£€æŸ¥æœåŠ¡æ˜¯å¦å­˜åœ¨
 sc query "%SERVICE_NAME%" >nul 2>&1
 if errorlevel 1 (
-    echo [´íÎó] ·þÎñ %SERVICE_NAME% Î´°²×°
+    echo [é”™è¯¯] æœåŠ¡ %SERVICE_NAME% æœªå®‰è£…
     echo.
-    echo ÇëÏÈÔËÐÐ°²×°½Å±¾: deployment_tools\install_windows_service.bat
+    echo è¯·å…ˆè¿è¡Œå®‰è£…è„šæœ¬: deployment_tools\install_windows_service.bat
     pause
     exit /b 1
 )
 
-REM »ñÈ¡·þÎñ×´Ì¬
+REM èŽ·å–æœåŠ¡çŠ¶æ€
 for /f "tokens=4" %%i in ('sc query "%SERVICE_NAME%" ^| findstr "STATE"') do set SERVICE_STATE=%%i
 
-echo µ±Ç°·þÎñ×´Ì¬:
+echo å½“å‰æœåŠ¡çŠ¶æ€:
 if "%SERVICE_STATE%"=="RUNNING" (
-    echo [ÔËÐÐÖÐ] ·þÎñÕýÔÚÔËÐÐ
-    echo ·ÃÎÊµØÖ·: http://localhost:8000
+    echo [è¿è¡Œä¸­] æœåŠ¡æ­£åœ¨è¿è¡Œ
+    echo è®¿é—®åœ°å€: http://localhost:8000
 ) else if "%SERVICE_STATE%"=="STOPPED" (
-    echo [ÒÑÍ£Ö¹] ·þÎñÒÑÍ£Ö¹
+    echo [å·²åœæ­¢] æœåŠ¡å·²åœæ­¢
 ) else (
-    echo [×´Ì¬] %SERVICE_STATE%
+    echo [çŠ¶æ€] %SERVICE_STATE%
 )
 echo.
 
-echo ¹ÜÀíÑ¡Ïî:
+echo ç®¡ç†é€‰é¡¹:
 echo ==========================================
-echo 1) Æô¶¯·þÎñ
-echo 2) Í£Ö¹·þÎñ  
-echo 3) ÖØÆô·þÎñ
-echo 4) ²é¿´·þÎñ×´Ì¬
-echo 5) ²é¿´ÈÕÖ¾ÎÄ¼þ
-echo 6) ·þÎñÅäÖÃ¹ÜÀí
-echo 7) Ð¶ÔØ·þÎñ
-echo 8) ´ò¿ªWeb½çÃæ
-echo 0) ÍË³ö
+echo 1) å¯åŠ¨æœåŠ¡
+echo 2) åœæ­¢æœåŠ¡  
+echo 3) é‡å¯æœåŠ¡
+echo 4) æŸ¥çœ‹æœåŠ¡çŠ¶æ€
+echo 5) æŸ¥çœ‹æ—¥å¿—æ–‡ä»¶
+echo 6) æœåŠ¡é…ç½®ç®¡ç†
+echo 7) å¸è½½æœåŠ¡
+echo 8) æ‰“å¼€Webç•Œé¢
+echo 0) é€€å‡º
 echo.
 
-set /p choice="ÇëÑ¡Ôñ²Ù×÷ (0-8): "
+set /p choice="è¯·é€‰æ‹©æ“ä½œ (0-8): "
 
 if "%choice%"=="1" goto start_service
 if "%choice%"=="2" goto stop_service
@@ -63,56 +63,56 @@ if "%choice%"=="7" goto uninstall_service
 if "%choice%"=="8" goto open_web
 if "%choice%"=="0" goto exit_script
 
-echo [´íÎó] ÎÞÐ§Ñ¡Ôñ£¬ÇëÊäÈë 0-8
+echo [é”™è¯¯] æ— æ•ˆé€‰æ‹©ï¼Œè¯·è¾“å…¥ 0-8
 pause
 goto main_menu
 
 :start_service
 echo.
-echo [ÐÅÏ¢] Æô¶¯·þÎñ...
+echo [ä¿¡æ¯] å¯åŠ¨æœåŠ¡...
 net start "%SERVICE_NAME%"
 if errorlevel 1 (
-    echo [´íÎó] ·þÎñÆô¶¯Ê§°Ü
-    echo Çë¼ì²éÈÕÖ¾ÎÄ¼þ»ñÈ¡ÏêÏ¸ÐÅÏ¢
+    echo [é”™è¯¯] æœåŠ¡å¯åŠ¨å¤±è´¥
+    echo è¯·æ£€æŸ¥æ—¥å¿—æ–‡ä»¶èŽ·å–è¯¦ç»†ä¿¡æ¯
 ) else (
-    echo [³É¹¦] ·þÎñÆô¶¯³É¹¦
-    echo ·ÃÎÊµØÖ·: http://localhost:8000
+    echo [æˆåŠŸ] æœåŠ¡å¯åŠ¨æˆåŠŸ
+    echo è®¿é—®åœ°å€: http://localhost:8000
 )
 pause
 goto main_menu
 
 :stop_service
 echo.
-echo [ÐÅÏ¢] Í£Ö¹·þÎñ...
+echo [ä¿¡æ¯] åœæ­¢æœåŠ¡...
 net stop "%SERVICE_NAME%"
 if errorlevel 1 (
-    echo [´íÎó] ·þÎñÍ£Ö¹Ê§°Ü
+    echo [é”™è¯¯] æœåŠ¡åœæ­¢å¤±è´¥
 ) else (
-    echo [³É¹¦] ·þÎñÒÑÍ£Ö¹
+    echo [æˆåŠŸ] æœåŠ¡å·²åœæ­¢
 )
 pause
 goto main_menu
 
 :restart_service
 echo.
-echo [ÐÅÏ¢] ÖØÆô·þÎñ...
-echo ÕýÔÚÍ£Ö¹·þÎñ...
+echo [ä¿¡æ¯] é‡å¯æœåŠ¡...
+echo æ­£åœ¨åœæ­¢æœåŠ¡...
 net stop "%SERVICE_NAME%" >nul 2>&1
 timeout /t 3 /nobreak >nul
-echo ÕýÔÚÆô¶¯·þÎñ...
+echo æ­£åœ¨å¯åŠ¨æœåŠ¡...
 net start "%SERVICE_NAME%"
 if errorlevel 1 (
-    echo [´íÎó] ·þÎñÖØÆôÊ§°Ü
+    echo [é”™è¯¯] æœåŠ¡é‡å¯å¤±è´¥
 ) else (
-    echo [³É¹¦] ·þÎñÖØÆô³É¹¦
-    echo ·ÃÎÊµØÖ·: http://localhost:8000
+    echo [æˆåŠŸ] æœåŠ¡é‡å¯æˆåŠŸ
+    echo è®¿é—®åœ°å€: http://localhost:8000
 )
 pause
 goto main_menu
 
 :show_status
 echo.
-echo ÏêÏ¸·þÎñ×´Ì¬:
+echo è¯¦ç»†æœåŠ¡çŠ¶æ€:
 echo ==========================================
 sc query "%SERVICE_NAME%"
 echo.
@@ -122,110 +122,110 @@ goto main_menu
 
 :view_logs
 echo.
-echo ÈÕÖ¾ÎÄ¼þ²é¿´:
+echo æ—¥å¿—æ–‡ä»¶æŸ¥çœ‹:
 echo ==========================================
-echo 1) ²é¿´±ê×¼Êä³öÈÕÖ¾
-echo 2) ²é¿´´íÎóÊä³öÈÕÖ¾
-echo 3) ´ò¿ªÈÕÖ¾Ä¿Â¼
-echo 4) ·µ»ØÖ÷²Ëµ¥
+echo 1) æŸ¥çœ‹æ ‡å‡†è¾“å‡ºæ—¥å¿—
+echo 2) æŸ¥çœ‹é”™è¯¯è¾“å‡ºæ—¥å¿—
+echo 3) æ‰“å¼€æ—¥å¿—ç›®å½•
+echo 4) è¿”å›žä¸»èœå•
 echo.
 
-set /p log_choice="ÇëÑ¡Ôñ (1-4): "
+set /p log_choice="è¯·é€‰æ‹© (1-4): "
 
 if "%log_choice%"=="1" (
     if exist "%PROJECT_DIR%\logs\service_stdout.log" (
         echo.
-        echo ±ê×¼Êä³öÈÕÖ¾ (×îºó20ÐÐ):
+        echo æ ‡å‡†è¾“å‡ºæ—¥å¿— (æœ€åŽ20è¡Œ):
         echo ==========================================
         powershell "Get-Content '%PROJECT_DIR%\logs\service_stdout.log' -Tail 20"
     ) else (
-        echo [¾¯¸æ] ±ê×¼Êä³öÈÕÖ¾ÎÄ¼þ²»´æÔÚ
+        echo [è­¦å‘Š] æ ‡å‡†è¾“å‡ºæ—¥å¿—æ–‡ä»¶ä¸å­˜åœ¨
     )
 ) else if "%log_choice%"=="2" (
     if exist "%PROJECT_DIR%\logs\service_stderr.log" (
         echo.
-        echo ´íÎóÊä³öÈÕÖ¾ (×îºó20ÐÐ):
+        echo é”™è¯¯è¾“å‡ºæ—¥å¿— (æœ€åŽ20è¡Œ):
         echo ==========================================
         powershell "Get-Content '%PROJECT_DIR%\logs\service_stderr.log' -Tail 20"
     ) else (
-        echo [¾¯¸æ] ´íÎóÊä³öÈÕÖ¾ÎÄ¼þ²»´æÔÚ
+        echo [è­¦å‘Š] é”™è¯¯è¾“å‡ºæ—¥å¿—æ–‡ä»¶ä¸å­˜åœ¨
     )
 ) else if "%log_choice%"=="3" (
     if exist "%PROJECT_DIR%\logs" (
         explorer "%PROJECT_DIR%\logs"
     ) else (
-        echo [¾¯¸æ] ÈÕÖ¾Ä¿Â¼²»´æÔÚ
+        echo [è­¦å‘Š] æ—¥å¿—ç›®å½•ä¸å­˜åœ¨
     )
 ) else if "%log_choice%"=="4" (
     goto main_menu
 ) else (
-    echo [´íÎó] ÎÞÐ§Ñ¡Ôñ
+    echo [é”™è¯¯] æ— æ•ˆé€‰æ‹©
 )
 pause
 goto main_menu
 
 :config_service
 echo.
-echo ·þÎñÅäÖÃ¹ÜÀí:
+echo æœåŠ¡é…ç½®ç®¡ç†:
 echo ==========================================
-echo 1) ²é¿´µ±Ç°ÅäÖÃ
-echo 2) ÉèÖÃÎª×Ô¶¯Æô¶¯
-echo 3) ÉèÖÃÎªÊÖ¶¯Æô¶¯
-echo 4) ·µ»ØÖ÷²Ëµ¥
+echo 1) æŸ¥çœ‹å½“å‰é…ç½®
+echo 2) è®¾ç½®ä¸ºè‡ªåŠ¨å¯åŠ¨
+echo 3) è®¾ç½®ä¸ºæ‰‹åŠ¨å¯åŠ¨
+echo 4) è¿”å›žä¸»èœå•
 echo.
 
-set /p config_choice="ÇëÑ¡Ôñ (1-4): "
+set /p config_choice="è¯·é€‰æ‹© (1-4): "
 
 if "%config_choice%"=="1" (
     echo.
     sc qc "%SERVICE_NAME%"
 ) else if "%config_choice%"=="2" (
     echo.
-    echo [ÐÅÏ¢] ÉèÖÃ·þÎñÎª×Ô¶¯Æô¶¯...
+    echo [ä¿¡æ¯] è®¾ç½®æœåŠ¡ä¸ºè‡ªåŠ¨å¯åŠ¨...
     sc config "%SERVICE_NAME%" start= auto
-    echo [³É¹¦] ·þÎñÒÑÉèÖÃÎª×Ô¶¯Æô¶¯
+    echo [æˆåŠŸ] æœåŠ¡å·²è®¾ç½®ä¸ºè‡ªåŠ¨å¯åŠ¨
 ) else if "%config_choice%"=="3" (
     echo.
-    echo [ÐÅÏ¢] ÉèÖÃ·þÎñÎªÊÖ¶¯Æô¶¯...
+    echo [ä¿¡æ¯] è®¾ç½®æœåŠ¡ä¸ºæ‰‹åŠ¨å¯åŠ¨...
     sc config "%SERVICE_NAME%" start= demand
-    echo [³É¹¦] ·þÎñÒÑÉèÖÃÎªÊÖ¶¯Æô¶¯
+    echo [æˆåŠŸ] æœåŠ¡å·²è®¾ç½®ä¸ºæ‰‹åŠ¨å¯åŠ¨
 ) else if "%config_choice%"=="4" (
     goto main_menu
 ) else (
-    echo [´íÎó] ÎÞÐ§Ñ¡Ôñ
+    echo [é”™è¯¯] æ— æ•ˆé€‰æ‹©
 )
 pause
 goto main_menu
 
 :uninstall_service
 echo.
-echo [¾¯¸æ] È·¶¨ÒªÐ¶ÔØ ReBugTracker Windows·þÎñÂð?
-set /p confirm="ÊäÈë 'yes' È·ÈÏÐ¶ÔØ: "
+echo [è­¦å‘Š] ç¡®å®šè¦å¸è½½ ReBugTracker WindowsæœåŠ¡å—?
+set /p confirm="è¾“å…¥ 'yes' ç¡®è®¤å¸è½½: "
 if /i "%confirm%"=="yes" (
     echo.
-    echo [ÐÅÏ¢] ÕýÔÚÐ¶ÔØ·þÎñ...
+    echo [ä¿¡æ¯] æ­£åœ¨å¸è½½æœåŠ¡...
     call "%PROJECT_DIR%\deployment_tools\uninstall_windows_service.bat"
     exit /b 0
 ) else (
-    echo Ð¶ÔØÒÑÈ¡Ïû
+    echo å¸è½½å·²å–æ¶ˆ
     pause
     goto main_menu
 )
 
 :open_web
 echo.
-echo [ÐÅÏ¢] ´ò¿ªWeb½çÃæ...
+echo [ä¿¡æ¯] æ‰“å¼€Webç•Œé¢...
 if "%SERVICE_STATE%"=="RUNNING" (
     start http://localhost:8000
-    echo [³É¹¦] ÒÑÔÚä¯ÀÀÆ÷ÖÐ´ò¿ª http://localhost:8000
+    echo [æˆåŠŸ] å·²åœ¨æµè§ˆå™¨ä¸­æ‰“å¼€ http://localhost:8000
 ) else (
-    echo [´íÎó] ·þÎñÎ´ÔËÐÐ£¬ÎÞ·¨·ÃÎÊWeb½çÃæ
-    echo ÇëÏÈÆô¶¯·þÎñ
+    echo [é”™è¯¯] æœåŠ¡æœªè¿è¡Œï¼Œæ— æ³•è®¿é—®Webç•Œé¢
+    echo è¯·å…ˆå¯åŠ¨æœåŠ¡
 )
 pause
 goto main_menu
 
 :exit_script
 echo.
-echo ¸ÐÐ»Ê¹ÓÃ ReBugTracker ·þÎñ¹ÜÀí¹¤¾ß£¡
+echo æ„Ÿè°¢ä½¿ç”¨ ReBugTracker æœåŠ¡ç®¡ç†å·¥å…·ï¼
 exit /b 0

@@ -1,173 +1,155 @@
 @echo off
-REM ReBugTracker WindowsæœåŠ¡å®‰è£…è„šæœ¬
-REM ä½¿ç”¨NSSMå°†ReBugTrackerå®‰è£…ä¸ºWindowsæœåŠ¡
+REM ReBugTracker Windows·şÎñ°²×°½Å±¾
+REM Ê¹ÓÃNSSM½«ReBugTracker°²×°ÎªWindows·şÎñ
 
 setlocal enabledelayedexpansion
 
-REM é¢œè‰²å®šä¹‰
-set "GREEN=[92m"
-set "YELLOW=[93m"
-set "RED=[91m"
-set "BLUE=[94m"
-set "NC=[0m"
+REM ¹Ì¶¨¹¤×÷Ä¿Â¼£¬½â¾ö¹ÜÀíÔ±È¨ÏŞÏÂÂ·¾¶ÎÊÌâ
+cd /d "%~dp0.."
 
-REM æœåŠ¡é…ç½®
+REM ·şÎñÅäÖÃ
 set "SERVICE_NAME=ReBugTracker"
 set "SERVICE_DISPLAY_NAME=ReBugTracker Bug Tracking System"
-set "SERVICE_DESCRIPTION=ä¼ä¸šçº§ç¼ºé™·è·Ÿè¸ªç³»ç»Ÿ"
-set "PROJECT_DIR=%~dp0.."
+set "SERVICE_DESCRIPTION=ÆóÒµ¼¶È±Ïİ¸ú×ÙÏµÍ³"
+set "PROJECT_DIR=%cd%"
 set "PYTHON_EXE=%PROJECT_DIR%\.venv\Scripts\python.exe"
 set "APP_SCRIPT=%PROJECT_DIR%\deployment_tools\run_waitress.py"
-set "NSSM_DIR=%PROJECT_DIR%\deployment_tools\nssm"
+set "NSSM_EXE=%PROJECT_DIR%\deployment_tools\nssm.exe"
 
-echo %BLUE%ğŸ”§ ReBugTracker WindowsæœåŠ¡å®‰è£…å·¥å…·%NC%
+echo ReBugTracker Windows·şÎñ°²×°¹¤¾ß
 echo ==========================================
 echo.
+echo ÏîÄ¿Ä¿Â¼: %PROJECT_DIR%
+echo NSSMÂ·¾¶: %NSSM_EXE%
+echo.
 
-REM æ£€æŸ¥ç®¡ç†å‘˜æƒé™
-net session >nul 2>&1
-if errorlevel 1 (
-    echo %RED%âŒ éœ€è¦ç®¡ç†å‘˜æƒé™æ‰èƒ½å®‰è£…WindowsæœåŠ¡%NC%
-    echo è¯·ä»¥ç®¡ç†å‘˜èº«ä»½è¿è¡Œæ­¤è„šæœ¬
+REM ¼ì²éNSSM¹¤¾ß
+if not exist "%NSSM_EXE%" (
+    echo [´íÎó] Î´ÕÒµ½NSSM¹¤¾ß: %NSSM_EXE%
+    echo ÇëÏÈÏÂÔØ²¢·ÅÖÃNSSM¹¤¾ßµ½deployment_toolsÄ¿Â¼
     pause
     exit /b 1
 )
 
-REM è§£å‹NSSMå·¥å…·
-if not exist "%NSSM_DIR%" (
-    echo %BLUE%ğŸ“¦ è§£å‹NSSMå·¥å…·...%NC%
-    if exist "%PROJECT_DIR%\deployment_tools\nssm-2.24.zip" (
-        powershell -Command "Expand-Archive -Path '%PROJECT_DIR%\deployment_tools\nssm-2.24.zip' -DestinationPath '%PROJECT_DIR%\deployment_tools\' -Force"
-        if exist "%PROJECT_DIR%\deployment_tools\nssm-2.24" (
-            move "%PROJECT_DIR%\deployment_tools\nssm-2.24" "%NSSM_DIR%"
-        )
-        echo %GREEN%âœ… NSSMå·¥å…·è§£å‹å®Œæˆ%NC%
-    ) else (
-        echo %RED%âŒ æœªæ‰¾åˆ°NSSMå®‰è£…åŒ…: nssm-2.24.zip%NC%
-        pause
-        exit /b 1
-    )
-)
-
-REM æ£€æŸ¥Pythonè™šæ‹Ÿç¯å¢ƒ
+REM ¼ì²éPythonĞéÄâ»·¾³
 if not exist "%PYTHON_EXE%" (
-    echo %RED%âŒ æœªæ‰¾åˆ°Pythonè™šæ‹Ÿç¯å¢ƒ: %PYTHON_EXE%%NC%
-    echo è¯·å…ˆè¿è¡Œéƒ¨ç½²è„šæœ¬åˆ›å»ºè™šæ‹Ÿç¯å¢ƒ
+    echo [´íÎó] Î´ÕÒµ½PythonĞéÄâ»·¾³: %PYTHON_EXE%
+    echo ÇëÏÈ´´½¨ĞéÄâ»·¾³
     pause
     exit /b 1
 )
 
-REM æ£€æŸ¥åº”ç”¨è„šæœ¬
+REM ¼ì²éÓ¦ÓÃ½Å±¾
 if not exist "%APP_SCRIPT%" (
-    echo %RED%âŒ æœªæ‰¾åˆ°åº”ç”¨è„šæœ¬: %APP_SCRIPT%%NC%
+    echo [´íÎó] Î´ÕÒµ½Ó¦ÓÃ½Å±¾: %APP_SCRIPT%
     pause
     exit /b 1
 )
 
-REM æ£€æŸ¥æœåŠ¡æ˜¯å¦å·²å­˜åœ¨
+REM ¼ì²é·şÎñÊÇ·ñÒÑ´æÔÚ
 sc query "%SERVICE_NAME%" >nul 2>&1
 if not errorlevel 1 (
-    echo %YELLOW%âš ï¸ æœåŠ¡ %SERVICE_NAME% å·²å­˜åœ¨%NC%
-    set /p overwrite="æ˜¯å¦è¦é‡æ–°å®‰è£…? (y/n): "
+    echo [¾¯¸æ] ·şÎñ %SERVICE_NAME% ÒÑ´æÔÚ
+    set /p overwrite="ÊÇ·ñÒªÖØĞÂ°²×°? (y/n): "
     if /i "!overwrite!" neq "y" (
-        echo å®‰è£…å·²å–æ¶ˆ
+        echo °²×°ÒÑÈ¡Ïû
         pause
         exit /b 0
     )
     
-    echo %BLUE%ğŸ›‘ åœæ­¢å¹¶åˆ é™¤ç°æœ‰æœåŠ¡...%NC%
+    echo [ĞÅÏ¢] Í£Ö¹²¢É¾³ıÏÖÓĞ·şÎñ...
     net stop "%SERVICE_NAME%" >nul 2>&1
-    "%NSSM_DIR%\win64\nssm.exe" remove "%SERVICE_NAME%" confirm >nul 2>&1
+    "%NSSM_EXE%" remove "%SERVICE_NAME%" confirm >nul 2>&1
     timeout /t 2 /nobreak >nul
 )
 
-echo %BLUE%ğŸš€ å®‰è£…ReBugTracker WindowsæœåŠ¡...%NC%
+echo [ĞÅÏ¢] °²×°ReBugTracker Windows·şÎñ...
 echo.
 
-REM å®‰è£…æœåŠ¡
-"%NSSM_DIR%\win64\nssm.exe" install "%SERVICE_NAME%" "%PYTHON_EXE%" "%APP_SCRIPT%"
+REM °²×°·şÎñ
+"%NSSM_EXE%" install "%SERVICE_NAME%" "%PYTHON_EXE%" "%APP_SCRIPT%"
 if errorlevel 1 (
-    echo %RED%âŒ æœåŠ¡å®‰è£…å¤±è´¥%NC%
+    echo [´íÎó] ·şÎñ°²×°Ê§°Ü
     pause
     exit /b 1
 )
 
-REM é…ç½®æœåŠ¡
-echo %BLUE%âš™ï¸ é…ç½®æœåŠ¡å‚æ•°...%NC%
+REM ÅäÖÃ·şÎñ
+echo [ĞÅÏ¢] ÅäÖÃ·şÎñ²ÎÊı...
 
-REM è®¾ç½®æœåŠ¡æ˜¾ç¤ºåç§°å’Œæè¿°
-"%NSSM_DIR%\win64\nssm.exe" set "%SERVICE_NAME%" DisplayName "%SERVICE_DISPLAY_NAME%"
-"%NSSM_DIR%\win64\nssm.exe" set "%SERVICE_NAME%" Description "%SERVICE_DESCRIPTION%"
+REM ÉèÖÃ·şÎñÏÔÊ¾Ãû³ÆºÍÃèÊö
+"%NSSM_EXE%" set "%SERVICE_NAME%" DisplayName "%SERVICE_DISPLAY_NAME%"
+"%NSSM_EXE%" set "%SERVICE_NAME%" Description "%SERVICE_DESCRIPTION%"
 
-REM è®¾ç½®å·¥ä½œç›®å½•
-"%NSSM_DIR%\win64\nssm.exe" set "%SERVICE_NAME%" AppDirectory "%PROJECT_DIR%"
+REM ÉèÖÃ¹¤×÷Ä¿Â¼
+"%NSSM_EXE%" set "%SERVICE_NAME%" AppDirectory "%PROJECT_DIR%"
 
-REM è®¾ç½®å¯åŠ¨ç±»å‹ä¸ºè‡ªåŠ¨
-"%NSSM_DIR%\win64\nssm.exe" set "%SERVICE_NAME%" Start SERVICE_AUTO_START
+REM ÉèÖÃÆô¶¯ÀàĞÍÎª×Ô¶¯
+"%NSSM_EXE%" set "%SERVICE_NAME%" Start SERVICE_AUTO_START
 
-REM è®¾ç½®æ—¥å¿—æ–‡ä»¶
+REM ÉèÖÃÈÕÖ¾ÎÄ¼ş
 if not exist "%PROJECT_DIR%\logs" mkdir "%PROJECT_DIR%\logs"
-"%NSSM_DIR%\win64\nssm.exe" set "%SERVICE_NAME%" AppStdout "%PROJECT_DIR%\logs\service_stdout.log"
-"%NSSM_DIR%\win64\nssm.exe" set "%SERVICE_NAME%" AppStderr "%PROJECT_DIR%\logs\service_stderr.log"
+"%NSSM_EXE%" set "%SERVICE_NAME%" AppStdout "%PROJECT_DIR%\logs\service_stdout.log"
+"%NSSM_EXE%" set "%SERVICE_NAME%" AppStderr "%PROJECT_DIR%\logs\service_stderr.log"
 
-REM è®¾ç½®æ—¥å¿—è½®è½¬
-"%NSSM_DIR%\win64\nssm.exe" set "%SERVICE_NAME%" AppStdoutCreationDisposition 4
-"%NSSM_DIR%\win64\nssm.exe" set "%SERVICE_NAME%" AppStderrCreationDisposition 4
+REM ÉèÖÃÈÕÖ¾ÂÖ×ª
+"%NSSM_EXE%" set "%SERVICE_NAME%" AppStdoutCreationDisposition 4
+"%NSSM_EXE%" set "%SERVICE_NAME%" AppStderrCreationDisposition 4
 
-REM è®¾ç½®æœåŠ¡ä¾èµ–ï¼ˆå¦‚æœä½¿ç”¨PostgreSQLï¼‰
+REM ÉèÖÃ·şÎñÒÀÀµ£¨Èç¹ûÊ¹ÓÃPostgreSQL£©
 if exist "%PROJECT_DIR%\.env" (
     findstr /i "DB_TYPE=postgres" "%PROJECT_DIR%\.env" >nul 2>&1
     if not errorlevel 1 (
-        echo %BLUE%ğŸ—„ï¸ æ£€æµ‹åˆ°PostgreSQLæ•°æ®åº“ï¼Œè®¾ç½®æœåŠ¡ä¾èµ–...%NC%
-        "%NSSM_DIR%\win64\nssm.exe" set "%SERVICE_NAME%" DependOnService postgresql-x64-17
+        echo [ĞÅÏ¢] ¼ì²âµ½PostgreSQLÊı¾İ¿â£¬ÉèÖÃ·şÎñÒÀÀµ...
+        "%NSSM_EXE%" set "%SERVICE_NAME%" DependOnService postgresql-x64-17
     )
 )
 
-REM è®¾ç½®æœåŠ¡æ¢å¤é€‰é¡¹
-"%NSSM_DIR%\win64\nssm.exe" set "%SERVICE_NAME%" AppThrottle 1500
-"%NSSM_DIR%\win64\nssm.exe" set "%SERVICE_NAME%" AppExit Default Restart
-"%NSSM_DIR%\win64\nssm.exe" set "%SERVICE_NAME%" AppRestartDelay 0
+REM ÉèÖÃ·şÎñ»Ö¸´Ñ¡Ïî
+"%NSSM_EXE%" set "%SERVICE_NAME%" AppThrottle 1500
+"%NSSM_EXE%" set "%SERVICE_NAME%" AppExit Default Restart
+"%NSSM_EXE%" set "%SERVICE_NAME%" AppRestartDelay 0
 
-echo %GREEN%âœ… æœåŠ¡å®‰è£…å®Œæˆ%NC%
+echo [³É¹¦] ·şÎñ°²×°Íê³É
 echo.
 
-REM å¯åŠ¨æœåŠ¡
-echo %BLUE%ğŸš€ å¯åŠ¨æœåŠ¡...%NC%
+REM Æô¶¯·şÎñ
+echo [ĞÅÏ¢] Æô¶¯·şÎñ...
 net start "%SERVICE_NAME%"
 if errorlevel 1 (
-    echo %RED%âŒ æœåŠ¡å¯åŠ¨å¤±è´¥%NC%
-    echo è¯·æ£€æŸ¥æ—¥å¿—æ–‡ä»¶: %PROJECT_DIR%\logs\service_stderr.log
+    echo [´íÎó] ·şÎñÆô¶¯Ê§°Ü
+    echo Çë¼ì²éÈÕÖ¾ÎÄ¼ş: %PROJECT_DIR%\logs\service_stderr.log
     pause
     exit /b 1
 )
 
-echo %GREEN%âœ… æœåŠ¡å¯åŠ¨æˆåŠŸ%NC%
+echo [³É¹¦] ·şÎñÆô¶¯³É¹¦
 echo.
 
-REM æ˜¾ç¤ºæœåŠ¡ä¿¡æ¯
-echo %BLUE%ğŸ“‹ æœåŠ¡ä¿¡æ¯:%NC%
+REM ÏÔÊ¾·şÎñĞÅÏ¢
+echo ·şÎñĞÅÏ¢:
 echo ==========================================
-echo æœåŠ¡åç§°: %SERVICE_NAME%
-echo æ˜¾ç¤ºåç§°: %SERVICE_DISPLAY_NAME%
-echo æœåŠ¡çŠ¶æ€: 
+echo ·şÎñÃû³Æ: %SERVICE_NAME%
+echo ÏÔÊ¾Ãû³Æ: %SERVICE_DISPLAY_NAME%
+echo ·şÎñ×´Ì¬: 
 sc query "%SERVICE_NAME%" | findstr "STATE"
 echo.
-echo è®¿é—®åœ°å€: http://localhost:8000
-echo ç®¡ç†å‘˜è´¦å·: admin
-echo ç®¡ç†å‘˜å¯†ç : admin
+echo ·ÃÎÊµØÖ·: http://localhost:8000
+echo ¹ÜÀíÔ±ÕËºÅ: admin
+echo ¹ÜÀíÔ±ÃÜÂë: admin
 echo.
-echo æ—¥å¿—æ–‡ä»¶:
-echo   æ ‡å‡†è¾“å‡º: %PROJECT_DIR%\logs\service_stdout.log
-echo   é”™è¯¯è¾“å‡º: %PROJECT_DIR%\logs\service_stderr.log
-echo.
-
-echo %BLUE%ğŸ”§ æœåŠ¡ç®¡ç†å‘½ä»¤:%NC%
-echo   å¯åŠ¨æœåŠ¡: net start %SERVICE_NAME%
-echo   åœæ­¢æœåŠ¡: net stop %SERVICE_NAME%
-echo   é‡å¯æœåŠ¡: net stop %SERVICE_NAME% ^&^& net start %SERVICE_NAME%
-echo   æŸ¥çœ‹çŠ¶æ€: sc query %SERVICE_NAME%
-echo   å¸è½½æœåŠ¡: deployment_tools\uninstall_windows_service.bat
+echo ÈÕÖ¾ÎÄ¼ş:
+echo   ±ê×¼Êä³ö: %PROJECT_DIR%\logs\service_stdout.log
+echo   ´íÎóÊä³ö: %PROJECT_DIR%\logs\service_stderr.log
 echo.
 
-echo %GREEN%ğŸ‰ ReBugTracker WindowsæœåŠ¡å®‰è£…å®Œæˆï¼%NC%
+echo ·şÎñ¹ÜÀíÃüÁî:
+echo   Æô¶¯·şÎñ: net start %SERVICE_NAME%
+echo   Í£Ö¹·şÎñ: net stop %SERVICE_NAME%
+echo   ÖØÆô·şÎñ: net stop %SERVICE_NAME% ^&^& net start %SERVICE_NAME%
+echo   ²é¿´×´Ì¬: sc query %SERVICE_NAME%
+echo   Ğ¶ÔØ·şÎñ: deployment_tools\uninstall_windows_service.bat
+echo.
+
+echo [³É¹¦] ReBugTracker Windows·şÎñ°²×°Íê³É£¡
 pause

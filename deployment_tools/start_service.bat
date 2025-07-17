@@ -1,59 +1,52 @@
 @echo off
-REM ReBugTracker WindowsæœåŠ¡å¿«é€Ÿå¯åŠ¨è„šæœ¬
+REM ReBugTracker Windows·şÎñ¿ìËÙÆô¶¯½Å±¾
 
 setlocal enabledelayedexpansion
 
-REM é¢œè‰²å®šä¹‰
-set "GREEN=[92m"
-set "YELLOW=[93m"
-set "RED=[91m"
-set "BLUE=[94m"
-set "NC=[0m"
-
 set "SERVICE_NAME=ReBugTracker"
 
-echo %BLUE%ğŸš€ ReBugTracker WindowsæœåŠ¡å¿«é€Ÿå¯åŠ¨%NC%
+echo ReBugTracker Windows·şÎñ¿ìËÙÆô¶¯
 echo ========================================
 echo.
 
-REM æ£€æŸ¥æœåŠ¡æ˜¯å¦å­˜åœ¨
+REM ¼ì²é·şÎñÊÇ·ñ´æÔÚ
 sc query "%SERVICE_NAME%" >nul 2>&1
 if errorlevel 1 (
-    echo %RED%âŒ æœåŠ¡ %SERVICE_NAME% æœªå®‰è£…%NC%
+    echo [´íÎó] ·şÎñ %SERVICE_NAME% Î´°²×°
     echo.
-    echo è¯·å…ˆå®‰è£…WindowsæœåŠ¡:
+    echo ÇëÏÈ°²×°Windows·şÎñ:
     echo   deployment_tools\install_windows_service.bat
     echo.
     pause
     exit /b 1
 )
 
-REM æ£€æŸ¥æœåŠ¡çŠ¶æ€
+REM ¼ì²é·şÎñ×´Ì¬
 for /f "tokens=4" %%i in ('sc query "%SERVICE_NAME%" ^| findstr "STATE"') do set SERVICE_STATE=%%i
 
 if "%SERVICE_STATE%"=="RUNNING" (
-    echo %GREEN%âœ… æœåŠ¡å·²åœ¨è¿è¡Œä¸­%NC%
-    echo è®¿é—®åœ°å€: http://localhost:8000
+    echo [³É¹¦] ·şÎñÒÑÔÚÔËĞĞÖĞ
+    echo ·ÃÎÊµØÖ·: http://localhost:8000
 ) else (
-    echo %BLUE%ğŸš€ å¯åŠ¨æœåŠ¡...%NC%
+    echo [ĞÅÏ¢] Æô¶¯·şÎñ...
     net start "%SERVICE_NAME%"
     if errorlevel 1 (
-        echo %RED%âŒ æœåŠ¡å¯åŠ¨å¤±è´¥%NC%
-        echo è¯·æ£€æŸ¥æ—¥å¿—æˆ–ä½¿ç”¨ç®¡ç†å·¥å…·: deployment_tools\manage_windows_service.bat
+        echo [´íÎó] ·şÎñÆô¶¯Ê§°Ü
+        echo Çë¼ì²éÈÕÖ¾»òÊ¹ÓÃ¹ÜÀí¹¤¾ß: deployment_tools\manage_windows_service.bat
     ) else (
-        echo %GREEN%âœ… æœåŠ¡å¯åŠ¨æˆåŠŸ%NC%
-        echo è®¿é—®åœ°å€: http://localhost:8000
+        echo [³É¹¦] ·şÎñÆô¶¯³É¹¦
+        echo ·ÃÎÊµØÖ·: http://localhost:8000
     )
 )
 
 echo.
-echo %BLUE%ğŸ”§ æœåŠ¡ç®¡ç†:%NC%
-echo   ç®¡ç†å·¥å…·: deployment_tools\manage_windows_service.bat
-echo   åœæ­¢æœåŠ¡: net stop %SERVICE_NAME%
-echo   æŸ¥çœ‹çŠ¶æ€: sc query %SERVICE_NAME%
+echo ·şÎñ¹ÜÀí:
+echo   ¹ÜÀí¹¤¾ß: deployment_tools\manage_windows_service.bat
+echo   Í£Ö¹·şÎñ: net stop %SERVICE_NAME%
+echo   ²é¿´×´Ì¬: sc query %SERVICE_NAME%
 echo.
 
-set /p open_web="æ˜¯å¦æ‰“å¼€Webç•Œé¢? (y/n): "
+set /p open_web="ÊÇ·ñ´ò¿ªWeb½çÃæ? (y/n): "
 if /i "%open_web%"=="y" (
     start http://localhost:8000
 )

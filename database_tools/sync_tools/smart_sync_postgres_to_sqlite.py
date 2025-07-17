@@ -127,7 +127,7 @@ def recreate_sqlite_tables(conn):
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL,
             description TEXT,
-            status TEXT DEFAULT 'open',
+            status TEXT DEFAULT '待处理',
             assigned_to INTEGER,
             created_by INTEGER,
             project TEXT,
@@ -156,8 +156,8 @@ def recreate_sqlite_tables(conn):
             config_key TEXT PRIMARY KEY,
             config_value TEXT,
             description TEXT,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_by TEXT
+            updated_by INTEGER,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
     
@@ -178,7 +178,7 @@ def recreate_sqlite_tables(conn):
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
             title TEXT NOT NULL,
-            content TEXT,
+            content TEXT NOT NULL,
             read_status BOOLEAN DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             read_at TIMESTAMP,

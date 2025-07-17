@@ -72,7 +72,7 @@ deployment_tools\start_service.bat
 - **服务名称**: ReBugTracker
 - **显示名称**: ReBugTracker Bug Tracking System
 - **启动类型**: 自动启动
-- **运行端口**: 8000 (可配置)
+- **运行端口**: 5000 (可配置)
 - **工作目录**: 项目根目录
 
 ### 文件路径
@@ -118,7 +118,7 @@ deployment_tools\uninstall_windows_service.bat
 ## 🌐 访问应用
 
 ### 默认访问
-- **地址**: http://localhost:8000
+- **地址**: http://localhost:5000
 - **管理员**: admin / admin
 
 ### 测试账号
@@ -157,7 +157,7 @@ sc query postgresql-x64-17
 **3. 端口占用**
 ```cmd
 # 检查端口占用
-netstat -ano | findstr 8000
+netstat -ano | findstr 5000
 
 # 修改端口配置
 echo APP_PORT=8080 >> .env
@@ -182,7 +182,7 @@ echo APP_PORT=8080 >> .env
 ### 配置参数
 ```bash
 # .env文件配置
-APP_PORT=8000
+APP_PORT=5000
 WAITRESS_THREADS=4
 DB_TYPE=postgres
 FLASK_ENV=production
