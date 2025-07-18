@@ -235,17 +235,17 @@ def init_db():
 
     # 创建用户表（兼容SQLite和PostgreSQL）
     if DB_TYPE == 'postgres':
-        # PostgreSQL建表语句
+        # PostgreSQL建表语句 - 与当前数据库结构保持一致
         c.execute('''
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
-                username TEXT UNIQUE NOT NULL,
+                username TEXT NOT NULL,
                 password TEXT NOT NULL,
-                chinese_name TEXT,
                 role TEXT NOT NULL,
-                role_en TEXT,
                 team TEXT,
+                role_en TEXT,
                 team_en TEXT,
+                chinese_name TEXT,
                 email CHARACTER VARYING(255),
                 phone CHARACTER VARYING(20),
                 gotify_app_token CHARACTER VARYING(255),
@@ -321,13 +321,18 @@ def init_db():
                 END
         ''')
 
-    # 添加表达式索引来实现大小写不敏感的唯一约束（仅PostgreSQL需要，SQLite默认大小写不敏感）
+    # 创建索引（仅PostgreSQL需要，SQLite会自动创建必要索引）
     if DB_TYPE == 'postgres':
-        # 创建表达式索引
-        c.execute('''
-            CREATE UNIQUE INDEX IF NOT EXISTS lowercase_username_idx
-            ON users (LOWER(username))
-        ''')
+        # 为notifications表创建索引（与当前数据库结构保持一致）
+        try:
+            c.execute('CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications (created_at)')
+            c.execute('CREATE INDEX IF NOT EXISTS idx_notifications_read_status ON notifications (read_status)')
+            c.execute('CREATE INDEX IF NOT EXISTS idx_notifications_related_bug_id ON notifications (related_bug_id)')
+            c.execute('CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications (user_id)')
+        except Exception as e:
+            print(f"创建索引时出错: {e}")
+            if DB_TYPE == 'postgres':
+                conn.rollback()
 
     # 检查并添加默认管理员账户(如果不存在)
     # 查询用户名为admin的用户
@@ -363,6 +368,7 @@ def init_db():
 
     # 创建bugs表（兼容SQLite和PostgreSQL）
     if DB_TYPE == 'postgres':
+        # PostgreSQL建表语句 - 与当前数据库结构保持一致（暂不添加外键约束）
         c.execute('''
             CREATE TABLE IF NOT EXISTS bugs (
                 id SERIAL PRIMARY KEY,
@@ -384,7 +390,7 @@ def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 title TEXT NOT NULL,
                 description TEXT,
-                status TEXT DEFAULT 'open',
+                status TEXT DEFAULT '待处理',
                 assigned_to INTEGER,         -- 负责人ID
                 created_by INTEGER,          -- 提交人ID
                 project TEXT,               -- 所属项目名称
@@ -399,14 +405,26 @@ def init_db():
 
     # 创建问题图片表
     if DB_TYPE == 'postgres':
+        # PostgreSQL建表语句 - 与当前数据库结构保持一致
         c.execute('''
             CREATE TABLE IF NOT EXISTS bug_images (
                 id SERIAL PRIMARY KEY,
-                bug_id INTEGER NOT NULL REFERENCES bugs (id) ON DELETE CASCADE,
+                bug_id INTEGER NOT NULL,
                 image_path TEXT NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+        # 添加外键约束（如果不存在）
+        try:
+            c.execute('''
+                ALTER TABLE bug_images
+                ADD CONSTRAINT bug_images_bug_id_fkey
+                FOREIGN KEY (bug_id) REFERENCES bugs (id) ON DELETE CASCADE
+            ''')
+        except Exception as e:
+            # 外键约束可能已存在，忽略错误
+            if DB_TYPE == 'postgres':
+                conn.rollback()
     else:
         c.execute('''
             CREATE TABLE IF NOT EXISTS bug_images (
@@ -420,6 +438,7 @@ def init_db():
 
     # 创建系统配置表
     if DB_TYPE == 'postgres':
+        # PostgreSQL建表语句 - 与当前数据库结构保持一致（暂不添加外键约束）
         c.execute('''
             CREATE TABLE IF NOT EXISTS system_config (
                 config_key CHARACTER VARYING(50) PRIMARY KEY,
@@ -433,21 +452,23 @@ def init_db():
         c.execute('''
             CREATE TABLE IF NOT EXISTS system_config (
                 config_key TEXT PRIMARY KEY,
-                config_value TEXT,
+                config_value TEXT NOT NULL,
                 description TEXT,
                 updated_by INTEGER,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (updated_by) REFERENCES users (id)
             )
         ''')
 
     # 创建用户通知偏好表
     if DB_TYPE == 'postgres':
+        # PostgreSQL建表语句 - 与当前数据库结构保持一致
         c.execute('''
             CREATE TABLE IF NOT EXISTS user_notification_preferences (
-                user_id INTEGER PRIMARY KEY REFERENCES users (id) ON DELETE CASCADE,
+                user_id INTEGER PRIMARY KEY,
                 email_enabled BOOLEAN DEFAULT TRUE,
+                gotify_enabled BOOLEAN DEFAULT TRUE,
                 inapp_enabled BOOLEAN DEFAULT TRUE,
-                gotify_enabled BOOLEAN DEFAULT FALSE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
@@ -467,6 +488,7 @@ def init_db():
 
     # 创建通知表
     if DB_TYPE == 'postgres':
+        # PostgreSQL建表语句 - 与当前数据库结构保持一致（暂不添加外键约束）
         c.execute('''
             CREATE TABLE IF NOT EXISTS notifications (
                 id SERIAL PRIMARY KEY,

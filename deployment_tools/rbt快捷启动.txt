@@ -1,3 +1,0 @@
-Set WshShell = CreateObject("WScript.Shell")
-' 替换为你的实际命令，比如带完整 Python 路径、日志输出
-WshShell.Run "python D:\ReBugTracker\deployment_tools\run_waitress.py > D:\ReBugTracker\deployment_tools\run.log 2>&1", 0, False

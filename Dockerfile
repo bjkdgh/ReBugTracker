@@ -48,8 +48,8 @@ RUN ln -fs /usr/share/zoneinfo/${TZ} /etc/localtime && \
 COPY --from=builder /opt/venv /opt/venv
 
 # 创建必要的目录
-RUN mkdir -p /app/uploads /app/logs && \
-    chown -R app:app /app/uploads /app/logs
+RUN mkdir -p /app/uploads /app/logs /app/data_exports /app/data && \
+    chown -R app:app /app/uploads /app/logs /app/data_exports /app/data
 
 # 复制应用代码到工作目录
 # --chown=app:app 将文件所有者设置为我们创建的非 root 用户

@@ -17,12 +17,22 @@ services:
       # 持久化上传文件、日志和SQLite数据库
       - app_uploads:/app/uploads
       - app_logs:/app/logs
+      - app_exports:/app/data_exports
       - app_data:/app/data
     environment:
       - FLASK_ENV=production
       - DB_TYPE=sqlite
-      - SQLITE_PATH=/app/data/rebugtracker.db
+      - SQLITE_DB_PATH=/app/data/rebugtracker.db
       - TZ=Asia/Shanghai
+      # Flask配置
+      - SECRET_KEY=${SECRET_KEY:-rebugtracker-sqlite-secret-key-change-this}
+      # 服务器配置
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=5000
+      # 文件配置
+      - UPLOAD_FOLDER=/app/uploads
+      - LOG_FOLDER=/app/logs
+      - DATA_EXPORT_FOLDER=/app/data_exports
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/"]
@@ -38,6 +48,9 @@ volumes:
     driver: local
   # 应用日志持久化
   app_logs:
+    driver: local
+  # 数据导出文件持久化
+  app_exports:
     driver: local
   # SQLite数据库文件持久化
   app_data:

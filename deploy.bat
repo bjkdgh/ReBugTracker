@@ -18,11 +18,12 @@ echo 本脚本将引导您完成 ReBugTracker 在 Windows 系统的完整部署
 echo 支持以下部署方式：
 echo - Docker 容器部署
 echo - 本地开发环境部署
-echo - Windows 服务部署（生产环境推荐）
+echo - VBS 后台启动（生产环境推荐）
 echo.
-echo 包含的工具：
-echo - NSSM Windows 服务管理器（需要下载）
-echo - Waitress 生产级 WSGI 服务器
+echo 特色功能：
+echo - VBS 脚本无窗口后台运行
+echo - 可配置开机自动启动
+echo - 无需额外工具，Windows 原生支持
 echo.
 echo 按任意键开始部署...
 pause >nul
@@ -90,11 +91,11 @@ echo    - 直接运行，便于开发调试
 echo    - 使用 Flask 开发服务器
 echo    - 使用虚拟环境隔离
 echo.
-echo 3) Windows 服务部署（生产环境推荐）
-echo    - 使用 NSSM 管理 Windows 服务
-echo    - 使用 Waitress 生产级服务器
-echo    - 开机自动启动，稳定可靠
-echo    - 需要手动下载 NSSM 工具
+echo 3) VBS 后台启动（生产环境推荐）
+echo    - 使用 VBS 脚本后台启动
+echo    - 无窗口运行，稳定可靠
+echo    - 可配置开机自动启动
+echo    - 无需额外工具，Windows 原生支持
 echo.
 
 :deployment_loop
@@ -115,64 +116,155 @@ if "%choice%"=="2" (
     goto choose_database
 )
 if "%choice%"=="3" (
-    set DEPLOYMENT_MODE=service
-    echo [成功] 已选择：Windows 服务部署
-    goto check_service_requirements
+    set DEPLOYMENT_MODE=vbs
+    echo [成功] 已选择：VBS 后台启动
+    goto check_vbs_requirements
 )
 echo [错误] 无效选择，请输入 1、2 或 3
 goto deployment_loop
 
-:check_service_requirements
+:check_vbs_requirements
 cls
 echo ========================================
-echo  Windows 服务部署要求检查
+echo  VBS 后台启动要求检查
 echo ========================================
 echo.
-echo 正在检查 Windows 服务部署所需工具...
+echo 正在检查 VBS 启动脚本...
 
-REM 检查 NSSM - 使用绝对路径
-set "NSSM_PATH=%cd%\deployment_tools\nssm.exe"
-if not exist "%NSSM_PATH%" (
-    echo [缺失] NSSM 工具未找到
-    echo 查找路径: %NSSM_PATH%
+REM 检查 VBS 启动脚本
+set "VBS_SCRIPT_PATH=%cd%\start_rebugtracker.vbs"
+if not exist "%VBS_SCRIPT_PATH%" (
+    echo [信息] VBS 启动脚本未找到
+    echo 查找路径: %VBS_SCRIPT_PATH%
     echo.
-    echo 请下载 NSSM ^(Non-Sucking Service Manager^):
-    echo 官网地址: https://nssm.cc/download
+    echo 部署过程中将自动创建 VBS 启动脚本
+    echo 或者您可以手动指定现有的 VBS 脚本路径
     echo.
-    echo 下载完成后将 nssm.exe 放置到 deployment_tools\ 目录
-    echo.
-    goto nssm_download_wait
+    goto vbs_path_config
 )
-echo [成功] NSSM 工具已就绪: %NSSM_PATH%
-goto check_waitress_script
+echo [成功] VBS 启动脚本已找到: %VBS_SCRIPT_PATH%
+echo.
+echo 正在检查 VBS 脚本中的路径配置...
+goto check_vbs_path
 
-:nssm_download_wait
-set /p nssm_continue="下载完成后按 y 继续，或按 n 返回选择其他部署方式 (y/n): "
-if /i "%nssm_continue%"=="n" goto choose_deployment
-if /i "%nssm_continue%"=="y" (
-    if not exist "%NSSM_PATH%" (
-        echo [错误] 仍未找到 nssm.exe，请确保文件已正确放置
-        echo 请检查路径: %NSSM_PATH%
-        pause
-        goto nssm_download_wait
+:vbs_path_config
+echo.
+echo  VBS 脚本路径配置
+echo ========================================
+echo.
+echo 当前查找路径: %VBS_SCRIPT_PATH%
+echo.
+echo 请选择操作:
+echo 1) 自动创建 VBS 脚本（推荐）
+echo 2) 手动指定现有 VBS 脚本路径
+echo 3) 返回选择其他部署方式
+echo.
+
+:vbs_path_loop
+set /p vbs_choice="请选择 (1-3): "
+if "%vbs_choice%"=="1" goto auto_create_vbs
+if "%vbs_choice%"=="2" goto manual_vbs_path
+if "%vbs_choice%"=="3" goto choose_deployment
+echo [错误] 无效选择，请输入 1、2 或 3
+goto vbs_path_loop
+
+:check_vbs_path
+echo 检查现有 VBS 脚本中的路径配置...
+findstr /i "CurrentDirectory" "%VBS_SCRIPT_PATH%" >nul 2>&1
+if errorlevel 1 (
+    echo [警告] 无法检查 VBS 脚本中的路径配置
+    goto vbs_path_config
+)
+
+REM 提取当前路径
+for /f "tokens=*" %%i in ('findstr /i "CurrentDirectory" "%VBS_SCRIPT_PATH%"') do set "VBS_CURRENT_PATH=%%i"
+echo 当前 VBS 脚本中的路径: %VBS_CURRENT_PATH%
+echo 项目实际路径: %PROJECT_ROOT%
+echo.
+
+echo 请选择操作:
+echo 1) 使用现有 VBS 脚本（不修改路径）
+echo 2) 更新 VBS 脚本中的路径为当前项目路径
+echo 3) 重新创建 VBS 脚本
+echo.
+
+:vbs_update_loop
+set /p vbs_update_choice="请选择 (1-3): "
+if "%vbs_update_choice%"=="1" goto vbs_requirements_complete
+if "%vbs_update_choice%"=="2" goto update_vbs_path
+if "%vbs_update_choice%"=="3" goto auto_create_vbs
+echo [错误] 无效选择，请输入 1、2 或 3
+goto vbs_update_loop
+
+:update_vbs_path
+echo 正在更新 VBS 脚本中的路径...
+REM 备份原文件
+copy "%VBS_SCRIPT_PATH%" "%VBS_SCRIPT_PATH%.backup" >nul 2>&1
+
+REM 创建临时文件
+set "TEMP_VBS=%VBS_SCRIPT_PATH%.tmp"
+(
+echo Set WshShell = CreateObject^("WScript.Shell"^)
+echo.
+echo ' 项目路径 - 自动更新
+echo WshShell.CurrentDirectory = "%PROJECT_ROOT%"
+echo.
+echo ' 启动 Waitress 服务器
+echo WshShell.Run "python deployment_tools\run_waitress.py", 0, False
+echo.
+echo MsgBox "ReBugTracker 已在后台启动，访问地址: http://localhost:5000", vbInformation
+) > "%TEMP_VBS%"
+
+REM 替换原文件
+move "%TEMP_VBS%" "%VBS_SCRIPT_PATH%" >nul 2>&1
+if errorlevel 1 (
+    echo [错误] 更新 VBS 脚本失败
+    if exist "%VBS_SCRIPT_PATH%.backup" (
+        move "%VBS_SCRIPT_PATH%.backup" "%VBS_SCRIPT_PATH%" >nul 2>&1
+        echo [恢复] 已恢复原始 VBS 脚本
     )
-    echo [成功] NSSM 工具已就绪
-    goto check_waitress_script
-)
-echo [错误] 请输入 y 或 n
-goto nssm_download_wait
-
-:check_waitress_script
-if not exist "deployment_tools\run_waitress.py" (
-    echo [错误] 未找到 Waitress 运行脚本
-    echo 请确保 deployment_tools\run_waitress.py 文件存在
     pause
     exit /b 1
 )
-echo [成功] Waitress 运行脚本存在
 
+echo [成功] VBS 脚本路径已更新
+if exist "%VBS_SCRIPT_PATH%.backup" (
+    echo [备份] 原始文件已备份为: %VBS_SCRIPT_PATH%.backup
+)
+goto vbs_requirements_complete
+
+:auto_create_vbs
+echo [选择] 将在部署过程中自动创建 VBS 脚本
+set "VBS_SCRIPT_PATH=%cd%\start_rebugtracker.vbs"
+echo VBS 脚本将创建在: %VBS_SCRIPT_PATH%
+goto vbs_requirements_complete
+
+:manual_vbs_path
 echo.
-echo Windows 服务部署要求检查完成！
+echo 请输入 start_rebugtracker.vbs 的完整路径:
+echo 示例: C:\path\to\your\start_rebugtracker.vbs
+echo.
+set /p custom_vbs_path="VBS 脚本路径: "
+
+if "%custom_vbs_path%"=="" (
+    echo [错误] 路径不能为空
+    goto manual_vbs_path
+)
+
+if not exist "%custom_vbs_path%" (
+    echo [错误] 指定的文件不存在: %custom_vbs_path%
+    echo.
+    set /p retry_path="是否重新输入路径? (y/n): "
+    if /i "%retry_path%"=="y" goto manual_vbs_path
+    goto choose_deployment
+)
+
+set "VBS_SCRIPT_PATH=%custom_vbs_path%"
+echo [成功] VBS 脚本路径已设置: %VBS_SCRIPT_PATH%
+
+:vbs_requirements_complete
+echo.
+echo VBS 后台启动要求检查完成！
 pause
 goto choose_database
 
@@ -193,7 +285,7 @@ echo    - 适合大团队使用
 echo    - 企业级数据库功能
 if "%DEPLOYMENT_MODE%"=="docker" (
     echo    - Docker 会自动配置 PostgreSQL
-) else if "%DEPLOYMENT_MODE%"=="service" (
+) else if "%DEPLOYMENT_MODE%"=="vbs" (
     echo    - 需要手动安装 PostgreSQL 服务
 ) else (
     echo    - 需要手动安装和配置 PostgreSQL
@@ -286,11 +378,11 @@ if "%DEPLOYMENT_MODE%"=="docker" (
     echo 2. 构建 Docker 镜像
     echo 3. 启动容器服务
     echo 4. 初始化数据库
-) else if "%DEPLOYMENT_MODE%"=="service" (
+) else if "%DEPLOYMENT_MODE%"=="vbs" (
     echo 1. 创建 Python 虚拟环境
-    echo 2. 安装项目依赖和 Waitress
+    echo 2. 安装项目依赖
     echo 3. 配置数据库连接
-    echo 4. 安装并启动 Windows 服务
+    echo 4. 使用 VBS 脚本后台启动
 ) else (
     echo 1. 创建 Python 虚拟环境
     echo 2. 安装项目依赖
@@ -319,8 +411,8 @@ echo.
 
 if "%DEPLOYMENT_MODE%"=="docker" (
     goto docker_deployment
-) else if "%DEPLOYMENT_MODE%"=="service" (
-    goto service_deployment
+) else if "%DEPLOYMENT_MODE%"=="vbs" (
+    goto vbs_deployment
 ) else (
     goto local_deployment
 )
@@ -368,8 +460,8 @@ echo [成功] 服务就绪
 
 goto deployment_complete
 
-:service_deployment
-echo [服务] Windows 服务部署模式
+:vbs_deployment
+echo [VBS] VBS 后台启动模式
 echo.
 
 echo [步骤 1/4] 创建虚拟环境
@@ -391,7 +483,6 @@ echo [步骤 2/4] 安装依赖
 echo 正在安装依赖包...
 call .venv\Scripts\activate.bat
 pip install -r requirements.txt
-pip install waitress
 if errorlevel 1 (
     echo [错误] 依赖安装失败
     pause
@@ -403,13 +494,13 @@ echo.
 echo [步骤 3/4] 配置数据库
 if "%DATABASE_TYPE%"=="sqlite" (
     echo 配置 SQLite 数据库...
-    echo DATABASE_TYPE=sqlite > .env
-    echo APP_PORT=5000 >> .env
+    echo DB_TYPE=sqlite > .env
+    echo SERVER_PORT=5000 >> .env
     echo [成功] SQLite 配置完成
 ) else (
     echo 配置 PostgreSQL 数据库...
-    echo DATABASE_TYPE=postgres > .env
-    echo APP_PORT=5000 >> .env
+    echo DB_TYPE=postgres > .env
+    echo SERVER_PORT=5000 >> .env
     echo DATABASE_HOST=localhost >> .env
     echo DATABASE_PORT=5432 >> .env
     echo DATABASE_NAME=rebugtracker >> .env
@@ -420,30 +511,72 @@ if "%DATABASE_TYPE%"=="sqlite" (
 )
 
 echo.
-echo [步骤 4/4] 安装 Windows 服务
-echo 正在安装 ReBugTracker Windows 服务...
-set "INSTALL_SCRIPT=%PROJECT_ROOT%\deployment_tools\install_windows_service.bat"
-echo 调用安装脚本: %INSTALL_SCRIPT%
-call "%INSTALL_SCRIPT%"
-if errorlevel 1 (
-    echo [错误] Windows 服务安装失败
-    echo 安装脚本路径: %INSTALL_SCRIPT%
+echo [步骤 4/4] 创建并启动 VBS 脚本
+echo 正在创建 VBS 启动脚本...
+
+REM 创建 VBS 启动脚本
+set "VBS_SCRIPT_PATH=%PROJECT_ROOT%\start_rebugtracker.vbs"
+echo 创建 VBS 脚本: %VBS_SCRIPT_PATH%
+
+(
+echo ' ReBugTracker VBS 启动脚本
+echo ' 自动生成于部署过程
+echo.
+echo ' 设置项目根目录路径
+echo Dim projectPath
+echo projectPath = "%PROJECT_ROOT%"
+echo.
+echo ' 设置 Python 虚拟环境路径
+echo Dim pythonPath
+echo pythonPath = projectPath ^& "\.venv\Scripts\python.exe"
+echo.
+echo ' 设置 Waitress 启动脚本路径
+echo Dim waitressScript
+echo waitressScript = projectPath ^& "\deployment_tools\run_waitress.py"
+echo.
+echo ' 创建 Shell 对象
+echo Dim shell
+echo Set shell = CreateObject^("WScript.Shell"^)
+echo.
+echo ' 切换到项目目录
+echo shell.CurrentDirectory = projectPath
+echo.
+echo ' 构建启动命令^(使用 Waitress 生产服务器^)
+echo Dim command
+echo command = """" ^& pythonPath ^& """ """ ^& waitressScript ^& """"
+echo.
+echo ' 在后台运行^(窗口隐藏^)
+echo shell.Run command, 0, False
+echo.
+echo ' 显示启动提示^(可选^)
+echo MsgBox "ReBugTracker 已在后台启动" ^& vbCrLf ^& "访问地址: http://localhost:5000", vbInformation, "ReBugTracker"
+) > "%VBS_SCRIPT_PATH%"
+
+if exist "%VBS_SCRIPT_PATH%" (
+    echo [成功] VBS 脚本创建完成
+) else (
+    echo [错误] VBS 脚本创建失败
     pause
     exit /b 1
 )
-echo [成功] Windows 服务安装完成
 
 echo.
-echo 正在启动 ReBugTracker 服务...
-set "START_SCRIPT=%PROJECT_ROOT%\deployment_tools\start_service.bat"
-echo 调用启动脚本: %START_SCRIPT%
-call "%START_SCRIPT%"
+echo 正在使用 VBS 脚本后台启动 ReBugTracker...
+echo 启动命令: wscript.exe "%VBS_SCRIPT_PATH%"
+wscript.exe "%VBS_SCRIPT_PATH%"
 if errorlevel 1 (
-    echo [警告] 服务启动可能失败，请检查日志
-    echo 启动脚本路径: %START_SCRIPT%
+    echo [警告] VBS 脚本启动可能失败
+    echo 请检查 VBS 脚本是否正确配置
 ) else (
-    echo [成功] ReBugTracker 服务启动成功
+    echo [成功] VBS 脚本已启动
 )
+
+echo.
+echo 等待服务启动...
+timeout /t 5 /nobreak >nul
+
+echo [信息] ReBugTracker 已在后台启动
+echo 如需停止服务，请结束相关的 Python 进程
 
 goto deployment_complete
 
@@ -526,11 +659,7 @@ echo.
 echo [成功] ReBugTracker 部署成功！
 echo.
 echo 访问信息：
-if "%DEPLOYMENT_MODE%"=="service" (
-    echo - 访问地址：http://localhost:5000
-) else (
-    echo - 访问地址：http://localhost:5000
-)
+echo - 访问地址：http://localhost:5000
 echo - 管理员账号：admin
 echo - 管理员密码：admin
 echo.
@@ -544,15 +673,18 @@ if "%DEPLOYMENT_MODE%"=="docker" (
     echo - 查看日志：docker-compose logs
     echo - 停止服务：docker-compose down
     echo - 重启服务：docker-compose restart
-) else if "%DEPLOYMENT_MODE%"=="service" (
-    echo Windows 服务管理：
-    echo - 服务管理：deployment_tools\manage_windows_service.bat
-    echo - 启动服务：deployment_tools\start_service.bat
-    echo - 停止服务：net stop ReBugTracker
-    echo - 重启服务：net stop ReBugTracker ^&^& net start ReBugTracker
-    echo - 卸载服务：deployment_tools\uninstall_windows_service.bat
+) else if "%DEPLOYMENT_MODE%"=="vbs" (
+    echo VBS 后台启动管理：
+    echo - VBS 脚本：%VBS_SCRIPT_PATH%
+    echo - 重新启动：wscript.exe "%VBS_SCRIPT_PATH%"
+    echo - 停止服务：结束 Python 进程（任务管理器）
     echo - 查看日志：logs\ 目录
-    echo - 服务端口：5000 （可在 .env 文件中修改 APP_PORT）
+    echo - 配置文件：.env
+    echo - 服务端口：5000 （可在 .env 文件中修改 SERVER_PORT）
+    echo.
+    echo  开机自动启动设置：
+    echo - 将 VBS 脚本添加到启动文件夹
+    echo - 启动文件夹路径：%%APPDATA%%\Microsoft\Windows\Start Menu\Programs\Startup
 ) else (
     echo 本地开发部署管理：
     echo - 启动服务：python rebugtracker.py
