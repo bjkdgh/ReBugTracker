@@ -12,6 +12,11 @@ import time
 import threading
 from pathlib import Path
 
+# 添加项目根目录到Python路径
+current_dir = Path(__file__).parent
+project_root = current_dir.parent.parent
+sys.path.insert(0, str(project_root))
+
 # 导入exe专用配置
 from app_config_exe import setup_exe_environment, load_config, apply_config_to_env, get_server_config
 
@@ -105,6 +110,9 @@ allowed_extensions = png,jpg,jpeg,gif
 def init_database():
     """初始化数据库"""
     try:
+        # 确保项目根目录在路径中
+        if str(project_root) not in sys.path:
+            sys.path.insert(0, str(project_root))
         from rebugtracker import init_db
         print("🗄️ 初始化数据库...")
         init_db()
@@ -181,6 +189,10 @@ def main():
     start_cleanup_scheduler()
     
     try:
+        # 确保项目根目录在路径中
+        if str(project_root) not in sys.path:
+            sys.path.insert(0, str(project_root))
+
         # 确保配置已加载
         import config_adapter  # 这会自动设置环境变量
 

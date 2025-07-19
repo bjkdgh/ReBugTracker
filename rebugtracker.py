@@ -342,15 +342,19 @@ def init_db():
         # 如果不存在则创建默认管理员账户
         hashed_password = generate_password_hash('admin')
         query, params = adapt_sql('''
-            INSERT INTO users (username, password, role, role_en)
-            VALUES (%s, %s, '管理员', 'gly')
+            INSERT INTO users (username, password, role, role_en, chinese_name, team, team_en)
+            VALUES (%s, %s, '管理员', 'gly', '系统管理员', '管理员', 'gly')
         ''', ('admin', hashed_password))
         c.execute(query, params)
 
-    # 确保admin用户的role_en字段正确设置
+    # 确保admin用户的完整信息正确设置
     query, params = adapt_sql('''
-        UPDATE users SET role_en = 'gly'
-        WHERE username = 'admin' AND (role_en IS NULL OR role_en = '')
+        UPDATE users SET
+            role_en = 'gly',
+            chinese_name = CASE WHEN chinese_name IS NULL OR chinese_name = '' THEN '系统管理员' ELSE chinese_name END,
+            team = CASE WHEN team IS NULL OR team = '' THEN '管理员' ELSE team END,
+            team_en = CASE WHEN team_en IS NULL OR team_en = '' THEN 'gly' ELSE team_en END
+        WHERE username = 'admin'
     ''', ())
     c.execute(query, params)
 

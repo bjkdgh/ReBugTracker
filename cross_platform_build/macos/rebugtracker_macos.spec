@@ -1,7 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 """
-ReBugTracker PyInstaller 配置文件
-用于将Flask应用打包成Windows可执行文件
+ReBugTracker macOS PyInstaller 配置文件
+专门用于 macOS 平台的打包配置
 """
 
 import os
@@ -9,7 +9,8 @@ import sys
 from pathlib import Path
 
 # 获取项目根目录
-project_root = os.path.dirname(os.path.abspath(SPEC))
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(SPEC))))
+macos_build_dir = os.path.dirname(os.path.abspath(SPEC))
 
 # 数据文件和目录
 datas = [
@@ -19,17 +20,17 @@ datas = [
     (os.path.join(project_root, 'static'), 'static'),
     # 配置文件
     (os.path.join(project_root, 'config.py'), '.'),
-    (os.path.join(project_root, 'app_config_exe.py'), '.'),
     (os.path.join(project_root, 'config_adapter.py'), '.'),
+    
+    # macOS 专用配置文件
+    (os.path.join(macos_build_dir, 'app_config_macos.py'), '.'),
+    (os.path.join(macos_build_dir, 'crypto_compat_macos.py'), '.'),
 
-    # 环境变量模板
-    (os.path.join(project_root, '.env.template'), '.'),
     # 数据库工厂和适配器
     (os.path.join(project_root, 'db_factory.py'), '.'),
     (os.path.join(project_root, 'sql_adapter.py'), '.'),
     # 通知系统
     (os.path.join(project_root, 'notification'), 'notification'),
-    # 数据库文件（如果存在）
 ]
 
 # 检查并添加数据库文件
@@ -76,7 +77,6 @@ hiddenimports = [
     'reportlab.lib',
 
     # 图像处理
-    'pillow',
     'PIL',
     'PIL.Image',
     'PIL.ImageDraw',
@@ -90,9 +90,6 @@ hiddenimports = [
     'notification.simple_notifier',
     'notification.flow_rules',
     'notification.channels',
-    'notification.channels.email_channel',
-    'notification.channels.gotify_channel',
-    'notification.channels.inapp_channel',
 
     # 邮件
     'email',
@@ -109,6 +106,7 @@ hiddenimports = [
     'json',
     'uuid',
     'hashlib',
+    '_hashlib',  # 重要：macOS 底层hashlib模块
     'base64',
     'urllib.parse',
     'functools',
@@ -123,10 +121,18 @@ hiddenimports = [
     'logging',
     'logging.handlers',
 
-
-    # 加密和安全
+    # 加密和安全 - macOS 专用
     'secrets',
     'hmac',
+    '_sha1',
+    '_sha256',
+    '_sha512',
+    '_md5',
+    'binascii',
+
+    # macOS 专用模块
+    'crypto_compat_macos',
+    'app_config_macos',
 
     # 数据处理
     'csv',
@@ -152,12 +158,12 @@ excludes = [
 
 # 分析配置
 a = Analysis(
-    ['rebugtracker_exe.py'],  # 主入口文件
-    pathex=[project_root],
+    [os.path.join(macos_build_dir, 'rebugtracker_macos.py')],  # macOS 专用启动脚本
+    pathex=[project_root, macos_build_dir],
     binaries=[],
     datas=datas,
     hiddenimports=hiddenimports,
-    hookspath=[],
+    hookspath=[macos_build_dir],  # 使用 macOS 专用 hook 路径
     hooksconfig={},
     runtime_hooks=[],
     excludes=excludes,
@@ -185,24 +191,23 @@ exe = EXE(
     upx=True,  # 使用UPX压缩（如果可用）
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,  # 显示控制台窗口
+    console=True,  # macOS 显示控制台窗口
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
     icon=os.path.join(project_root, 'static', 'RBT.ico') if os.path.exists(os.path.join(project_root, 'static', 'RBT.ico')) else None,
-    version_file=None,
 )
 
-# 收集所有文件到一个目录（可选）
-# coll = COLLECT(
-#     exe,
-#     a.binaries,
-#     a.zipfiles,
-#     a.datas,
-#     strip=False,
-#     upx=True,
-#     upx_exclude=[],
-#     name='ReBugTracker'
-# )
+# 收集所有文件到 dist_mac 目录
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    name='dist_mac'  # 输出到 dist_mac 目录
+)

@@ -17,8 +17,9 @@ def get_app_dir():
         # 打包后的exe环境
         return os.path.dirname(sys.executable)
     else:
-        # 开发环境
-        return os.path.dirname(os.path.abspath(__file__))
+        # 开发环境 - 从 cross_platform_build/windows 回到项目根目录
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        return os.path.dirname(os.path.dirname(current_dir))
 
 def get_resource_path(relative_path):
     """获取资源文件路径（兼容开发和打包环境）"""
@@ -26,9 +27,10 @@ def get_resource_path(relative_path):
         # 打包后的exe环境
         base_path = sys._MEIPASS
     else:
-        # 开发环境
-        base_path = os.path.dirname(os.path.abspath(__file__))
-    
+        # 开发环境 - 从 cross_platform_build/windows 回到项目根目录
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        base_path = os.path.dirname(os.path.dirname(current_dir))
+
     return os.path.join(base_path, relative_path)
 
 def load_env_file(app_dir):

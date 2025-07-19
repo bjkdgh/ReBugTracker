@@ -35,10 +35,17 @@ def print_error(message):
     """打印错误信息"""
     print(f"❌ {message}")
 
+def get_project_root():
+    """获取项目根目录"""
+    # 从 cross_platform_build/windows 回到项目根目录
+    current_dir = Path(__file__).parent
+    project_root = current_dir.parent.parent
+    return project_root.resolve()
+
 def check_requirements():
     """检查打包要求"""
     print_step(1, "检查打包要求")
-    
+
     # 检查Python版本
     python_version = sys.version_info
     if python_version < (3, 8):
@@ -46,7 +53,7 @@ def check_requirements():
         print("需要Python 3.8或更高版本")
         return False
     print_success(f"Python版本: {python_version.major}.{python_version.minor}.{python_version.micro}")
-    
+
     # 检查PyInstaller
     try:
         import PyInstaller
@@ -55,40 +62,60 @@ def check_requirements():
         print_error("PyInstaller未安装")
         print("请运行: pip install pyinstaller")
         return False
-    
+
+    # 获取项目根目录
+    project_root = get_project_root()
+
     # 检查必要文件
     required_files = [
         'rebugtracker.py',
-        'rebugtracker_exe.py',
-        'rebugtracker.spec',
         'config.py',
         'db_factory.py',
         'sql_adapter.py',
         'requirements.txt'
     ]
-    
+
+    # 检查Windows特定文件
+    windows_files = [
+        'rebugtracker_exe.py',
+        'rebugtracker.spec',
+        'app_config_exe.py'
+    ]
+
     missing_files = []
+
+    # 检查项目根目录的文件
     for file in required_files:
-        if not os.path.exists(file):
+        if not (project_root / file).exists():
             missing_files.append(file)
-    
+
+    # 检查Windows目录的文件
+    windows_dir = Path(__file__).parent
+    for file in windows_files:
+        if not (windows_dir / file).exists():
+            missing_files.append(f"windows/{file}")
+
     if missing_files:
         print_error(f"缺少必要文件: {', '.join(missing_files)}")
         return False
-    
+
     print_success("所有必要文件都存在")
     return True
 
 def clean_build_dirs():
     """清理构建目录"""
     print_step(2, "清理构建目录")
-    
-    dirs_to_clean = ['build', 'dist', '__pycache__']
-    
+
+    project_root = get_project_root()
+
+    # 清理项目根目录的构建文件
+    dirs_to_clean = ['build', '__pycache__']
+
     for dir_name in dirs_to_clean:
-        if os.path.exists(dir_name):
+        dir_path = project_root / dir_name
+        if dir_path.exists():
             try:
-                shutil.rmtree(dir_name)
+                shutil.rmtree(dir_path)
                 print_success(f"已清理: {dir_name}")
             except Exception as e:
                 print_warning(f"清理 {dir_name} 失败: {e}")
@@ -98,18 +125,27 @@ def clean_build_dirs():
 def run_pyinstaller():
     """运行PyInstaller"""
     print_step(3, "运行PyInstaller打包")
-    
-    cmd = [
-        sys.executable, '-m', 'PyInstaller',
-        '--clean',  # 清理临时文件
-        '--noconfirm',  # 不询问覆盖
-        'rebugtracker.spec'  # 使用spec文件
-    ]
-    
-    print(f"🔧 执行命令: {' '.join(cmd)}")
-    print()
-    
+
+    # 切换到项目根目录
+    project_root = get_project_root()
+    original_cwd = os.getcwd()
+    os.chdir(project_root)
+
     try:
+        # 使用Windows目录下的spec文件
+        windows_dir = Path(__file__).parent
+        spec_file = windows_dir / 'rebugtracker.spec'
+
+        cmd = [
+            sys.executable, '-m', 'PyInstaller',
+            '--clean',  # 清理临时文件
+            '--noconfirm',  # 不询问覆盖
+            str(spec_file)  # 使用spec文件
+        ]
+
+        print(f"🔧 执行命令: {' '.join(cmd)}")
+        print()
+
         # 运行PyInstaller
         result = subprocess.run(cmd, check=True, capture_output=False, text=True)
         print_success("PyInstaller打包完成")
@@ -120,16 +156,22 @@ def run_pyinstaller():
     except Exception as e:
         print_error(f"执行PyInstaller时出错: {e}")
         return False
+    finally:
+        # 恢复原始工作目录
+        os.chdir(original_cwd)
 
 def copy_additional_files():
     """复制额外文件到dist目录"""
     print_step(4, "复制额外文件")
-    
-    dist_dir = 'dist'
-    if not os.path.exists(dist_dir):
+
+    project_root = get_project_root()
+    windows_dir = Path(__file__).parent
+    dist_dir = windows_dir / 'dist'
+
+    if not dist_dir.exists():
         print_error("dist目录不存在")
         return False
-    
+
     # 要复制的文件和目录
     items_to_copy = [
         ('rebugtracker.db', '数据库文件'),
@@ -137,19 +179,19 @@ def copy_additional_files():
         ('logs', '日志目录'),
         ('data_exports', '数据导出目录'),
         ('README.md', '说明文档'),
-        ('.env.template', '环境变量模板'),
     ]
-    
+
     for item, description in items_to_copy:
-        if os.path.exists(item):
-            dest = os.path.join(dist_dir, item)
+        source = project_root / item
+        if source.exists():
+            dest = dist_dir / item
             try:
-                if os.path.isdir(item):
-                    if os.path.exists(dest):
+                if source.is_dir():
+                    if dest.exists():
                         shutil.rmtree(dest)
-                    shutil.copytree(item, dest)
+                    shutil.copytree(source, dest)
                 else:
-                    shutil.copy2(item, dest)
+                    shutil.copy2(source, dest)
                 print_success(f"已复制 {description}: {item}")
             except Exception as e:
                 print_warning(f"复制 {item} 失败: {e}")
@@ -159,8 +201,9 @@ def copy_additional_files():
 def create_startup_script():
     """创建启动脚本"""
     print_step(5, "创建启动脚本")
-    
-    dist_dir = 'dist'
+
+    windows_dir = Path(__file__).parent
+    dist_dir = windows_dir / 'dist'
     script_content = '''@echo off
 chcp 65001 >nul
 REM ReBugTracker 启动脚本
@@ -226,8 +269,9 @@ def create_config_info():
     """创建配置说明文件"""
     print_step(6, "创建配置说明")
 
-    dist_dir = 'dist'
-    if not os.path.exists(dist_dir):
+    windows_dir = Path(__file__).parent
+    dist_dir = windows_dir / 'dist'
+    if not dist_dir.exists():
         print_error("dist目录不存在")
         return False
 
@@ -306,8 +350,9 @@ SMTP_USE_TLS=true
 def create_readme():
     """创建使用说明"""
     print_step(7, "创建使用说明")
-    
-    dist_dir = 'dist'
+
+    windows_dir = Path(__file__).parent
+    dist_dir = windows_dir / 'dist'
     readme_content = '''# ReBugTracker 可执行版本
 
 ## 📋 使用说明
@@ -381,17 +426,19 @@ def show_results():
     print("=" * 60)
     print("🎉 打包完成!")
     print("=" * 60)
-    
-    dist_dir = 'dist'
-    if os.path.exists(dist_dir):
-        print(f"📂 输出目录: {os.path.abspath(dist_dir)}")
-        
+
+    windows_dir = Path(__file__).parent
+    dist_dir = windows_dir / 'dist'
+
+    if dist_dir.exists():
+        print(f"📂 输出目录: {dist_dir.absolute()}")
+
         # 列出主要文件
-        exe_file = os.path.join(dist_dir, 'ReBugTracker.exe')
-        if os.path.exists(exe_file):
-            size = os.path.getsize(exe_file) / (1024 * 1024)  # MB
+        exe_file = dist_dir / 'ReBugTracker.exe'
+        if exe_file.exists():
+            size = exe_file.stat().st_size / (1024 * 1024)  # MB
             print(f"📦 可执行文件: ReBugTracker.exe ({size:.1f} MB)")
-        
+
         print()
         print("🚀 使用方法:")
         print("1. 进入 dist 目录")

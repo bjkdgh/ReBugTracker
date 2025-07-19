@@ -84,11 +84,15 @@ def run_platform_build(system_type):
     script_dir = Path(__file__).parent
     
     if system_type == 'windows':
-        # Windows 使用项目根目录的打包脚本
-        script_path = script_dir.parent / 'build_exe.py'
+        # Windows 使用 windows 目录下的打包脚本
+        script_path = script_dir / 'windows' / 'build_windows.py'
         if not script_path.exists():
             print_error(f"Windows 打包脚本不存在: {script_path}")
-            return False
+            print("尝试使用传统构建脚本...")
+            script_path = script_dir / 'windows' / 'build_exe.py'
+            if not script_path.exists():
+                print_error(f"传统 Windows 打包脚本也不存在: {script_path}")
+                return False
     elif system_type == 'macos':
         script_path = script_dir / 'build_macos.py'
     elif system_type == 'linux':
