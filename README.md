@@ -70,7 +70,7 @@ cd cross_platform_build\windows
 # 方式1: 新构建系统（推荐）
 python build_windows.py
 
-# 方式2: 传统构建系统
+# 方式2: 传统构建系统（除了生产exe程序，也会生产完整文档）
 python build_exe.py
 
 # 🚀 部署运行（不生成 dist 目录）
