@@ -4,6 +4,7 @@ setlocal enabledelayedexpansion
 
 REM 固定工作目录为脚本所在目录，解决管理员权限下路径问题
 cd /d "%~dp0"
+cd /d "%~dp0\..\.."
 set "PROJECT_ROOT=%cd%"
 
 :welcome
@@ -137,7 +138,7 @@ if not exist "%VBS_SCRIPT_PATH%" (
     echo [信息] VBS 启动脚本未找到
     echo 查找路径: %VBS_SCRIPT_PATH%
     echo.
-    echo 💡 部署过程中将自动创建 VBS 启动脚本
+    echo  部署过程中将自动创建 VBS 启动脚本
     echo 或者您可以手动指定现有的 VBS 脚本路径
     echo.
     goto vbs_path_config
@@ -149,7 +150,7 @@ goto check_vbs_path
 
 :vbs_path_config
 echo.
-echo 📁 VBS 脚本路径配置
+echo  VBS 脚本路径配置
 echo ========================================
 echo.
 echo 当前查找路径: %VBS_SCRIPT_PATH%
@@ -212,7 +213,7 @@ echo.
 echo ' 启动 Waitress 服务器
 echo WshShell.Run "python deployment_tools\run_waitress.py", 0, False
 echo.
-echo MsgBox "ReBugTracker 已在后台启动，访问地址: http://localhost:5000", vbInformation
+echo MsgBox "ReBugTracker started successfully! Visit: http://localhost:5000", vbInformation
 ) > "%TEMP_VBS%"
 
 REM 替换原文件
@@ -549,7 +550,7 @@ echo ' 在后台运行^(窗口隐藏^)
 echo shell.Run command, 0, False
 echo.
 echo ' 显示启动提示^(可选^)
-echo MsgBox "ReBugTracker 已在后台启动" ^& vbCrLf ^& "访问地址: http://localhost:5000", vbInformation, "ReBugTracker"
+echo MsgBox "ReBugTracker started in background" ^& vbCrLf ^& "Access URL: http://localhost:5000", vbInformation, "ReBugTracker"
 ) > "%VBS_SCRIPT_PATH%"
 
 if exist "%VBS_SCRIPT_PATH%" (
@@ -562,7 +563,7 @@ if exist "%VBS_SCRIPT_PATH%" (
 
 echo.
 echo 正在使用 VBS 脚本后台启动 ReBugTracker...
-echo 启动命令: wscript.exe "%VBS_SCRIPT_PATH%"
+echo Start command: wscript.exe "%VBS_SCRIPT_PATH%"
 wscript.exe "%VBS_SCRIPT_PATH%"
 if errorlevel 1 (
     echo [警告] VBS 脚本启动可能失败
@@ -676,13 +677,13 @@ if "%DEPLOYMENT_MODE%"=="docker" (
 ) else if "%DEPLOYMENT_MODE%"=="vbs" (
     echo VBS 后台启动管理：
     echo - VBS 脚本：%VBS_SCRIPT_PATH%
-    echo - 重新启动：wscript.exe "%VBS_SCRIPT_PATH%"
+    echo - Restart: wscript.exe "%VBS_SCRIPT_PATH%"
     echo - 停止服务：结束 Python 进程（任务管理器）
     echo - 查看日志：logs\ 目录
     echo - 配置文件：.env
     echo - 服务端口：5000 （可在 .env 文件中修改 SERVER_PORT）
     echo.
-    echo 💡 开机自动启动设置：
+    echo  开机自动启动设置：
     echo - 将 VBS 脚本添加到启动文件夹
     echo - 启动文件夹路径：%%APPDATA%%\Microsoft\Windows\Start Menu\Programs\Startup
 ) else (
@@ -847,7 +848,7 @@ echo.
 echo [安装] 准备安装 Python...
 echo.
 echo 重要提示：
-echo 1. 安装过程中请务必勾选 "Add Python to PATH" 选项
+echo 1. Please check "Add Python to PATH" option during installation
 echo 2. 建议选择 "Install for all users" 选项
 echo 3. 安装完成后不要立即关闭安装程序
 echo.
@@ -880,7 +881,7 @@ if errorlevel 1 (
     echo [警告] Python 可能未正确安装或未添加到 PATH
     echo.
     echo 可能的原因：
-    echo 1. 安装时未勾选 "Add Python to PATH"
+    echo 1. "Add Python to PATH" was not checked during installation
     echo 2. 需要重启命令提示符
     echo 3. 可能是加载问题，可关闭此脚本，在cmd中输入python -v查看
     echo 4. 需要重新登录 Windows

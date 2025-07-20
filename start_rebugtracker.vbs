@@ -28,4 +28,4 @@ command = """" & pythonPath & """ """ & waitressScript & """"
 shell.Run command, 0, False
 
 ' 显示启动提示(可选)
-MsgBox "ReBugTracker 已在后台启动" & vbCrLf & "访问地址: http://localhost:5000", vbInformation, "ReBugTracker"
+MsgBox "ReBugTracker started in background" & vbCrLf & "Access URL: http://localhost:5000", vbInformation, "ReBugTracker"
