@@ -19,6 +19,7 @@ DEPLOYMENT_MODE=""
 DATABASE_TYPE=""
 USE_DOCKER=""
 DOCKER_COMPOSE_FILE=""
+DOCKER_COMPOSE_CMD=""
 PROJECT_DIR=$(pwd)
 VENV_PATH="$PROJECT_DIR/.venv"
 DB_HOST="localhost"
@@ -26,6 +27,20 @@ DB_PORT="5432"
 DB_NAME="rebugtracker"
 DB_USER="postgres"
 DB_PASSWORD=""
+
+# 系统信息变量
+OS=""
+DISTRO=""
+VERSION=""
+ARCH=""
+PKG_MANAGER=""
+PKG_UPDATE=""
+PKG_INSTALL=""
+SERVICE_MANAGER=""
+SERVICE_START=""
+SERVICE_ENABLE=""
+PYTHON_CMD=""
+IS_APPLE_SILICON=false
 
 # 打印带颜色的消息
 print_info() { echo -e "${BLUE}ℹ️  $1${NC}"; }
@@ -62,34 +77,521 @@ welcome() {
     echo "   • PostgreSQL: 高性能，适合生产环境"
     echo "   • SQLite: 轻量级，适合小团队"
     echo ""
+    echo "🔧 故障诊断"
+    echo "   • 如遇到 Docker 问题，可运行: ./deploy.sh --diagnose"
+    echo "   • 提供详细的环境检查和故障排除建议"
+    echo ""
     print_info "脚本将引导您完成所有配置，无需手动修改配置文件"
     echo ""
     read -p "按回车键开始部署..." -r
 }
 
+# Docker 诊断功能
+diagnose_docker_macos() {
+    print_step "Docker 环境诊断..."
+    echo ""
+
+    print_info "=== Docker 命令检查 ==="
+    if command -v docker &> /dev/null; then
+        print_success "✓ docker 命令可用"
+        echo "  路径: $(which docker)"
+        echo "  版本: $(docker --version 2>/dev/null || echo '获取版本失败')"
+    else
+        print_error "✗ docker 命令不可用"
+    fi
+
+    echo ""
+    print_info "=== Docker 服务状态 ==="
+    if docker info &> /dev/null 2>&1; then
+        print_success "✓ Docker 服务运行中"
+        echo "  容器数量: $(docker ps -q | wc -l | tr -d ' ')"
+        echo "  镜像数量: $(docker images -q | wc -l | tr -d ' ')"
+        echo "  运行中容器: $(docker ps --format 'table {{.Names}}\t{{.Status}}' | tail -n +2 | wc -l | tr -d ' ')"
+        echo "  Docker 根目录: $(docker info --format '{{.DockerRootDir}}' 2>/dev/null || echo '未知')"
+        echo "  存储驱动: $(docker info --format '{{.Driver}}' 2>/dev/null || echo '未知')"
+    else
+        print_warning "✗ Docker 服务未运行或无法连接"
+        local docker_error=$(docker info 2>&1 | head -3)
+        echo "  错误信息: $docker_error"
+
+        # 提供详细的错误分析
+        if echo "$docker_error" | grep -q "Cannot connect to the Docker daemon"; then
+            print_info "  分析: Docker 守护进程未运行"
+        elif echo "$docker_error" | grep -q "permission denied"; then
+            print_info "  分析: 权限问题，可能需要将用户添加到 docker 组"
+        elif echo "$docker_error" | grep -q "dial unix"; then
+            print_info "  分析: Docker socket 连接问题"
+        fi
+    fi
+
+    echo ""
+    print_info "=== Docker 安装检测 ==="
+
+    # Docker Desktop
+    if [ -d "/Applications/Docker.app" ]; then
+        print_success "✓ Docker Desktop 已安装"
+        echo "  路径: /Applications/Docker.app"
+
+        # 检查 Docker Desktop 是否正在运行
+        if pgrep -f "Docker Desktop" > /dev/null; then
+            print_success "  状态: 正在运行"
+        else
+            print_warning "  状态: 未运行"
+        fi
+
+        # 检查 Docker Desktop 版本
+        local desktop_version=""
+        if [ -f "/Applications/Docker.app/Contents/Info.plist" ]; then
+            desktop_version=$(defaults read /Applications/Docker.app/Contents/Info.plist CFBundleShortVersionString 2>/dev/null || echo "未知")
+            echo "  版本: $desktop_version"
+        fi
+    else
+        print_info "✗ Docker Desktop 未检测到"
+    fi
+
+    # Homebrew Docker
+    if command -v brew &> /dev/null; then
+        if brew list --cask 2>/dev/null | grep -q "^docker$"; then
+            print_success "✓ Homebrew Docker 已安装"
+            local brew_docker_version=$(brew list --cask --versions docker 2>/dev/null | cut -d' ' -f2 || echo "未知")
+            echo "  版本: $brew_docker_version"
+        else
+            print_info "✗ Homebrew Docker 未安装"
+        fi
+    else
+        print_info "✗ Homebrew 不可用"
+    fi
+
+    # Colima
+    if command -v colima &> /dev/null; then
+        print_success "✓ Colima 已安装"
+        echo "  版本: $(colima version 2>/dev/null || echo '获取版本失败')"
+        local colima_status=$(colima status 2>/dev/null || echo '获取状态失败')
+        echo "  状态: $colima_status"
+
+        if echo "$colima_status" | grep -q "Running"; then
+            print_success "  Colima 正在运行"
+        else
+            print_warning "  Colima 未运行"
+        fi
+    else
+        print_info "✗ Colima 未安装"
+    fi
+
+    echo ""
+    print_info "=== Docker Compose 检查 ==="
+    if docker compose version &> /dev/null; then
+        print_success "✓ Docker Compose V2 可用"
+        echo "  版本: $(docker compose version --short 2>/dev/null || echo '获取版本失败')"
+    elif command -v docker-compose &> /dev/null; then
+        print_success "✓ Docker Compose V1 可用"
+        echo "  版本: $(docker-compose --version 2>/dev/null || echo '获取版本失败')"
+    else
+        print_error "✗ Docker Compose 不可用"
+    fi
+
+    echo ""
+    print_info "=== 网络连接检查 ==="
+    if ping -c 1 docker.io &> /dev/null; then
+        print_success "✓ 可以连接到 Docker Hub"
+    else
+        print_warning "✗ 无法连接到 Docker Hub"
+        echo "  这可能影响镜像下载"
+    fi
+
+    echo ""
+    print_info "=== 系统资源检查 ==="
+    echo "  操作系统: $(sw_vers -productName) $(sw_vers -productVersion)"
+    echo "  架构: $(uname -m)"
+    echo "  内存: $(sysctl -n hw.memsize | awk '{print int($1/1024/1024/1024) "GB"}')"
+    echo "  CPU 核心: $(sysctl -n hw.ncpu)"
+    echo "  磁盘空间: $(df -h / | tail -1 | awk '{print $4}') 可用"
+    echo "  Shell: $SHELL"
+
+    echo ""
+    print_info "=== 环境变量检查 ==="
+    echo "  PATH: $PATH"
+    if [ -n "$DOCKER_HOST" ]; then
+        echo "  DOCKER_HOST: $DOCKER_HOST"
+    else
+        echo "  DOCKER_HOST: 未设置"
+    fi
+
+    echo ""
+    print_info "=== 故障排除建议 ==="
+    if ! command -v docker &> /dev/null; then
+        print_warning "Docker 未安装，建议："
+        echo "  1. 安装 Docker Desktop: https://www.docker.com/products/docker-desktop"
+        echo "  2. 或使用 Homebrew: brew install --cask docker"
+        echo "  3. 或使用 Colima: brew install colima docker"
+    elif ! docker info &> /dev/null 2>&1; then
+        print_warning "Docker 已安装但未运行，建议："
+        echo "  1. 启动 Docker Desktop 应用"
+        echo "  2. 或运行: colima start (如果使用 Colima)"
+        echo "  3. 检查系统资源是否充足"
+        echo "  4. 重启 Docker 服务"
+    else
+        print_success "Docker 环境正常"
+    fi
+
+    echo ""
+    read -p "按回车键继续部署，或按 Ctrl+C 退出..." -r
+}
+
+# Linux Docker 诊断功能
+diagnose_docker_linux() {
+    print_step "Docker 环境诊断..."
+    echo ""
+
+    print_info "=== Docker 命令检查 ==="
+    if command -v docker &> /dev/null; then
+        print_success "✓ docker 命令可用"
+        echo "  路径: $(which docker)"
+        echo "  版本: $(docker --version 2>/dev/null || echo '获取版本失败')"
+    else
+        print_error "✗ docker 命令不可用"
+    fi
+
+    echo ""
+    print_info "=== Docker 服务状态 ==="
+    if docker info &> /dev/null 2>&1; then
+        print_success "✓ Docker 服务运行中"
+        echo "  容器数量: $(docker ps -q | wc -l | tr -d ' ')"
+        echo "  镜像数量: $(docker images -q | wc -l | tr -d ' ')"
+        echo "  运行中容器: $(docker ps --format 'table {{.Names}}\t{{.Status}}' | tail -n +2 | wc -l | tr -d ' ')"
+        echo "  Docker 根目录: $(docker info --format '{{.DockerRootDir}}' 2>/dev/null || echo '未知')"
+        echo "  存储驱动: $(docker info --format '{{.Driver}}' 2>/dev/null || echo '未知')"
+    else
+        print_warning "✗ Docker 服务未运行或无法连接"
+        local docker_error=$(docker info 2>&1 | head -3)
+        echo "  错误信息: $docker_error"
+
+        # 提供详细的错误分析
+        if echo "$docker_error" | grep -q "Cannot connect to the Docker daemon"; then
+            print_info "  分析: Docker 守护进程未运行"
+        elif echo "$docker_error" | grep -q "permission denied"; then
+            print_info "  分析: 权限问题，可能需要将用户添加到 docker 组"
+        elif echo "$docker_error" | grep -q "dial unix"; then
+            print_info "  分析: Docker socket 连接问题"
+        fi
+    fi
+
+    echo ""
+    print_info "=== Docker 安装检测 ==="
+    if command -v docker &> /dev/null; then
+        print_success "✓ Docker 已安装"
+        local docker_version=$(docker --version 2>/dev/null | cut -d' ' -f3 | cut -d',' -f1 || echo "未知")
+        echo "  版本: $docker_version"
+    else
+        print_error "✗ Docker 未安装"
+    fi
+
+    echo ""
+    print_info "=== Docker Compose 检查 ==="
+    if docker compose version &> /dev/null; then
+        print_success "✓ Docker Compose V2 可用"
+        echo "  版本: $(docker compose version --short 2>/dev/null || echo '获取版本失败')"
+    elif command -v docker-compose &> /dev/null; then
+        print_success "✓ Docker Compose V1 可用"
+        echo "  版本: $(docker-compose --version 2>/dev/null || echo '获取版本失败')"
+    else
+        print_error "✗ Docker Compose 不可用"
+    fi
+
+    echo ""
+    print_info "=== 系统服务检查 ==="
+    if command -v systemctl &> /dev/null; then
+        local docker_status=$(systemctl is-active docker 2>/dev/null || echo "未知")
+        echo "  Docker 服务状态: $docker_status"
+        local docker_enabled=$(systemctl is-enabled docker 2>/dev/null || echo "未知")
+        echo "  Docker 开机启动: $docker_enabled"
+    fi
+
+    echo ""
+    print_info "=== 用户权限检查 ==="
+    if groups | grep -q docker; then
+        print_success "✓ 当前用户在 docker 组中"
+    else
+        print_warning "✗ 当前用户不在 docker 组中"
+        echo "  建议运行: sudo usermod -aG docker $USER"
+    fi
+
+    echo ""
+    print_info "=== 网络连接检查 ==="
+    if ping -c 1 docker.io &> /dev/null; then
+        print_success "✓ 可以连接到 Docker Hub"
+    else
+        print_warning "✗ 无法连接到 Docker Hub"
+        echo "  这可能影响镜像下载"
+    fi
+
+    echo ""
+    print_info "=== 系统资源检查 ==="
+    echo "  操作系统: $(lsb_release -d 2>/dev/null | cut -f2 || cat /etc/os-release | grep PRETTY_NAME | cut -d'=' -f2 | tr -d '"' || echo '未知')"
+    echo "  架构: $(uname -m)"
+    echo "  内核版本: $(uname -r)"
+    echo "  内存: $(free -h | grep Mem | awk '{print $2}') 总计, $(free -h | grep Mem | awk '{print $7}') 可用"
+    echo "  CPU 核心: $(nproc)"
+    echo "  磁盘空间: $(df -h / | tail -1 | awk '{print $4}') 可用"
+
+    echo ""
+    print_info "=== 故障排除建议 ==="
+    if ! command -v docker &> /dev/null; then
+        print_warning "Docker 未安装，建议："
+        echo "  1. Ubuntu/Debian: sudo apt update && sudo apt install docker.io"
+        echo "  2. CentOS/RHEL: sudo yum install docker"
+        echo "  3. 或参考官方文档: https://docs.docker.com/engine/install/"
+    elif ! docker info &> /dev/null 2>&1; then
+        print_warning "Docker 已安装但未运行，建议："
+        echo "  1. 启动服务: sudo systemctl start docker"
+        echo "  2. 设置开机启动: sudo systemctl enable docker"
+        echo "  3. 添加用户到 docker 组: sudo usermod -aG docker $USER"
+        echo "  4. 重新登录或运行: newgrp docker"
+    else
+        print_success "Docker 环境正常"
+    fi
+
+    echo ""
+    read -p "按回车键继续部署，或按 Ctrl+C 退出..." -r
+}
+
+# Linux Docker 诊断功能
+diagnose_docker_linux() {
+    print_step "Docker 环境诊断..."
+    echo ""
+
+    print_info "=== Docker 命令检查 ==="
+    if command -v docker &> /dev/null; then
+        print_success "✓ docker 命令可用"
+        echo "  路径: $(which docker)"
+        echo "  版本: $(docker --version 2>/dev/null || echo '获取版本失败')"
+    else
+        print_error "✗ docker 命令不可用"
+    fi
+
+    echo ""
+    print_info "=== Docker 服务状态 ==="
+    if docker info &> /dev/null 2>&1; then
+        print_success "✓ Docker 服务运行中"
+        echo "  容器数量: $(docker ps -q | wc -l | tr -d ' ')"
+        echo "  镜像数量: $(docker images -q | wc -l | tr -d ' ')"
+        echo "  运行中容器: $(docker ps --format 'table {{.Names}}\t{{.Status}}' | tail -n +2 | wc -l | tr -d ' ')"
+        echo "  Docker 根目录: $(docker info --format '{{.DockerRootDir}}' 2>/dev/null || echo '未知')"
+        echo "  存储驱动: $(docker info --format '{{.Driver}}' 2>/dev/null || echo '未知')"
+    else
+        print_warning "✗ Docker 服务未运行或无法连接"
+        local docker_error=$(docker info 2>&1 | head -3)
+        echo "  错误信息: $docker_error"
+
+        # 提供详细的错误分析
+        if echo "$docker_error" | grep -q "Cannot connect to the Docker daemon"; then
+            print_info "  分析: Docker 守护进程未运行"
+        elif echo "$docker_error" | grep -q "permission denied"; then
+            print_info "  分析: 权限问题，可能需要将用户添加到 docker 组"
+        elif echo "$docker_error" | grep -q "dial unix"; then
+            print_info "  分析: Docker socket 连接问题"
+        fi
+    fi
+
+    echo ""
+    print_info "=== Docker 安装检测 ==="
+    if command -v docker &> /dev/null; then
+        print_success "✓ Docker 已安装"
+        local docker_version=$(docker --version 2>/dev/null | cut -d' ' -f3 | cut -d',' -f1 || echo "未知")
+        echo "  版本: $docker_version"
+    else
+        print_error "✗ Docker 未安装"
+    fi
+
+    echo ""
+    print_info "=== Docker Compose 检查 ==="
+    if docker compose version &> /dev/null; then
+        print_success "✓ Docker Compose V2 可用"
+        echo "  版本: $(docker compose version --short 2>/dev/null || echo '获取版本失败')"
+    elif command -v docker-compose &> /dev/null; then
+        print_success "✓ Docker Compose V1 可用"
+        echo "  版本: $(docker-compose --version 2>/dev/null || echo '获取版本失败')"
+    else
+        print_error "✗ Docker Compose 不可用"
+    fi
+
+    echo ""
+    print_info "=== 系统服务检查 ==="
+    if command -v systemctl &> /dev/null; then
+        local docker_status=$(systemctl is-active docker 2>/dev/null || echo "未知")
+        echo "  Docker 服务状态: $docker_status"
+        local docker_enabled=$(systemctl is-enabled docker 2>/dev/null || echo "未知")
+        echo "  Docker 开机启动: $docker_enabled"
+    fi
+
+    echo ""
+    print_info "=== 用户权限检查 ==="
+    if groups | grep -q docker; then
+        print_success "✓ 当前用户在 docker 组中"
+    else
+        print_warning "✗ 当前用户不在 docker 组中"
+        echo "  建议运行: sudo usermod -aG docker $USER"
+    fi
+
+    echo ""
+    print_info "=== 网络连接检查 ==="
+    if ping -c 1 docker.io &> /dev/null; then
+        print_success "✓ 可以连接到 Docker Hub"
+    else
+        print_warning "✗ 无法连接到 Docker Hub"
+        echo "  这可能影响镜像下载"
+    fi
+
+    echo ""
+    print_info "=== 系统资源检查 ==="
+    echo "  操作系统: $(lsb_release -d 2>/dev/null | cut -f2 || cat /etc/os-release | grep PRETTY_NAME | cut -d'=' -f2 | tr -d '"' || echo '未知')"
+    echo "  架构: $(uname -m)"
+    echo "  内核版本: $(uname -r)"
+    echo "  内存: $(free -h | grep Mem | awk '{print $2}') 总计, $(free -h | grep Mem | awk '{print $7}') 可用"
+    echo "  CPU 核心: $(nproc)"
+    echo "  磁盘空间: $(df -h / | tail -1 | awk '{print $4}') 可用"
+
+    echo ""
+    print_info "=== 故障排除建议 ==="
+    if ! command -v docker &> /dev/null; then
+        print_warning "Docker 未安装，建议："
+        echo "  1. Ubuntu/Debian: sudo apt update && sudo apt install docker.io"
+        echo "  2. CentOS/RHEL: sudo yum install docker"
+        echo "  3. 或参考官方文档: https://docs.docker.com/engine/install/"
+    elif ! docker info &> /dev/null 2>&1; then
+        print_warning "Docker 已安装但未运行，建议："
+        echo "  1. 启动服务: sudo systemctl start docker"
+        echo "  2. 设置开机启动: sudo systemctl enable docker"
+        echo "  3. 添加用户到 docker 组: sudo usermod -aG docker $USER"
+        echo "  4. 重新登录或运行: newgrp docker"
+    else
+        print_success "Docker 环境正常"
+    fi
+
+    echo ""
+    read -p "按回车键继续部署，或按 Ctrl+C 退出..." -r
+}
+
 # 检测操作系统
 detect_os() {
-    print_step "检测操作系统..."
-    
-    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-        if [ -f /etc/debian_version ]; then
-            OS="ubuntu"
-            print_success "检测到 Ubuntu/Debian 系统"
-        elif [ -f /etc/redhat-release ]; then
-            OS="centos"
-            print_success "检测到 CentOS/RHEL 系统"
-        else
-            OS="linux"
-            print_success "检测到 Linux 系统"
-        fi
-    elif [[ "$OSTYPE" == "darwin"* ]]; then
+    print_step "详细检测操作系统..."
+
+    # 获取架构信息
+    ARCH=$(uname -m)
+
+    if [[ "$OSTYPE" == "darwin"* ]]; then
         OS="macos"
-        print_success "检测到 macOS 系统"
+        # 检测 macOS 版本
+        MACOS_VERSION=$(sw_vers -productVersion 2>/dev/null || echo "未知")
+        print_success "检测到 macOS $MACOS_VERSION ($ARCH)"
+
+        # 检测 Apple Silicon
+        if [[ "$ARCH" == "arm64" ]]; then
+            IS_APPLE_SILICON=true
+            print_info "检测到 Apple Silicon Mac"
+        fi
+
+        # macOS 包管理器检测
+        if command -v brew &> /dev/null; then
+            PKG_MANAGER="brew"
+            PKG_INSTALL="brew install"
+            print_info "包管理器: Homebrew"
+        else
+            print_warning "未检测到 Homebrew"
+        fi
+
+    elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        # 详细的 Linux 发行版检测
+        if command -v lsb_release &> /dev/null; then
+            DISTRO=$(lsb_release -si | tr '[:upper:]' '[:lower:]')
+            VERSION=$(lsb_release -sr)
+        elif [ -f /etc/os-release ]; then
+            source /etc/os-release
+            DISTRO=$(echo "$ID" | tr '[:upper:]' '[:lower:]')
+            VERSION="$VERSION_ID"
+        elif [ -f /etc/debian_version ]; then
+            DISTRO="debian"
+            VERSION=$(cat /etc/debian_version)
+        elif [ -f /etc/redhat-release ]; then
+            DISTRO="rhel"
+            VERSION=$(grep -oE '[0-9]+\.[0-9]+' /etc/redhat-release | head -1)
+        else
+            DISTRO="linux"
+            VERSION="未知"
+        fi
+
+        OS="linux"
+        print_success "检测到 Linux: $DISTRO $VERSION ($ARCH)"
+
+        # 设置包管理器
+        case $DISTRO in
+            ubuntu|debian|linuxmint|pop)
+                PKG_MANAGER="apt"
+                PKG_UPDATE="apt update"
+                PKG_INSTALL="apt install -y"
+                ;;
+            centos|rhel|fedora|rocky|almalinux|ol)
+                if command -v dnf &> /dev/null; then
+                    PKG_MANAGER="dnf"
+                    PKG_UPDATE="dnf check-update || true"
+                    PKG_INSTALL="dnf install -y"
+                else
+                    PKG_MANAGER="yum"
+                    PKG_UPDATE="yum check-update || true"
+                    PKG_INSTALL="yum install -y"
+                fi
+                ;;
+            opensuse*|sles)
+                PKG_MANAGER="zypper"
+                PKG_UPDATE="zypper refresh"
+                PKG_INSTALL="zypper install -y"
+                ;;
+            arch|manjaro|endeavouros)
+                PKG_MANAGER="pacman"
+                PKG_UPDATE="pacman -Sy"
+                PKG_INSTALL="pacman -S --noconfirm"
+                ;;
+            alpine)
+                PKG_MANAGER="apk"
+                PKG_UPDATE="apk update"
+                PKG_INSTALL="apk add"
+                ;;
+            *)
+                print_warning "未知的 Linux 发行版: $DISTRO，使用通用设置"
+                PKG_MANAGER="unknown"
+                ;;
+        esac
+
+        print_info "包管理器: $PKG_MANAGER"
+
     else
         print_error "不支持的操作系统: $OSTYPE"
-        echo "请在 Linux 或 macOS 系统上运行此脚本"
+        echo "支持的系统: Linux (Ubuntu/Debian/CentOS/RHEL/Fedora/openSUSE/Arch/Alpine) 和 macOS"
         exit 1
     fi
+
+    # 检测系统服务管理器
+    if command -v systemctl &> /dev/null && systemctl --version &> /dev/null; then
+        SERVICE_MANAGER="systemd"
+        SERVICE_START="systemctl start"
+        SERVICE_ENABLE="systemctl enable"
+        SERVICE_STATUS="systemctl is-active"
+    elif command -v service &> /dev/null; then
+        SERVICE_MANAGER="sysv"
+        SERVICE_START="service"
+        SERVICE_ENABLE="chkconfig --add"
+        SERVICE_STATUS="service"
+    elif command -v rc-service &> /dev/null; then
+        SERVICE_MANAGER="openrc"
+        SERVICE_START="rc-service"
+        SERVICE_ENABLE="rc-update add"
+        SERVICE_STATUS="rc-service"
+    else
+        SERVICE_MANAGER="unknown"
+        print_warning "未检测到系统服务管理器"
+    fi
+
+    print_info "服务管理器: $SERVICE_MANAGER"
 }
 
 # 选择部署方式
@@ -174,65 +676,372 @@ choose_database_type() {
 
 # 检查Docker环境
 check_docker() {
-    print_step "检查Docker环境..."
-    
+    print_step "智能检测 Docker 环境..."
+
+    case $OS in
+        "macos")
+            check_docker_macos
+            ;;
+        "linux")
+            check_docker_linux
+            ;;
+    esac
+
+    # 检测 Docker Compose 命令
+    detect_docker_compose_cmd
+
+    print_success "Docker 环境检查完成"
+}
+
+# macOS Docker 检测
+check_docker_macos() {
+    local docker_methods=()
+    local preferred_docker=""
+
+    # 首先检查 Docker 命令是否可用 (最重要的检查)
+    if ! command -v docker &> /dev/null; then
+        print_error "Docker 命令不可用"
+        print_info "请确保 Docker 已正确安装并添加到 PATH"
+        echo ""
+        print_info "是否需要运行 Docker 环境诊断来获取详细信息？"
+        read -p "运行诊断 (y/n): " run_diagnosis
+        if [[ $run_diagnosis =~ ^[Yy]$ ]]; then
+            diagnose_docker_macos
+        fi
+        show_docker_install_options_macos
+        exit 1
+    fi
+
+    print_success "Docker 命令可用"
+
+    # 检测具体的安装方式 (用于确定启动方法)
+    # 检测 Docker Desktop
+    if [ -d "/Applications/Docker.app" ]; then
+        docker_methods+=("Docker Desktop")
+        preferred_docker="desktop"
+        print_info "检测到 Docker Desktop 安装"
+    fi
+
+    # 检测 Homebrew Docker (更安全的检测方式)
+    if command -v brew &> /dev/null; then
+        if brew list --cask 2>/dev/null | grep -q "^docker$"; then
+            docker_methods+=("Homebrew Docker")
+            if [ -z "$preferred_docker" ]; then
+                preferred_docker="homebrew"
+            fi
+            print_info "检测到 Homebrew Docker 安装"
+        fi
+    fi
+
+    # 检测 Colima
+    if command -v colima &> /dev/null; then
+        docker_methods+=("Colima")
+        if [ -z "$preferred_docker" ]; then
+            preferred_docker="colima"
+        fi
+        print_info "检测到 Colima 安装"
+    fi
+
+    # 如果没有检测到具体安装方式，使用通用方式
+    if [ ${#docker_methods[@]} -eq 0 ]; then
+        docker_methods+=("Docker (未知安装方式)")
+        preferred_docker="other"
+        print_info "Docker 可用但未检测到具体安装方式"
+    fi
+
+    print_info "Docker 安装方式: ${docker_methods[*]}"
+
+    # 检查 Docker 服务状态
+    ensure_docker_running_macos "$preferred_docker"
+}
+
+# 显示 macOS Docker 安装选项
+show_docker_install_options_macos() {
+    echo ""
+    print_info "macOS Docker 安装选项："
+    echo ""
+    echo "1) Docker Desktop (推荐新手):"
+    if [[ "$IS_APPLE_SILICON" == "true" ]]; then
+        echo "   https://desktop.docker.com/mac/main/arm64/Docker.dmg"
+    else
+        echo "   https://desktop.docker.com/mac/main/amd64/Docker.dmg"
+    fi
+    echo ""
+    echo "2) Homebrew (推荐开发者):"
+    echo "   brew install --cask docker"
+    echo ""
+    echo "3) Colima (轻量级):"
+    echo "   brew install colima docker"
+    echo "   colima start"
+    echo ""
+    print_error "请选择一种方式安装 Docker 后重新运行此脚本"
+}
+
+# 确保 macOS Docker 运行
+ensure_docker_running_macos() {
+    local method=$1
+
+    print_step "检查 Docker 服务状态..."
+
+    if docker info &> /dev/null; then
+        print_success "Docker 服务正在运行"
+
+        # 显示 Docker 版本信息
+        local docker_version=$(docker --version 2>/dev/null || echo "未知版本")
+        print_info "Docker 版本: $docker_version"
+        return
+    fi
+
+    print_warning "Docker 命令可用但服务未运行，尝试启动..."
+
+    case $method in
+        "desktop")
+            if [ -d "/Applications/Docker.app" ]; then
+                print_info "启动 Docker Desktop..."
+                open -a Docker
+
+                # 等待 Docker 启动（最多等待 120 秒）
+                local count=0
+                while [ $count -lt 24 ]; do
+                    if docker info &> /dev/null; then
+                        print_success "Docker Desktop 启动成功"
+                        return
+                    fi
+                    sleep 5
+                    count=$((count + 1))
+                    echo -n "."
+                done
+                echo ""
+                print_error "Docker Desktop 启动超时，请手动启动"
+                echo ""
+                print_info "是否需要运行 Docker 环境诊断来获取详细信息？"
+                read -p "运行诊断 (y/n): " run_diagnosis
+                if [[ $run_diagnosis =~ ^[Yy]$ ]]; then
+                    diagnose_docker_macos
+                fi
+                exit 1
+            fi
+            ;;
+        "colima")
+            if command -v colima &> /dev/null; then
+                print_info "启动 Colima..."
+                colima start
+                if docker info &> /dev/null; then
+                    print_success "Colima 启动成功"
+                    return
+                fi
+            fi
+            ;;
+        "other")
+            print_warning "检测到 Docker 命令但无法自动启动"
+            print_info "请手动确保 Docker 服务正在运行"
+            print_info "常见启动方式："
+            echo "  • Docker Desktop: 打开 Docker Desktop 应用"
+            echo "  • Colima: colima start"
+            echo "  • 其他方式: 请参考相应文档"
+            echo ""
+            read -p "Docker 服务已启动？按回车继续..." -r
+            if ! docker info &> /dev/null; then
+                print_error "Docker 服务仍未运行，请启动后重试"
+                echo ""
+                print_info "是否需要运行 Docker 环境诊断来获取详细信息？"
+                read -p "运行诊断 (y/n): " run_diagnosis
+                if [[ $run_diagnosis =~ ^[Yy]$ ]]; then
+                    diagnose_docker_macos
+                fi
+                exit 1
+            fi
+            print_success "Docker 服务确认运行"
+            return
+            ;;
+    esac
+
+    print_error "无法启动 Docker 服务，请手动启动后重新运行脚本"
+    echo ""
+    print_info "是否需要运行 Docker 环境诊断来获取详细信息？"
+    read -p "运行诊断 (y/n): " run_diagnosis
+    if [[ $run_diagnosis =~ ^[Yy]$ ]]; then
+        diagnose_docker_macos
+    fi
+    exit 1
+}
+
+# Linux Docker 检测
+check_docker_linux() {
     if ! command -v docker &> /dev/null; then
         print_warning "Docker 未安装"
         echo ""
-        echo "请先安装Docker："
-        case $OS in
-            "ubuntu")
-                echo "sudo apt update"
-                echo "sudo apt install -y docker.io docker-compose"
-                echo "sudo systemctl start docker"
-                echo "sudo systemctl enable docker"
-                echo "sudo usermod -aG docker \$USER"
-                ;;
-            "centos")
-                echo "sudo yum install -y docker docker-compose"
-                echo "sudo systemctl start docker"
-                echo "sudo systemctl enable docker"
-                echo "sudo usermod -aG docker \$USER"
-                ;;
-            "macos")
-                echo "请访问 https://docs.docker.com/desktop/mac/install/ 下载安装Docker Desktop"
-                ;;
-        esac
-        echo ""
-        print_error "请安装Docker后重新运行此脚本"
+        print_info "是否需要运行 Docker 环境诊断来获取详细信息？"
+        read -p "运行诊断 (y/n): " run_diagnosis
+        if [[ $run_diagnosis =~ ^[Yy]$ ]]; then
+            diagnose_docker_linux
+        fi
+        show_docker_install_options_linux
         exit 1
     fi
-    
-    if ! command -v docker-compose &> /dev/null; then
-        print_warning "Docker Compose 未安装"
-        case $OS in
-            "ubuntu"|"centos")
-                print_info "正在安装 Docker Compose..."
-                sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-                sudo chmod +x /usr/local/bin/docker-compose
-                ;;
-            "macos")
-                print_error "请安装Docker Desktop，它包含Docker Compose"
-                exit 1
-                ;;
-        esac
-    fi
-    
-    # 检查Docker服务状态
+
+    # 检查 Docker 服务状态
     if ! docker info &> /dev/null; then
-        print_error "Docker 服务未运行，请启动Docker服务"
+        print_warning "Docker 服务未运行，尝试启动..."
+        start_docker_service_linux
+
+        # 如果启动后仍然失败，提供诊断选项
+        if ! docker info &> /dev/null; then
+            print_error "Docker 服务启动失败"
+            echo ""
+            print_info "是否需要运行 Docker 环境诊断来获取详细信息？"
+            read -p "运行诊断 (y/n): " run_diagnosis
+            if [[ $run_diagnosis =~ ^[Yy]$ ]]; then
+                diagnose_docker_linux
+            fi
+            exit 1
+        fi
+    else
+        print_success "Docker 服务正在运行"
+    fi
+}
+
+# 显示 Linux Docker 安装选项
+show_docker_install_options_linux() {
+    echo ""
+    print_info "Linux Docker 安装命令："
+    echo ""
+
+    case $PKG_MANAGER in
+        "apt")
+            echo "# Ubuntu/Debian:"
+            echo "sudo $PKG_UPDATE"
+            echo "sudo $PKG_INSTALL docker.io docker-compose-plugin"
+            echo "sudo $SERVICE_START docker"
+            echo "sudo $SERVICE_ENABLE docker"
+            echo "sudo usermod -aG docker \$USER"
+            ;;
+        "dnf"|"yum")
+            echo "# CentOS/RHEL/Fedora:"
+            echo "sudo $PKG_INSTALL docker docker-compose"
+            echo "sudo $SERVICE_START docker"
+            echo "sudo $SERVICE_ENABLE docker"
+            echo "sudo usermod -aG docker \$USER"
+            ;;
+        "zypper")
+            echo "# openSUSE:"
+            echo "sudo $PKG_INSTALL docker docker-compose"
+            echo "sudo $SERVICE_START docker"
+            echo "sudo $SERVICE_ENABLE docker"
+            echo "sudo usermod -aG docker \$USER"
+            ;;
+        "pacman")
+            echo "# Arch Linux:"
+            echo "sudo $PKG_INSTALL docker docker-compose"
+            echo "sudo $SERVICE_START docker"
+            echo "sudo $SERVICE_ENABLE docker"
+            echo "sudo usermod -aG docker \$USER"
+            ;;
+        "apk")
+            echo "# Alpine Linux:"
+            echo "sudo $PKG_INSTALL docker docker-compose"
+            echo "sudo $SERVICE_START docker"
+            echo "sudo $SERVICE_ENABLE docker default"
+            echo "sudo addgroup \$USER docker"
+            ;;
+        *)
+            echo "请参考 Docker 官方文档安装: https://docs.docker.com/engine/install/"
+            ;;
+    esac
+
+    echo ""
+    print_error "请安装 Docker 后重新运行此脚本"
+}
+
+# 启动 Linux Docker 服务
+start_docker_service_linux() {
+    case $SERVICE_MANAGER in
+        "systemd")
+            sudo systemctl start docker
+            if docker info &> /dev/null; then
+                print_success "Docker 服务启动成功"
+            else
+                print_error "Docker 服务启动失败"
+                exit 1
+            fi
+            ;;
+        "sysv")
+            sudo service docker start
+            sleep 3
+            if docker info &> /dev/null; then
+                print_success "Docker 服务启动成功"
+            else
+                print_error "Docker 服务启动失败"
+                exit 1
+            fi
+            ;;
+        "openrc")
+            sudo rc-service docker start
+            sleep 3
+            if docker info &> /dev/null; then
+                print_success "Docker 服务启动成功"
+            else
+                print_error "Docker 服务启动失败"
+                exit 1
+            fi
+            ;;
+        *)
+            print_error "无法启动 Docker 服务，请手动启动"
+            exit 1
+            ;;
+    esac
+}
+
+# 检测 Docker Compose 命令
+detect_docker_compose_cmd() {
+    # 检查新版本的 docker compose
+    if docker compose version &> /dev/null; then
+        DOCKER_COMPOSE_CMD="docker compose"
+        print_info "使用 Docker Compose V2"
+    elif command -v docker-compose &> /dev/null; then
+        DOCKER_COMPOSE_CMD="docker-compose"
+        print_info "使用 Docker Compose V1"
+    else
+        print_error "Docker Compose 不可用"
+
         case $OS in
-            "ubuntu"|"centos")
-                echo "sudo systemctl start docker"
-                ;;
             "macos")
-                echo "请启动Docker Desktop应用"
+                print_info "Docker Desktop 应该包含 Docker Compose"
+                ;;
+            "linux")
+                print_info "尝试安装 Docker Compose..."
+                install_docker_compose_linux
                 ;;
         esac
-        exit 1
+
+        # 重新检测
+        if docker compose version &> /dev/null; then
+            DOCKER_COMPOSE_CMD="docker compose"
+        elif command -v docker-compose &> /dev/null; then
+            DOCKER_COMPOSE_CMD="docker-compose"
+        else
+            print_error "Docker Compose 安装失败"
+            exit 1
+        fi
     fi
-    
-    print_success "Docker 环境检查完成"
+}
+
+# 安装 Linux Docker Compose
+install_docker_compose_linux() {
+    case $PKG_MANAGER in
+        "apt")
+            sudo $PKG_INSTALL docker-compose-plugin
+            ;;
+        "dnf"|"yum")
+            sudo $PKG_INSTALL docker-compose
+            ;;
+        *)
+            # 通用安装方法
+            print_info "下载 Docker Compose 二进制文件..."
+            sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
+            ;;
+    esac
 }
 
 # 配置Docker环境变量
@@ -339,147 +1148,346 @@ start_docker_services() {
 
     # 停止现有服务
     print_info "停止现有服务..."
-    docker-compose -f "$DOCKER_COMPOSE_FILE" down 2>/dev/null || true
+    $DOCKER_COMPOSE_CMD -f "$DOCKER_COMPOSE_FILE" down 2>/dev/null || true
 
     # 构建并启动服务
     print_info "构建并启动服务..."
-    docker-compose -f "$DOCKER_COMPOSE_FILE" up -d --build
+    $DOCKER_COMPOSE_CMD -f "$DOCKER_COMPOSE_FILE" up -d --build
 
     # 等待服务启动
     print_info "等待服务启动..."
     sleep 10
 
     # 检查服务状态
-    if docker-compose -f "$DOCKER_COMPOSE_FILE" ps | grep -q "Up"; then
+    print_info "检查服务状态..."
+
+    # 等待更长时间让服务完全启动
+    local max_attempts=12
+    local attempt=0
+    local services_running=false
+
+    while [ $attempt -lt $max_attempts ]; do
+        # 检查服务状态 (兼容 Docker Compose V1 和 V2)
+        if $DOCKER_COMPOSE_CMD -f "$DOCKER_COMPOSE_FILE" ps --format table | grep -E "(Up|running)" > /dev/null 2>&1 || \
+           $DOCKER_COMPOSE_CMD -f "$DOCKER_COMPOSE_FILE" ps | grep -E "(Up|running)" > /dev/null 2>&1; then
+            services_running=true
+            break
+        fi
+
+        attempt=$((attempt + 1))
+        echo -n "."
+        sleep 5
+    done
+
+    echo ""
+
+    if [ "$services_running" = true ]; then
         print_success "Docker服务启动成功"
+
+        # 显示服务状态
+        print_info "服务状态："
+        $DOCKER_COMPOSE_CMD -f "$DOCKER_COMPOSE_FILE" ps
     else
-        print_error "Docker服务启动失败"
-        docker-compose -f "$DOCKER_COMPOSE_FILE" logs
+        print_error "Docker服务启动失败或超时"
+        print_info "查看服务日志："
+        $DOCKER_COMPOSE_CMD -f "$DOCKER_COMPOSE_FILE" logs --tail=50
         exit 1
     fi
 }
 
 # 检查并安装系统依赖 (本地部署)
 install_system_dependencies() {
-    print_step "检查系统依赖..."
+    print_step "安装系统依赖..."
 
     case $OS in
-        "ubuntu")
-            print_info "更新软件包列表..."
-            sudo apt update
-
-            print_info "安装系统依赖..."
-            sudo apt install -y \
-                curl \
-                wget \
-                git \
-                build-essential \
-                libssl-dev \
-                libffi-dev \
-                python3-dev \
-                python3-pip \
-                python3-venv
-
-            if [ "$DATABASE_TYPE" = "postgres" ]; then
-                sudo apt install -y \
-                    postgresql \
-                    postgresql-contrib \
-                    postgresql-client \
-                    libpq-dev
-            fi
-            ;;
-
-        "centos")
-            print_info "安装系统依赖..."
-            sudo yum groupinstall -y "Development Tools"
-            sudo yum install -y \
-                curl \
-                wget \
-                git \
-                openssl-devel \
-                libffi-devel \
-                python3 \
-                python3-pip \
-                python3-devel
-
-            if [ "$DATABASE_TYPE" = "postgres" ]; then
-                sudo yum install -y \
-                    postgresql-server \
-                    postgresql-contrib \
-                    postgresql-devel
-            fi
-            ;;
-
         "macos")
-            print_info "检查 Homebrew..."
-            if ! command -v brew &> /dev/null; then
-                print_warning "Homebrew 未安装，正在安装..."
-                /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-            fi
-
-            print_info "安装系统依赖..."
-            brew install python3 git
-
-            if [ "$DATABASE_TYPE" = "postgres" ]; then
-                brew install postgresql
-            fi
+            install_system_dependencies_macos
+            ;;
+        "linux")
+            install_system_dependencies_linux
             ;;
     esac
 
     print_success "系统依赖安装完成"
 }
 
-# 检查并安装Python
-check_install_python() {
-    print_step "检查 Python 环境..."
+# macOS 系统依赖安装
+install_system_dependencies_macos() {
+    # 检查 Homebrew
+    if ! command -v brew &> /dev/null; then
+        print_warning "Homebrew 未安装"
+        echo ""
+        echo "安装选项："
+        echo "1) 自动安装 Homebrew (推荐)"
+        echo "2) 手动安装后继续"
+        echo ""
+        read -p "请选择 (1-2): " choice
 
-    if command -v python3 &> /dev/null; then
-        PYTHON_VERSION=$(python3 --version | cut -d' ' -f2)
-        print_success "Python 已安装: $PYTHON_VERSION"
-
-        # 检查版本是否满足要求
-        if python3 -c "import sys; exit(0 if sys.version_info >= (3, 8) else 1)"; then
-            print_success "Python 版本满足要求 (3.8+)"
-        else
-            print_error "Python 版本过低，需要 3.8+，当前版本: $PYTHON_VERSION"
-            install_python
-        fi
-    else
-        print_warning "Python 未安装"
-        install_python
-    fi
-
-    # 检查pip
-    if ! command -v pip3 &> /dev/null; then
-        print_info "安装 pip..."
-        case $OS in
-            "ubuntu") sudo apt install -y python3-pip ;;
-            "centos") sudo yum install -y python3-pip ;;
-            "macos") python3 -m ensurepip --upgrade ;;
+        case $choice in
+            1)
+                print_info "正在安装 Homebrew..."
+                if /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"; then
+                    # 添加 Homebrew 到 PATH (Apple Silicon)
+                    if [[ "$IS_APPLE_SILICON" == "true" ]]; then
+                        echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
+                        eval "$(/opt/homebrew/bin/brew shellenv)"
+                    fi
+                    print_success "Homebrew 安装成功"
+                else
+                    print_error "Homebrew 安装失败"
+                    exit 1
+                fi
+                ;;
+            2)
+                print_info "请手动安装 Homebrew 后重新运行脚本"
+                echo "安装命令: /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
+                exit 1
+                ;;
+            *)
+                print_error "无效选择"
+                exit 1
+                ;;
         esac
     fi
 
-    print_success "Python 环境检查完成"
+    # 安装基础工具
+    print_info "安装基础工具..."
+    brew install git curl wget
+
+    # 安装 Python (如果需要)
+    if ! command -v python3 &> /dev/null || ! python_version_check "$(python3 --version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')"; then
+        print_info "安装 Python..."
+        brew install python@3.11
+    fi
+
+    # 安装 PostgreSQL (如果需要)
+    if [ "$DATABASE_TYPE" = "postgres" ]; then
+        print_info "安装 PostgreSQL..."
+        brew install postgresql@15
+        brew services start postgresql@15
+    fi
 }
 
-# 安装Python
-install_python() {
-    print_step "安装 Python..."
+# Linux 系统依赖安装
+install_system_dependencies_linux() {
+    # 更新包列表
+    if [ -n "$PKG_UPDATE" ]; then
+        print_info "更新软件包列表..."
+        sudo $PKG_UPDATE
+    fi
 
-    case $OS in
-        "ubuntu")
-            sudo apt update
-            sudo apt install -y python3.9 python3.9-venv python3.9-dev python3-pip
+    # 基础依赖包映射
+    local build_tools=""
+    local python_dev=""
+    local ssl_dev=""
+    local postgres_dev=""
+    local postgres_server=""
+
+    case $PKG_MANAGER in
+        "apt")
+            build_tools="build-essential"
+            python_dev="python3-dev python3-pip python3-venv"
+            ssl_dev="libssl-dev libffi-dev"
+            postgres_dev="libpq-dev"
+            postgres_server="postgresql postgresql-contrib postgresql-client"
             ;;
-        "centos")
-            sudo yum install -y python39 python39-devel python39-pip
+        "dnf"|"yum")
+            build_tools="gcc gcc-c++ make"
+            python_dev="python3-devel python3-pip"
+            ssl_dev="openssl-devel libffi-devel"
+            postgres_dev="postgresql-devel"
+            postgres_server="postgresql-server postgresql-contrib"
             ;;
-        "macos")
-            brew install python@3.9
+        "zypper")
+            build_tools="gcc gcc-c++ make"
+            python_dev="python3-devel python3-pip"
+            ssl_dev="libopenssl-devel libffi-devel"
+            postgres_dev="postgresql-devel"
+            postgres_server="postgresql-server postgresql-contrib"
+            ;;
+        "pacman")
+            build_tools="base-devel"
+            python_dev="python python-pip"
+            ssl_dev="openssl libffi"
+            postgres_dev="postgresql-libs"
+            postgres_server="postgresql"
+            ;;
+        "apk")
+            build_tools="build-base"
+            python_dev="python3-dev py3-pip"
+            ssl_dev="openssl-dev libffi-dev"
+            postgres_dev="postgresql-dev"
+            postgres_server="postgresql postgresql-contrib"
+            ;;
+        *)
+            print_error "不支持的包管理器: $PKG_MANAGER"
+            exit 1
             ;;
     esac
 
-    print_success "Python 安装完成"
+    # 安装基础依赖
+    print_info "安装基础工具..."
+    sudo $PKG_INSTALL curl wget git
+
+    print_info "安装编译工具..."
+    sudo $PKG_INSTALL $build_tools
+
+    print_info "安装 Python 开发环境..."
+    sudo $PKG_INSTALL $python_dev
+
+    print_info "安装 SSL 开发库..."
+    sudo $PKG_INSTALL $ssl_dev
+
+    # 安装 PostgreSQL (如果需要)
+    if [ "$DATABASE_TYPE" = "postgres" ]; then
+        print_info "安装 PostgreSQL 开发库..."
+        sudo $PKG_INSTALL $postgres_dev
+
+        print_info "安装 PostgreSQL 服务器..."
+        sudo $PKG_INSTALL $postgres_server
+    fi
+}
+
+# 检查并安装Python
+check_install_python() {
+    print_step "设置 Python 环境..."
+
+    # 查找可用的 Python 版本
+    local python_candidates=("python3.12" "python3.11" "python3.10" "python3.9" "python3.8" "python3" "python")
+    PYTHON_CMD=""
+
+    for cmd in "${python_candidates[@]}"; do
+        if command -v "$cmd" &> /dev/null; then
+            local version=$($cmd --version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+            if [ -n "$version" ] && python_version_check "$version"; then
+                PYTHON_CMD="$cmd"
+                print_success "找到合适的 Python: $cmd ($version)"
+                break
+            fi
+        fi
+    done
+
+    if [ -z "$PYTHON_CMD" ]; then
+        print_warning "未找到合适的 Python 版本 (需要 3.8+)"
+        install_python_smart
+
+        # 重新检测
+        for cmd in "${python_candidates[@]}"; do
+            if command -v "$cmd" &> /dev/null; then
+                local version=$($cmd --version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+                if [ -n "$version" ] && python_version_check "$version"; then
+                    PYTHON_CMD="$cmd"
+                    print_success "Python 安装成功: $cmd ($version)"
+                    break
+                fi
+            fi
+        done
+
+        if [ -z "$PYTHON_CMD" ]; then
+            print_error "Python 安装失败"
+            exit 1
+        fi
+    fi
+
+    # 检查 pip
+    check_pip
+
+    print_success "Python 环境设置完成"
+}
+
+# Python 版本检查
+python_version_check() {
+    local version=$1
+    local major=$(echo "$version" | cut -d. -f1)
+    local minor=$(echo "$version" | cut -d. -f2)
+
+    if [ "$major" -gt 3 ] || ([ "$major" -eq 3 ] && [ "$minor" -ge 8 ]); then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# 智能安装 Python
+install_python_smart() {
+    print_step "安装 Python..."
+
+    case $OS in
+        "macos")
+            if command -v brew &> /dev/null; then
+                brew install python@3.11
+                # 创建符号链接
+                if [ -f "/opt/homebrew/bin/python3.11" ]; then
+                    export PATH="/opt/homebrew/bin:$PATH"
+                elif [ -f "/usr/local/bin/python3.11" ]; then
+                    export PATH="/usr/local/bin:$PATH"
+                fi
+            else
+                print_error "需要 Homebrew 来安装 Python"
+                exit 1
+            fi
+            ;;
+        "linux")
+            case $PKG_MANAGER in
+                "apt")
+                    sudo $PKG_INSTALL python3.11 python3.11-venv python3.11-dev python3-pip
+                    ;;
+                "dnf"|"yum")
+                    sudo $PKG_INSTALL python3.11 python3.11-devel python3-pip
+                    ;;
+                "zypper")
+                    sudo $PKG_INSTALL python311 python311-devel python3-pip
+                    ;;
+                "pacman")
+                    sudo $PKG_INSTALL python python-pip
+                    ;;
+                "apk")
+                    sudo $PKG_INSTALL python3 py3-pip python3-dev
+                    ;;
+                *)
+                    print_error "不支持的包管理器: $PKG_MANAGER"
+                    exit 1
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+# 检查 pip
+check_pip() {
+    local pip_cmd=""
+
+    # 查找 pip 命令
+    if command -v pip3 &> /dev/null; then
+        pip_cmd="pip3"
+    elif command -v pip &> /dev/null; then
+        pip_cmd="pip"
+    elif $PYTHON_CMD -m pip --version &> /dev/null; then
+        pip_cmd="$PYTHON_CMD -m pip"
+    else
+        print_info "安装 pip..."
+        case $OS in
+            "macos")
+                $PYTHON_CMD -m ensurepip --upgrade
+                ;;
+            "linux")
+                case $PKG_MANAGER in
+                    "apt")
+                        sudo $PKG_INSTALL python3-pip
+                        ;;
+                    "dnf"|"yum")
+                        sudo $PKG_INSTALL python3-pip
+                        ;;
+                    *)
+                        $PYTHON_CMD -m ensurepip --upgrade
+                        ;;
+                esac
+                ;;
+        esac
+        pip_cmd="$PYTHON_CMD -m pip"
+    fi
+
+    print_info "使用 pip: $pip_cmd"
 }
 
 # 创建Python虚拟环境
@@ -497,11 +1505,15 @@ create_virtual_env() {
         fi
     fi
 
-    python3 -m venv "$VENV_PATH"
+    # 使用检测到的 Python 命令创建虚拟环境
+    $PYTHON_CMD -m venv "$VENV_PATH"
+
+    # 激活虚拟环境
     source "$VENV_PATH/bin/activate"
 
+    # 升级 pip
     print_info "升级 pip..."
-    pip install --upgrade pip
+    python -m pip install --upgrade pip
 
     print_success "虚拟环境创建完成"
 }
@@ -516,9 +1528,123 @@ install_python_dependencies() {
     fi
 
     source "$VENV_PATH/bin/activate"
+
+    # 确保安装 python-dotenv（脚本需要）
+    print_info "安装基础依赖..."
+    pip install python-dotenv wheel setuptools
+
+    print_info "安装项目依赖..."
     pip install -r requirements.txt
 
     print_success "Python 依赖安装完成"
+}
+
+# 配置PostgreSQL (本地部署)
+setup_postgresql() {
+    if [ "$DATABASE_TYPE" != "postgres" ]; then
+        return
+    fi
+
+    print_step "配置 PostgreSQL 数据库..."
+
+    case $OS in
+        "macos")
+            setup_postgresql_macos
+            ;;
+        "linux")
+            setup_postgresql_linux
+            ;;
+    esac
+
+    print_success "PostgreSQL 配置完成"
+}
+
+# macOS PostgreSQL 配置
+setup_postgresql_macos() {
+    # 检测 PostgreSQL 安装方式
+    if brew services list | grep -q postgresql; then
+        print_info "使用 Homebrew PostgreSQL"
+
+        # 启动服务
+        if ! brew services list | grep postgresql | grep -q "started"; then
+            brew services start postgresql@15 || brew services start postgresql
+        fi
+
+        # 等待服务启动
+        sleep 3
+
+        # 创建用户数据库（如果不存在）
+        createdb $(whoami) 2>/dev/null || true
+
+        DB_USER=$(whoami)
+        DB_HOST="localhost"
+        DB_PORT="5432"
+
+    elif [ -d "/Applications/Postgres.app" ]; then
+        print_info "检测到 Postgres.app"
+        print_warning "请确保 Postgres.app 正在运行"
+        DB_USER=$(whoami)
+        DB_HOST="localhost"
+        DB_PORT="5432"
+
+    else
+        print_error "未检测到 PostgreSQL 安装"
+        echo "请安装 PostgreSQL："
+        echo "1) Homebrew: brew install postgresql@15"
+        echo "2) Postgres.app: https://postgresapp.com/"
+        exit 1
+    fi
+
+    configure_postgres_connection
+}
+
+# Linux PostgreSQL 配置
+setup_postgresql_linux() {
+    case $PKG_MANAGER in
+        "apt")
+            # Ubuntu/Debian
+            sudo $SERVICE_START postgresql || true
+            sudo $SERVICE_ENABLE postgresql || true
+            ;;
+        "dnf"|"yum")
+            # CentOS/RHEL/Fedora
+            if [ ! -d "/var/lib/pgsql/data" ] && [ ! -d "/var/lib/postgresql/data" ]; then
+                if command -v postgresql-setup &> /dev/null; then
+                    sudo postgresql-setup initdb
+                elif command -v initdb &> /dev/null; then
+                    sudo -u postgres initdb -D /var/lib/pgsql/data
+                fi
+            fi
+            sudo $SERVICE_START postgresql || true
+            sudo $SERVICE_ENABLE postgresql || true
+            ;;
+        "zypper")
+            # openSUSE
+            sudo $SERVICE_START postgresql || true
+            sudo $SERVICE_ENABLE postgresql || true
+            ;;
+        "pacman")
+            # Arch Linux
+            if [ ! -d "/var/lib/postgres/data" ]; then
+                sudo -u postgres initdb -D /var/lib/postgres/data
+            fi
+            sudo $SERVICE_START postgresql || true
+            sudo $SERVICE_ENABLE postgresql || true
+            ;;
+        "apk")
+            # Alpine Linux
+            if [ ! -d "/var/lib/postgresql/data" ]; then
+                sudo -u postgres initdb -D /var/lib/postgresql/data
+            fi
+            sudo $SERVICE_START postgresql || true
+            sudo $SERVICE_ENABLE postgresql default || true
+            ;;
+    esac
+
+    # 等待服务启动
+    sleep 3
+
+    configure_postgres_connection
 }
 
 # 配置PostgreSQL (本地部署)
@@ -563,8 +1689,8 @@ setup_postgresql() {
     print_success "PostgreSQL 配置完成"
 }
 
-# 配置PostgreSQL本地连接
-configure_postgres_local() {
+# 配置PostgreSQL连接
+configure_postgres_connection() {
     print_step "配置PostgreSQL数据库连接..."
 
     # 交互式配置数据库连接
@@ -589,7 +1715,7 @@ configure_postgres_local() {
     DB_USER=${input_user:-$DB_USER}
 
     # 数据库密码
-    echo -n "数据库密码: "
+    echo -n "数据库密码 (留空表示无密码): "
     read -s DB_PASSWORD
     echo ""
 
@@ -604,17 +1730,20 @@ configure_postgres_local() {
 test_postgres_connection() {
     print_step "测试数据库连接..."
 
+    # 激活虚拟环境
+    source "$VENV_PATH/bin/activate" 2>/dev/null || true
+
+    # 构建连接参数
+    local conn_params="host='$DB_HOST' port='$DB_PORT' dbname='postgres' user='$DB_USER'"
+    if [ -n "$DB_PASSWORD" ]; then
+        conn_params="$conn_params password='$DB_PASSWORD'"
+    fi
+
     # 使用Python测试连接
-    if python3 -c "
+    if $PYTHON_CMD -c "
 import psycopg2
 try:
-    conn = psycopg2.connect(
-        host='$DB_HOST',
-        port='$DB_PORT',
-        dbname='postgres',
-        user='$DB_USER',
-        password='$DB_PASSWORD'
-    )
+    conn = psycopg2.connect($conn_params)
     conn.close()
     print('连接成功')
 except Exception as e:
@@ -629,10 +1758,28 @@ except Exception as e:
         echo "• PostgreSQL服务是否运行"
         echo "• 用户名和密码是否正确"
         echo "• 主机地址和端口是否正确"
+        echo "• 防火墙设置"
+        echo ""
+
+        # 提供一些调试信息
+        case $OS in
+            "macos")
+                echo "macOS 调试命令："
+                echo "• 检查服务: brew services list | grep postgresql"
+                echo "• 启动服务: brew services start postgresql"
+                ;;
+            "linux")
+                echo "Linux 调试命令："
+                echo "• 检查服务: sudo $SERVICE_STATUS postgresql"
+                echo "• 启动服务: sudo $SERVICE_START postgresql"
+                echo "• 查看日志: sudo journalctl -u postgresql"
+                ;;
+        esac
+
         echo ""
         read -p "是否重新配置数据库连接? (y/n): " retry
         if [[ $retry =~ ^[Yy]$ ]]; then
-            configure_postgres_local
+            configure_postgres_connection
         else
             exit 1
         fi
@@ -643,38 +1790,47 @@ except Exception as e:
 create_postgres_database() {
     print_step "创建应用数据库..."
 
-    # 检查数据库是否存在
-    if python3 -c "
+    # 激活虚拟环境
+    source "$VENV_PATH/bin/activate" 2>/dev/null || true
+
+    # 构建连接参数
+    local conn_params_target="host='$DB_HOST' port='$DB_PORT' dbname='$DB_NAME' user='$DB_USER'"
+    local conn_params_postgres="host='$DB_HOST' port='$DB_PORT' dbname='postgres' user='$DB_USER'"
+
+    if [ -n "$DB_PASSWORD" ]; then
+        conn_params_target="$conn_params_target password='$DB_PASSWORD'"
+        conn_params_postgres="$conn_params_postgres password='$DB_PASSWORD'"
+    fi
+
+    # 使用Python检查和创建数据库
+    if $PYTHON_CMD -c "
 import psycopg2
+import sys
+
+db_name = '$DB_NAME'
+
 try:
-    conn = psycopg2.connect(
-        host='$DB_HOST',
-        port='$DB_PORT',
-        dbname='$DB_NAME',
-        user='$DB_USER',
-        password='$DB_PASSWORD'
-    )
+    # 先尝试连接到目标数据库
+    conn = psycopg2.connect($conn_params_target)
     conn.close()
     print('数据库已存在')
 except psycopg2.OperationalError:
     # 数据库不存在，尝试创建
     try:
-        conn = psycopg2.connect(
-            host='$DB_HOST',
-            port='$DB_PORT',
-            dbname='postgres',
-            user='$DB_USER',
-            password='$DB_PASSWORD'
-        )
+        conn = psycopg2.connect($conn_params_postgres)
         conn.autocommit = True
         cur = conn.cursor()
-        cur.execute('CREATE DATABASE $DB_NAME')
+        # 使用参数化查询避免SQL注入
+        cur.execute('CREATE DATABASE \"{}\"'.format(db_name))
         cur.close()
         conn.close()
         print('数据库创建成功')
     except Exception as e:
         print(f'数据库创建失败: {e}')
-        exit(1)
+        sys.exit(1)
+except Exception as e:
+    print(f'数据库连接失败: {e}')
+    sys.exit(1)
 " 2>/dev/null; then
         print_success "数据库准备完成"
     else
@@ -757,14 +1913,17 @@ test_database() {
 
     source "$VENV_PATH/bin/activate"
 
-    python3 -c "
+    $PYTHON_CMD -c "
 import os
 import sys
 sys.path.append('.')
 
 # 加载环境变量
-from dotenv import load_dotenv
-load_dotenv()
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    print('警告: python-dotenv 未安装，使用系统环境变量')
 
 # 测试数据库连接
 try:
@@ -772,8 +1931,13 @@ try:
     conn = get_db_connection()
     conn.close()
     print('数据库连接成功')
+except ImportError as e:
+    print(f'导入错误: {e}')
+    print('请确保项目文件完整')
+    sys.exit(1)
 except Exception as e:
     print(f'数据库连接失败: {e}')
+    print('请检查数据库配置和服务状态')
     sys.exit(1)
 "
 
@@ -791,18 +1955,44 @@ init_database() {
 
     source "$VENV_PATH/bin/activate"
 
-    python3 -c "
+    $PYTHON_CMD -c "
 import sys
 sys.path.append('.')
 
-from rebugtracker import create_app, db
-app = create_app()
-with app.app_context():
-    db.create_all()
-    print('数据库表创建完成')
+# 加载环境变量
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    print('警告: python-dotenv 未安装，使用系统环境变量')
+
+# 初始化数据库
+try:
+    # 导入并调用初始化函数
+    import rebugtracker
+    if hasattr(rebugtracker, 'init_db'):
+        rebugtracker.init_db()
+        print('数据库初始化完成')
+    else:
+        # 如果没有 init_db 函数，尝试直接运行应用来初始化
+        print('正在初始化数据库...')
+        # 这里可能需要根据实际的应用结构调整
+        print('请手动运行应用进行数据库初始化')
+except ImportError as e:
+    print(f'导入错误: {e}')
+    print('请确保项目文件完整')
+    sys.exit(1)
+except Exception as e:
+    print(f'数据库初始化失败: {e}')
+    sys.exit(1)
 "
 
-    print_success "数据库初始化完成"
+    if [ $? -eq 0 ]; then
+        print_success "数据库初始化完成"
+    else
+        print_error "数据库初始化失败"
+        exit 1
+    fi
 }
 
 # 创建启动脚本
@@ -826,11 +2016,11 @@ echo ""
 echo "按 Ctrl+C 停止服务"
 echo ""
 
-docker-compose -f $DOCKER_COMPOSE_FILE up -d
+$DOCKER_COMPOSE_CMD -f $DOCKER_COMPOSE_FILE up -d
 echo "服务已在后台启动"
 echo ""
-echo "查看日志: docker-compose -f $DOCKER_COMPOSE_FILE logs -f"
-echo "停止服务: docker-compose -f $DOCKER_COMPOSE_FILE down"
+echo "查看日志: $DOCKER_COMPOSE_CMD -f $DOCKER_COMPOSE_FILE logs -f"
+echo "停止服务: $DOCKER_COMPOSE_CMD -f $DOCKER_COMPOSE_FILE down"
 EOF
     else
         # 本地启动脚本
@@ -850,7 +2040,7 @@ echo ""
 echo "按 Ctrl+C 停止服务"
 echo ""
 
-python3 rebugtracker.py
+$PYTHON_CMD rebugtracker.py
 EOF
     fi
 
@@ -878,14 +2068,15 @@ show_completion_info() {
     if [ "$USE_DOCKER" = "yes" ]; then
         echo "🐳 Docker 管理命令："
         echo "   启动服务: ./start_rebugtracker.sh"
-        echo "   查看日志: docker-compose -f $DOCKER_COMPOSE_FILE logs -f"
-        echo "   停止服务: docker-compose -f $DOCKER_COMPOSE_FILE down"
-        echo "   重启服务: docker-compose -f $DOCKER_COMPOSE_FILE restart"
+        echo "   查看日志: $DOCKER_COMPOSE_CMD -f $DOCKER_COMPOSE_FILE logs -f"
+        echo "   停止服务: $DOCKER_COMPOSE_CMD -f $DOCKER_COMPOSE_FILE down"
+        echo "   重启服务: $DOCKER_COMPOSE_CMD -f $DOCKER_COMPOSE_FILE restart"
     else
         echo "💻 本地部署命令："
         echo "   启动服务: ./start_rebugtracker.sh"
-        echo "   手动启动: source .venv/bin/activate && python3 rebugtracker.py"
+        echo "   手动启动: source .venv/bin/activate && $PYTHON_CMD rebugtracker.py"
         echo "   虚拟环境: source .venv/bin/activate"
+        echo "   Python 命令: $PYTHON_CMD"
     fi
 
     echo ""
@@ -924,10 +2115,35 @@ trap handle_error ERR
 
 # 主函数
 main() {
+    # 检查命令行参数
+    if [ "$1" = "--diagnose" ] || [ "$1" = "-d" ]; then
+        print_info "运行 Docker 环境诊断..."
+        detect_os
+        if [ "$OS" = "macos" ]; then
+            diagnose_docker_macos
+        elif [ "$OS" = "linux" ]; then
+            diagnose_docker_linux
+        else
+            print_error "不支持的操作系统"
+            exit 1
+        fi
+        exit 0
+    elif [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+        echo "ReBugTracker 部署脚本"
+        echo ""
+        echo "用法:"
+        echo "  $0                 运行完整部署流程"
+        echo "  $0 --diagnose     仅运行 Docker 环境诊断"
+        echo "  $0 --help         显示此帮助信息"
+        echo ""
+        exit 0
+    fi
+
     # 检查是否以root用户运行
     if [ "$EUID" -eq 0 ]; then
         print_error "请不要以 root 用户运行此脚本"
-        echo "正确用法: ./deploy_enhanced.sh"
+        echo "正确用法: ./deploy.sh"
+        echo "诊断模式: ./deploy.sh --diagnose"
         exit 1
     fi
 

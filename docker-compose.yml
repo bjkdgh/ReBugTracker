@@ -37,7 +37,8 @@ services:
       # SQLite配置（当DB_TYPE=sqlite时使用）
       - SQLITE_DB_PATH=/app/data/rebugtracker.db
       # Flask配置
-      - SECRET_KEY=${SECRET_KEY:-rebugtracker-docker-secret-key-change-this}
+      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-rebugtracker-postgres-secret-key-change-this}
+      - SECRET_KEY=${SECRET_KEY:-rebugtracker-postgres-secret-key-change-this}
       # 服务器配置
       - SERVER_HOST=0.0.0.0
       - SERVER_PORT=5000
@@ -45,8 +46,12 @@ services:
       - UPLOAD_FOLDER=/app/uploads
       - LOG_FOLDER=/app/logs
       - DATA_EXPORT_FOLDER=/app/data_exports
+      # Gunicorn 配置
+      - GUNICORN_WORKERS=4
+      - GUNICORN_TIMEOUT=120
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - rebug_network
     restart: unless-stopped

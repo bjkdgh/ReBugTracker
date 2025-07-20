@@ -1,0 +1,173 @@
+# deploy.sh 修复建议
+
+## 1. 修复数据库初始化函数 (第 788-806 行)
+
+# 原代码：
+init_database() {
+    print_step "初始化数据库表..."
+    
+    source "$VENV_PATH/bin/activate"
+    
+    python3 -c "
+import sys
+sys.path.append('.')
+
+from rebugtracker import create_app, db  # ❌ 错误：rebugtracker.py 不是工厂模式
+app = create_app()
+with app.app_context():
+    db.create_all()
+    print('数据库表创建完成')
+"
+    
+    print_success "数据库初始化完成"
+}
+
+# 修复后：
+init_database() {
+    print_step "初始化数据库表..."
+    
+    source "$VENV_PATH/bin/activate"
+    
+    python3 -c "
+import sys
+sys.path.append('.')
+
+# 加载环境变量
+from dotenv import load_dotenv
+load_dotenv()
+
+# 调用 rebugtracker.py 中的 init_db 函数
+from rebugtracker import init_db
+init_db()
+print('数据库初始化完成')
+"
+    
+    print_success "数据库初始化完成"
+}
+
+## 2. 修复 PostgreSQL 数据库创建 (第 642-684 行)
+
+# 原代码中的问题：
+cur.execute('CREATE DATABASE $DB_NAME')  # ❌ 变量不会被展开
+
+# 修复方案：
+create_postgres_database() {
+    print_step "创建应用数据库..."
+    
+    # 使用 Python 脚本，传递变量
+    python3 -c "
+import psycopg2
+import sys
+
+db_host = '$DB_HOST'
+db_port = '$DB_PORT'
+db_name = '$DB_NAME'
+db_user = '$DB_USER'
+db_password = '$DB_PASSWORD'
+
+try:
+    # 先尝试连接到目标数据库
+    conn = psycopg2.connect(
+        host=db_host,
+        port=db_port,
+        dbname=db_name,
+        user=db_user,
+        password=db_password
+    )
+    conn.close()
+    print('数据库已存在')
+except psycopg2.OperationalError:
+    # 数据库不存在，尝试创建
+    try:
+        conn = psycopg2.connect(
+            host=db_host,
+            port=db_port,
+            dbname='postgres',
+            user=db_user,
+            password=db_password
+        )
+        conn.autocommit = True
+        cur = conn.cursor()
+        cur.execute(f'CREATE DATABASE {db_name}')  # ✅ 使用 f-string
+        cur.close()
+        conn.close()
+        print('数据库创建成功')
+    except Exception as e:
+        print(f'数据库创建失败: {e}')
+        sys.exit(1)
+except Exception as e:
+    print(f'数据库连接失败: {e}')
+    sys.exit(1)
+" 2>/dev/null
+    
+    if [ $? -eq 0 ]; then
+        print_success "数据库准备完成"
+    else
+        print_error "数据库操作失败"
+        exit 1
+    fi
+}
+
+## 3. 添加依赖检查
+
+# 在 install_python_dependencies 函数中添加：
+install_python_dependencies() {
+    print_step "安装 Python 依赖包..."
+    
+    if [ ! -f "requirements.txt" ]; then
+        print_error "未找到 requirements.txt 文件"
+        exit 1
+    fi
+    
+    source "$VENV_PATH/bin/activate"
+    
+    # 确保安装 python-dotenv（脚本需要）
+    pip install python-dotenv
+    pip install -r requirements.txt
+    
+    print_success "Python 依赖安装完成"
+}
+
+## 4. 改进错误处理
+
+# 在测试数据库连接时添加更详细的错误信息：
+test_database() {
+    print_step "测试数据库连接..."
+    
+    source "$VENV_PATH/bin/activate"
+    
+    python3 -c "
+import os
+import sys
+sys.path.append('.')
+
+# 加载环境变量
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    print('警告: python-dotenv 未安装，使用系统环境变量')
+
+# 测试数据库连接
+try:
+    from db_factory import get_db_connection
+    conn = get_db_connection()
+    conn.close()
+    print('数据库连接成功')
+except ImportError as e:
+    print(f'导入错误: {e}')
+    print('请确保项目文件完整')
+    sys.exit(1)
+except Exception as e:
+    print(f'数据库连接失败: {e}')
+    print('请检查数据库配置和服务状态')
+    sys.exit(1)
+"
+    
+    if [ $? -eq 0 ]; then
+        print_success "数据库连接测试通过"
+    else
+        print_error "数据库连接测试失败"
+        exit 1
+    fi
+}
