@@ -1,0 +1,206 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "rebugtracker"
+version = "1.0.0"
+description = "基于Flask的缺陷跟踪系统，支持用户注册、登录、问题提交、分配和解决等功能"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "ReBugTracker Team"},
+]
+maintainers = [
+    {name = "ReBugTracker Team"},
+]
+keywords = [
+    "bug-tracker",
+    "issue-tracker", 
+    "flask",
+    "web-application",
+    "project-management"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Web Environment",
+    "Framework :: Flask",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+    "Topic :: Software Development :: Bug Tracking",
+    "Topic :: Software Development :: Quality Assurance",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "flask==2.3.3",
+    "Werkzeug==2.3.7",
+    "psycopg2-binary==2.9.10",
+    "waitress==3.0.2",
+    "gunicorn==21.2.0",
+    "python-dotenv==1.1.1",
+    "requests==2.32.4",
+    "openpyxl==3.1.2",
+    "reportlab==4.0.4",
+    "pillow==11.3.0",
+    "Flask-SQLAlchemy==3.1.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-flask>=1.2.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+    "pre-commit>=3.0.0",
+]
+build = [
+    "pyinstaller>=5.0.0",
+    "cx-freeze>=6.0.0",
+]
+docs = [
+    "sphinx>=5.0.0",
+    "sphinx-rtd-theme>=1.0.0",
+    "myst-parser>=0.18.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/your-org/rebugtracker"
+Documentation = "https://rebugtracker.readthedocs.io"
+Repository = "https://github.com/your-org/rebugtracker.git"
+"Bug Tracker" = "https://github.com/your-org/rebugtracker/issues"
+Changelog = "https://github.com/your-org/rebugtracker/blob/main/CHANGELOG.md"
+
+[project.scripts]
+rebugtracker = "rebugtracker:main"
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=7.0.0",
+    "pytest-flask>=1.2.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+    "pre-commit>=3.0.0",
+]
+
+[tool.uv.sources]
+# 如果需要从特定源安装包，可以在这里配置
+
+[tool.black]
+line-length = 88
+target-version = ['py38', 'py39', 'py310', 'py311', 'py312']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+  | cross_platform_build
+)/
+'''
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = ["E203", "W503"]
+exclude = [
+    ".git",
+    "__pycache__",
+    ".venv",
+    "build",
+    "dist",
+    "cross_platform_build",
+]
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+exclude = [
+    "cross_platform_build/",
+    "build/",
+    "dist/",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--verbose",
+    "--cov=rebugtracker",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-report=xml",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
+
+[tool.coverage.run]
+source = ["rebugtracker"]
+omit = [
+    "*/tests/*",
+    "*/cross_platform_build/*",
+    "*/build/*",
+    "*/dist/*",
+    "*/.venv/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
+exclude = [
+    "cross_platform_build/",
+    "tests/",
+    "docs/",
+    ".venv/",
+    "build/",
+    "dist/",
+    "*.egg-info/",
+]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "cross_platform_build/",
+    ".venv/",
+    "build/",
+    "dist/",
+    "*.egg-info/",
+]
