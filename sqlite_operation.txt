@@ -1,0 +1,4 @@
+window安装sqlite-web
+pip install sqlite-web
+cmd执行python -m sqlite_web /path/to/yourdb开启web，localhost:8080维护
+或是直接https://sqlitestudio.pl/下个sqlitestudio
