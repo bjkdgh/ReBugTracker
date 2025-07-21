@@ -1,0 +1,80 @@
+# uv ignore file - 指定uv应该忽略的文件和目录
+
+# 构建输出
+build/
+dist/
+*.egg-info/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 虚拟环境
+.venv/
+venv/
+env/
+ENV/
+
+# 跨平台构建文件
+cross_platform_build/
+
+# 日志文件
+logs/
+*.log
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+
+# 上传文件
+uploads/
+
+# 数据导出
+data_exports/
+
+# 配置文件（包含敏感信息）
+.env
+.env.local
+.env.production
+
+# IDE 文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# 测试覆盖率
+.coverage
+htmlcov/
+.pytest_cache/
+
+# 文档构建
+docs/_build/
+
+# 临时文件
+*.tmp
+*.temp
+*.bak
+
+# Windows 特定文件
+*.bat
+*.vbs
+*.exe
+*.msi
+
+# 部署工具
+deployment_tools/
+
+# Git
+.git/
+.gitignore
