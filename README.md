@@ -16,8 +16,24 @@
 - 📱 **响应式设计** - 完美适配桌面端和移动端
 - 🐳 **Docker 支持** - 一键容器化部署，支持多架构
 - 🔧 **智能诊断** - 内置 Docker 环境诊断工具
+- ⚡ **现代包管理** - 支持 uv 超快速依赖管理
+- 📦 **离线部署** - 完整的离线环境部署方案
+- ⚡ **现代包管理** - 支持 uv 超快速依赖管理
+- 📦 **离线部署** - 完整的离线环境部署方案
 
 ## 🚀 快速开始
+
+### ⚡ 现代化部署（推荐）- 使用 uv 包管理器
+```bash
+# 1. 自动设置 uv 环境（一键完成所有配置）
+python uv_setup.py
+
+# 2. 运行应用
+uv run python rebugtracker.py
+
+# 3. 创建离线部署包
+python create_offline_package.py
+```
 
 ### 🎯 智能部署选择器（推荐新手）
 ```bash
@@ -105,13 +121,32 @@ python build_universal.py
 
 ### 手动部署
 
-#### 1. 环境准备
+#### 方式1：使用 uv 包管理器（推荐）
+```bash
+# 1. 安装 uv
+# Windows
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+# Linux/macOS
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# 2. 克隆项目
+git clone https://github.com/bjkdgh/ReBugTracker.git
+cd ReBugTracker
+
+# 3. 自动设置环境（推荐）
+python uv_setup.py
+
+# 或手动设置
+uv sync
+```
+
+#### 方式2：传统 pip 方式
 ```bash
 # 检查 Python 版本（需要 3.8+）
 python --version
 
 # 克隆项目
-git clone https://github.com/your-repo/ReBugTracker.git
+git clone https://github.com/bjkdgh/ReBugTracker.git
 cd ReBugTracker
 
 # 创建虚拟环境
@@ -129,7 +164,10 @@ pip install -r requirements.txt
 
 #### 2. 启动应用
 ```bash
-# 直接启动（使用 SQLite）
+# 使用 uv 启动（推荐）
+uv run python rebugtracker.py
+
+# 传统方式启动
 python rebugtracker.py
 
 # 或使用 Docker (SQLite 模式)
@@ -339,6 +377,7 @@ pkill -f ReBugTracker
 
 ### 📚 核心文档
 - **[完整部署指南](DEPLOYMENT_GUIDE.md)** - 包含所有部署方式的详细说明
+- **[uv 使用指南](UV_GUIDE.md)** - 现代化包管理和离线部署指南
 - **[数据库工具](database_tools/README.md)** - 数据库管理和维护工具
 - **[通知系统](docs/notification_priority_system_guide.md)** - 通知系统配置指南
 
@@ -381,8 +420,9 @@ pkill -f ReBugTracker
 | 前端框架 | Bootstrap | 5.x |
 | 图表库 | Chart.js | >= 3.0 |
 | Python | Python | >= 3.8 |
+| 包管理器 | uv / pip | 最新版 / >= 20.0 |
 | 容器化 | Docker / Docker Compose | >= 20.0 |
-| Web服务器 | Gunicorn | >= 20.0 |
+| Web服务器 | Gunicorn / Waitress | >= 20.0 / >= 3.0 |
 
 ## 🛠️ 项目工具
 
@@ -392,6 +432,10 @@ ReBugTracker/
 ├── 📄 deploy.py                    # 智能部署选择器
 ├── 📄 deploy.sh                    # Linux/macOS 一键部署脚本
 ├── 📄 rebugtracker.py              # 主程序入口
+├── 📄 pyproject.toml               # uv 项目配置文件
+├── 📄 uv_setup.py                  # uv 环境自动设置脚本
+├── 📄 create_offline_package.py    # 离线部署包创建工具
+├── 📄 UV_GUIDE.md                  # uv 使用和离线部署指南
 ├── 📁 cross_platform_build/        # 跨平台构建系统
 │   ├── 📄 build_universal.py       # 通用构建脚本
 │   ├── 📁 windows/                 # Windows 构建系统
@@ -409,6 +453,8 @@ ReBugTracker/
 ```
 
 ### 🔧 工具功能
+- **现代包管理** (`uv_setup.py`, `pyproject.toml`) - uv 超快速依赖管理
+- **离线部署** (`create_offline_package.py`) - 完整离线环境打包
 - **数据库工具** (`database_tools/`) - 数据库管理和维护
 - **跨平台构建** (`cross_platform_build/`) - Windows/macOS/Linux 打包
 - **测试套件** (`test/`) - 完整的测试覆盖
@@ -696,124 +742,4 @@ flowchart TD
 
 **ReBugTracker** - 让缺陷跟踪更简单、更高效！ 🚀
 
-## 🛠️ 故障排除
 
-### Docker 相关问题
-
-#### 1. 镜像下载失败
-```bash
-# 运行诊断工具
-./deploy.sh --diagnose
-
-# 检查网络连接
-ping docker.io
-
-# 手动配置镜像源 (已自动配置)
-# 清华源: https://docker.mirrors.ustc.edu.cn
-# 中科大源: https://docker.mirrors.ustc.edu.cn  
-# 网易源: https://hub-mirror.c.163.com
-```
-
-#### 2. 端口冲突
-```bash
-# 检查端口占用
-lsof -i :10001  # macOS/Linux
-netstat -ano | findstr :10001  # Windows
-
-# 修改端口 (编辑 docker-compose.sqlite.yml)
-ports:
-  - "新端口:5000"
-```
-
-#### 3. 容器启动失败
-```bash
-# 查看详细日志
-docker logs rebugtracker_app_sqlite
-
-# 检查容器状态
-docker ps -a
-
-# 重新构建镜像
-docker-compose -f docker-compose.sqlite.yml up -d --build
-```
-
-### 常见问题
-
-#### macOS 用户
-- **端口 5000 被占用**: macOS AirPlay 服务占用，已改为端口 10001
-- **Docker 环境**: 支持 Docker Desktop、OrbStack、Colima
-- **安全性提示**: 在"系统偏好设置 > 安全性与隐私"中允许运行
-
-**Windows 用户**
-- **杀毒软件误报**: 将构建目录添加到杀毒软件白名单
-- **服务安装失败**: 确保以管理员身份运行
-- **VBS 脚本被阻止**: 在组策略中允许 VBS 脚本执行
-
-**Linux 用户**
-- **端口权限**: 使用 1024 以上端口避免权限问题
-- **系统服务**: 可使用 systemd 管理服务
-- **防火墙**: 确保防火墙允许对应端口
-
-#### 网络问题
-- **Docker Hub 连接失败**: 自动使用国内镜像源
-- **pip 安装慢**: 自动配置清华 PyPI 源
-- **代理环境**: 配置 HTTP_PROXY 和 HTTPS_PROXY 环境变量
-
-## 🎯 最佳实践
-
-### 📊 部署方式选择指南
-
-#### 开发环境
-- **部署方式**: 本地部署
-- **数据库**: SQLite
-- **端口**: 5000
-- **优势**: 快速启动、易于调试
-
-#### 测试环境
-- **部署方式**: Docker 部署
-- **数据库**: PostgreSQL
-- **端口**: 10001
-- **优势**: 环境隔离、接近生产
-
-#### 生产环境
-- **部署方式**: Docker 部署 + Nginx 反向代理
-- **数据库**: PostgreSQL（独立部署）
-- **端口**: 80/443（通过 Nginx）
-- **优势**: 高可用、负载均衡、SSL 支持
-
-#### 桌面应用
-- **部署方式**: 构建部署
-- **数据库**: SQLite
-- **端口**: 自动分配
-- **优势**: 免安装、用户友好
-
-### 🔒 安全建议
-
-1. **修改默认密码**: 首次登录后立即修改 admin 账户密码
-2. **使用 HTTPS**: 生产环境建议配置 SSL 证书
-3. **数据库安全**: PostgreSQL 使用强密码和限制访问
-4. **防火墙配置**: 只开放必要的端口
-5. **定期备份**: 设置自动数据库备份
-
-### 📈 性能优化
-
-1. **数据库选择**:
-   - 小团队（<50人）: SQLite
-   - 大团队（>50人）: PostgreSQL
-2. **内存配置**:
-   - 开发环境: 2GB
-   - 生产环境: 4GB+
-3. **存储优化**:
-   - 定期清理日志文件
-   - 压缩上传文件
-   - 数据库定期维护
-
-## 📞 技术支持
-
-- **项目地址**: https://github.com/bjkdgh/ReBugTracker
-- **问题反馈**: 提交 GitHub Issue
-- **详细文档**: 查看 [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
-
----
-
-**ReBugTracker** - 让缺陷跟踪更简单、更高效！ 🚀
