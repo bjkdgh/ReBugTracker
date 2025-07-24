@@ -94,7 +94,7 @@ def sync_bugs_table(sqlite_cursor, pg_cursor, pg_conn):
     bugs = sqlite_cursor.fetchall()
     
     for bug in bugs:
-        # SQLite字段: id, title, description, status, assigned_to, created_by, project, created_at, resolved_at, resolution, image_path
+        # SQLite字段: id, title, description, status, assigned_to, created_by, project, created_at, resolved_at, resolution, image_path, type
         values = [
             bug[0],   # id
             bug[1],   # title
@@ -106,14 +106,15 @@ def sync_bugs_table(sqlite_cursor, pg_cursor, pg_conn):
             bug[7],   # created_at
             bug[8],   # resolved_at
             bug[9],   # resolution
-            bug[10]   # image_path
+            bug[10],  # image_path
+            bug[11] if len(bug) > 11 else 'bug'   # type (默认为'bug'如果字段不存在)
         ]
-        
+
         pg_cursor.execute('''
-            INSERT INTO bugs 
+            INSERT INTO bugs
             (id, title, description, status, assigned_to, created_by, project,
-             created_at, resolved_at, resolution, image_path)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+             created_at, resolved_at, resolution, image_path, type)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ''', values)
     
     # 更新序列

@@ -101,6 +101,7 @@ def verify_postgres_schema():
                 title TEXT NOT NULL,
                 description TEXT,
                 status TEXT DEFAULT '待处理',
+                type TEXT DEFAULT 'bug',
                 assigned_to INTEGER REFERENCES users (id),
                 created_by INTEGER REFERENCES users (id),
                 project TEXT,

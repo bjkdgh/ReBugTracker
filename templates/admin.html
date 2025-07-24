@@ -2872,6 +2872,41 @@
                                                         <label class="form-check-label" for="statusCompleted">已完成</label>
                                                     </div>
                                                 </div>
+
+                                                <!-- 类型筛选 -->
+                                                <div class="form-check mt-3">
+                                                    <input class="form-check-input" type="checkbox" id="filterByType" checked>
+                                                    <label class="form-check-label" for="filterByType">
+                                                        按类型筛选
+                                                    </label>
+                                                </div>
+                                                <div class="type-filters ms-3" id="typeFilters">
+                                                    <div class="form-check form-check-inline">
+                                                        <input class="form-check-input" type="checkbox" id="typeBug" checked>
+                                                        <label class="form-check-label" for="typeBug">
+                                                            <i class="fas fa-bug text-danger me-1"></i>Bug
+                                                        </label>
+                                                    </div>
+                                                    <div class="form-check form-check-inline">
+                                                        <input class="form-check-input" type="checkbox" id="typeRequirement" checked>
+                                                        <label class="form-check-label" for="typeRequirement">
+                                                            <i class="fas fa-lightbulb text-success me-1"></i>需求
+                                                        </label>
+                                                    </div>
+                                                </div>
+
+                                                <!-- 项目筛选 -->
+                                                <div class="form-check mt-3">
+                                                    <input class="form-check-input" type="checkbox" id="filterByProject">
+                                                    <label class="form-check-label" for="filterByProject">
+                                                        按项目筛选
+                                                    </label>
+                                                </div>
+                                                <div class="project-filters ms-3" id="projectFilters" style="display: none;">
+                                                    <select class="form-select" id="projectSelect">
+                                                        <option value="">选择项目...</option>
+                                                    </select>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -2937,6 +2972,14 @@
                                                 <div class="form-check">
                                                     <input class="form-check-input" type="checkbox" id="fieldStatus" checked>
                                                     <label class="form-check-label" for="fieldStatus">状态</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="fieldType" checked>
+                                                    <label class="form-check-label" for="fieldType">类型</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="fieldProject" checked>
+                                                    <label class="form-check-label" for="fieldProject">项目</label>
                                                 </div>
                                             </div>
                                         </div>
@@ -3061,12 +3104,53 @@
                                 <h3><i class="fas fa-chart-bar"></i> 数据统计图表</h3>
                             </div>
                             <div class="export-body">
-                                <!-- 图表切换按钮 -->
+                                <!-- 类型分布图表 -->
                                 <div class="chart-controls mb-4">
                                     <div class="row">
+                                        <div class="col-12">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <h5 class="mb-0"><i class="fas fa-chart-pie"></i> 问题类型分布</h5>
+                                                <button type="button" class="btn btn-outline-info btn-sm" onclick="exportChart('type')" title="导出图表">
+                                                    <i class="fas fa-download"></i> 导出
+                                                </button>
+                                            </div>
+                                            <div class="btn-group" role="group">
+                                                <button type="button" class="btn btn-outline-warning active" onclick="switchChart('type', 'pie')">
+                                                    <i class="fas fa-chart-pie"></i> 饼状图
+                                                </button>
+                                                <button type="button" class="btn btn-outline-warning" onclick="switchChart('type', 'bar')">
+                                                    <i class="fas fa-chart-bar"></i> 柱状图
+                                                </button>
+                                            </div>
+                                            <div class="chart-container mt-3" style="max-width: 400px; margin: 0 auto;">
+                                                <canvas id="typeChart" width="400" height="300"></canvas>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 按类型分别统计的图表 -->
+                                <div class="chart-controls mb-4">
+                                    <div class="row">
+                                        <div class="col-12 mb-3">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <h5 class="mb-0"><i class="fas fa-filter"></i> 按类型分别统计（已完成）</h5>
+                                                <div class="btn-group" role="group">
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm active" onclick="switchTypeFilter('all')" id="typeFilterAll">
+                                                        全部
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="switchTypeFilter('bug')" id="typeFilterBug">
+                                                        <i class="fas fa-bug"></i> Bug
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-success btn-sm" onclick="switchTypeFilter('需求')" id="typeFilterRequirement">
+                                                        <i class="fas fa-lightbulb"></i> 需求
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
                                         <div class="col-md-6">
                                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                                <h5 class="mb-0"><i class="fas fa-user-edit"></i> 提交人统计（已完成）</h5>
+                                                <h5 class="mb-0"><i class="fas fa-user-edit"></i> 提交人统计</h5>
                                                 <button type="button" class="btn btn-outline-info btn-sm" onclick="exportChart('creator')" title="导出图表">
                                                     <i class="fas fa-download"></i> 导出
                                                 </button>
@@ -3088,7 +3172,7 @@
                                         </div>
                                         <div class="col-md-6">
                                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                                <h5 class="mb-0"><i class="fas fa-user-check"></i> 处理人统计（已完成）</h5>
+                                                <h5 class="mb-0"><i class="fas fa-user-check"></i> 处理人统计</h5>
                                                 <button type="button" class="btn btn-outline-info btn-sm" onclick="exportChart('assignee')" title="导出图表">
                                                     <i class="fas fa-download"></i> 导出
                                                 </button>
@@ -3186,15 +3270,18 @@
                             </select>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="editTeam" class="form-label">团队</label>
+                            <label for="editTeam" class="form-label">产品线</label>
                             <select class="form-select" id="editTeam" name="team">
-                                <option value="">请选择团队</option>
-                                <option value="网络分析">网络分析</option>
+                                <option value="">请选择产品线</option>
                                 <option value="实施组">实施组</option>
-                                <option value="第三道防线">第三道防线</option>
                                 <option value="新能源">新能源</option>
-                                <option value="管理员">管理员</option>
-                                <option value="开发组">开发组</option>
+                                <option value="网络分析">网络分析</option>
+                                <option value="第三道防线">第三道防线</option>
+                                <option value="智能告警">智能告警</option>
+                                <option value="操作票及防误">操作票及防误</option>
+                                <option value="电量">电量</option>
+                                <option value="消纳">消纳</option>
+                                <option value="自动发电控制">自动发电控制</option>
                             </select>
                         </div>
                     </div>
@@ -4389,6 +4476,41 @@ function initializeReportsTab() {
         const statusFilters = document.getElementById('statusFilters');
         statusFilters.style.display = this.checked ? 'block' : 'none';
     });
+
+    document.getElementById('filterByType').addEventListener('change', function() {
+        const typeFilters = document.getElementById('typeFilters');
+        typeFilters.style.display = this.checked ? 'block' : 'none';
+    });
+
+    document.getElementById('filterByProject').addEventListener('change', function() {
+        const projectFilters = document.getElementById('projectFilters');
+        projectFilters.style.display = this.checked ? 'block' : 'none';
+    });
+
+    // 加载项目列表
+    loadProjectList();
+}
+
+// 加载项目列表
+async function loadProjectList() {
+    try {
+        const response = await fetch('/admin/reports/projects');
+        const result = await response.json();
+
+        if (result.success) {
+            const projectSelect = document.getElementById('projectSelect');
+            projectSelect.innerHTML = '<option value="">选择项目...</option>';
+
+            result.projects.forEach(project => {
+                const option = document.createElement('option');
+                option.value = project;
+                option.textContent = project;
+                projectSelect.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('加载项目列表失败:', error);
+    }
 }
 
 function setDateRange(range) {
@@ -4605,6 +4727,22 @@ function getExportConfig() {
         filters.status = statusList;
     }
 
+    // 类型筛选
+    if (document.getElementById('filterByType').checked) {
+        const typeList = [];
+        if (document.getElementById('typeBug').checked) typeList.push('bug');
+        if (document.getElementById('typeRequirement').checked) typeList.push('需求');
+        filters.type = typeList;
+    }
+
+    // 项目筛选
+    if (document.getElementById('filterByProject').checked) {
+        const selectedProject = document.getElementById('projectSelect').value;
+        if (selectedProject) {
+            filters.project = selectedProject;
+        }
+    }
+
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
     if (startDate) filters.startDate = startDate;
@@ -4617,6 +4755,8 @@ function getExportConfig() {
         'fieldTitle': { key: 'title', label: '问题标题' },
         'fieldDescription': { key: 'description', label: '问题描述' },
         'fieldStatus': { key: 'status', label: '状态' },
+        'fieldType': { key: 'type', label: '类型' },
+        'fieldProject': { key: 'project', label: '项目' },
         'fieldCreator': { key: 'creator', label: '创建人' },
         'fieldAssignee': { key: 'assignee', label: '分配给' },
         'fieldManager': { key: 'manager', label: '负责人' },
@@ -4766,7 +4906,9 @@ async function cleanupNotifications(type) {
 // 图表相关变量
 let creatorChart = null;
 let assigneeChart = null;
+let typeChart = null;
 let chartData = null;
+let currentTypeFilter = 'all'; // 当前选择的类型筛选
 
 // 图表切换函数
 function switchChart(type, chartType) {
@@ -4782,20 +4924,113 @@ function switchChart(type, chartType) {
         currentButton.classList.add('active');
     }
 
-    // 获取对应的图表实例和数据
-    const chart = type === 'creator' ? creatorChart : assigneeChart;
-    const data = type === 'creator' ? chartData.creator : chartData.assignee;
-
-    if (chart) {
-        chart.destroy();
-    }
-
-    // 创建新图表
-    if (type === 'creator') {
-        creatorChart = createChart('creatorChart', data, chartType, '已完成需求数量（提交人）');
+    // 处理不同类型的图表
+    if (type === 'type') {
+        // 类型分布图表
+        if (typeChart) {
+            typeChart.destroy();
+        }
+        typeChart = createChart('typeChart', chartData.type, chartType, '问题类型分布');
     } else {
-        assigneeChart = createChart('assigneeChart', data, chartType, '已完成需求数量（处理人）');
+        // 提交人和处理人图表（按类型筛选）
+        const chart = type === 'creator' ? creatorChart : assigneeChart;
+        let data;
+
+        console.log(`切换${type}图表，当前筛选:`, currentTypeFilter);
+        console.log(`可用的${type}数据类型:`, Object.keys(chartData[type] || {}));
+
+        if (currentTypeFilter === 'all') {
+            // 合并所有类型的数据
+            data = mergeChartData(chartData[type]);
+            console.log(`${type}合并数据:`, data);
+        } else {
+            // 使用特定类型的数据
+            data = chartData[type][currentTypeFilter] || { labels: [], values: [] };
+            console.log(`${type}特定类型数据(${currentTypeFilter}):`, data);
+        }
+
+        if (chart) {
+            chart.destroy();
+        }
+
+        // 创建新图表
+        const typeLabel = currentTypeFilter === 'all' ? '全部' :
+                         currentTypeFilter === 'bug' ? 'Bug' : '需求';
+        if (type === 'creator') {
+            creatorChart = createChart('creatorChart', data, chartType, `已完成问题数量（提交人-${typeLabel}）`);
+        } else {
+            assigneeChart = createChart('assigneeChart', data, chartType, `已完成问题数量（处理人-${typeLabel}）`);
+        }
     }
+}
+
+// 类型筛选切换函数
+function switchTypeFilter(filterType) {
+    console.log('切换类型筛选:', filterType);
+    currentTypeFilter = filterType;
+
+    // 更新按钮状态
+    document.querySelectorAll('[id^="typeFilter"]').forEach(btn => btn.classList.remove('active'));
+
+    // 根据filterType映射到正确的按钮ID
+    let buttonId;
+    if (filterType === 'all') {
+        buttonId = 'typeFilterAll';
+    } else if (filterType === 'bug') {
+        buttonId = 'typeFilterBug';
+    } else if (filterType === '需求') {
+        buttonId = 'typeFilterRequirement';
+    }
+
+    console.log('按钮ID:', buttonId);
+    if (buttonId) {
+        const button = document.getElementById(buttonId);
+        if (button) {
+            button.classList.add('active');
+            console.log('按钮状态更新成功');
+        } else {
+            console.error('找不到按钮:', buttonId);
+        }
+    }
+
+    // 重新渲染提交人和处理人图表
+    if (chartData) {
+        // 获取当前图表类型
+        const creatorActiveBtn = document.querySelector('button[onclick*="creator"].active');
+        const assigneeActiveBtn = document.querySelector('button[onclick*="assignee"].active');
+
+        if (creatorActiveBtn) {
+            const chartType = creatorActiveBtn.getAttribute('onclick').match(/'(\w+)'\)$/)[1];
+            switchChart('creator', chartType);
+        }
+
+        if (assigneeActiveBtn) {
+            const chartType = assigneeActiveBtn.getAttribute('onclick').match(/'(\w+)'\)$/)[1];
+            switchChart('assignee', chartType);
+        }
+    }
+}
+
+// 合并图表数据函数
+function mergeChartData(typeData) {
+    const mergedLabels = new Set();
+    const mergedData = {};
+
+    // 收集所有标签和数据
+    Object.values(typeData).forEach(data => {
+        if (data && data.labels && data.values) {
+            data.labels.forEach((label, index) => {
+                mergedLabels.add(label);
+                mergedData[label] = (mergedData[label] || 0) + data.values[index];
+            });
+        }
+    });
+
+    // 转换为图表格式
+    const labels = Array.from(mergedLabels);
+    const values = labels.map(label => mergedData[label]);
+
+    return { labels, values };
 }
 
 // 创建图表函数
@@ -4876,9 +5111,18 @@ async function loadChartData() {
         if (result.success) {
             chartData = result.data;
 
-            // 创建初始图表（折线图）
-            creatorChart = createChart('creatorChart', chartData.creator, 'line', '已完成需求数量（提交人）');
-            assigneeChart = createChart('assigneeChart', chartData.assignee, 'line', '已完成需求数量（处理人）');
+            // 创建类型分布图表
+            if (chartData.type) {
+                typeChart = createChart('typeChart', chartData.type, 'pie', '问题类型分布');
+            }
+
+            // 创建初始图表（折线图，显示全部类型）
+            currentTypeFilter = 'all';
+            const creatorData = mergeChartData(chartData.creator);
+            const assigneeData = mergeChartData(chartData.assignee);
+
+            creatorChart = createChart('creatorChart', creatorData, 'line', '已完成问题数量（提交人-全部）');
+            assigneeChart = createChart('assigneeChart', assigneeData, 'line', '已完成问题数量（处理人-全部）');
 
             // 显示图表区域
             document.getElementById('chartsSection').style.display = 'block';
@@ -4894,8 +5138,22 @@ async function loadChartData() {
 // 导出图表为图片
 function exportChart(type) {
     try {
-        const chart = type === 'creator' ? creatorChart : assigneeChart;
-        const chartTitle = type === 'creator' ? '提交人统计（已完成）' : '处理人统计（已完成）';
+        let chart, chartTitle;
+
+        if (type === 'type') {
+            chart = typeChart;
+            chartTitle = '问题类型分布';
+        } else if (type === 'creator') {
+            chart = creatorChart;
+            const typeLabel = currentTypeFilter === 'all' ? '全部' :
+                             currentTypeFilter === 'bug' ? 'Bug' : '需求';
+            chartTitle = `提交人统计（已完成-${typeLabel}）`;
+        } else {
+            chart = assigneeChart;
+            const typeLabel = currentTypeFilter === 'all' ? '全部' :
+                             currentTypeFilter === 'bug' ? 'Bug' : '需求';
+            chartTitle = `处理人统计（已完成-${typeLabel}）`;
+        }
 
         if (!chart) {
             alert('图表尚未加载，请先预览数据');

@@ -128,6 +128,7 @@ def recreate_sqlite_tables(conn):
             title TEXT NOT NULL,
             description TEXT,
             status TEXT DEFAULT '待处理',
+            type TEXT DEFAULT 'bug',
             assigned_to INTEGER,
             created_by INTEGER,
             project TEXT,
@@ -307,11 +308,11 @@ def main():
         # 2. 同步bugs表
         count = sync_table_data(
             pg_cursor, sqlite_conn, "bugs",
-            "SELECT title, description, status, assigned_to, created_by, project, created_at, resolved_at, resolution, image_path FROM bugs ORDER BY id",
-            '''INSERT INTO bugs 
-               (title, description, status, assigned_to, created_by, project, created_at, resolved_at, resolution, image_path)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
-            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+            "SELECT title, description, status, type, assigned_to, created_by, project, created_at, resolved_at, resolution, image_path FROM bugs ORDER BY id",
+            '''INSERT INTO bugs
+               (title, description, status, type, assigned_to, created_by, project, created_at, resolved_at, resolution, image_path)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         )
         total_records += count
         

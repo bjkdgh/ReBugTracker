@@ -379,6 +379,7 @@ def init_db():
                 title TEXT NOT NULL,
                 description TEXT,
                 status TEXT DEFAULT '待处理',
+                type TEXT DEFAULT 'bug',
                 assigned_to INTEGER,
                 created_by INTEGER,
                 project TEXT,
@@ -395,6 +396,7 @@ def init_db():
                 title TEXT NOT NULL,
                 description TEXT,
                 status TEXT DEFAULT '待处理',
+                type TEXT DEFAULT 'bug',    -- 类型：需求/bug
                 assigned_to INTEGER,         -- 负责人ID
                 created_by INTEGER,          -- 提交人ID
                 project TEXT,               -- 所属项目名称
@@ -1246,7 +1248,7 @@ def team_issues():
         else:
             c = conn.cursor()
         query, params = adapt_sql('''
-            SELECT b.id, b.title, b.description, b.status, b.assigned_to, b.created_by, b.project,
+            SELECT b.id, b.title, b.description, b.status, b.type, b.assigned_to, b.created_by, b.project,
                    b.created_at as local_created_at,
                    b.resolved_at as local_resolved_at,
                    b.resolution, b.image_path,
@@ -1399,6 +1401,7 @@ def submit_bug_handler(user):
 
         manager_id = manager['id'] if DB_TYPE == 'postgres' else manager[0]
         project_id = request.form.get('project', '')
+        bug_type = request.form.get('type', 'bug')  # 获取类型，默认为bug
 
         # 获取当前时间，精确到秒
         from datetime import datetime
@@ -1406,17 +1409,17 @@ def submit_bug_handler(user):
 
         if DB_TYPE == 'postgres':
             query, params = adapt_sql('''
-                INSERT INTO bugs (title, description, created_by, project, image_path, assigned_to, status, created_at)
-                VALUES (%s, %s, %s, %s, %s, %s, '待处理', %s)
+                INSERT INTO bugs (title, description, created_by, project, image_path, assigned_to, status, type, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s, '待处理', %s, %s)
                 RETURNING id
-            ''', (title, description, created_by, project_id, image_path, manager_id, current_time))
+            ''', (title, description, created_by, project_id, image_path, manager_id, bug_type, current_time))
             c.execute(query, params)
             bug_id = c.fetchone()['id']
         else:
             query, params = adapt_sql('''
-                INSERT INTO bugs (title, description, created_by, project, image_path, assigned_to, status, created_at)
-                VALUES (%s, %s, %s, %s, %s, %s, '待处理', %s)
-            ''', (title, description, created_by, project_id, image_path, manager_id, current_time))
+                INSERT INTO bugs (title, description, created_by, project, image_path, assigned_to, status, type, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s, '待处理', %s, %s)
+            ''', (title, description, created_by, project_id, image_path, manager_id, bug_type, current_time))
             c.execute(query, params)
             bug_id = c.lastrowid
 
@@ -1557,16 +1560,17 @@ def submit_bug():
 
         manager_id = manager['id']
         project_id = request.form.get('project', '')
+        bug_type = request.form.get('type', 'bug')  # 获取类型，默认为bug
 
         # 获取当前时间，精确到秒
         from datetime import datetime
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         query, params = adapt_sql('''
-            INSERT INTO bugs (title, description, created_by, project, image_path, assigned_to, status, created_at)
-            VALUES (%s, %s, %s, %s, %s, %s, '待处理', %s)
+            INSERT INTO bugs (title, description, created_by, project, image_path, assigned_to, status, type, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, '待处理', %s, %s)
             RETURNING id
-        ''', (title, description, created_by, project_id, main_image_path, manager_id, current_time))
+        ''', (title, description, created_by, project_id, main_image_path, manager_id, bug_type, current_time))
         c.execute(query, params)
 
         bug_id = c.fetchone()['id']
@@ -3234,7 +3238,7 @@ def admin_reports_preview():
 
         # 基础查询
         base_query = '''
-            SELECT b.id, b.title, b.description, b.status, b.project,
+            SELECT b.id, b.title, b.description, b.status, b.type, b.project,
                    b.created_at, b.resolved_at, b.resolution, b.image_path,
                    u1.username as creator_username, u1.chinese_name as creator_name,
                    u2.username as assignee_username, u2.chinese_name as assignee_name,
@@ -3281,6 +3285,14 @@ def admin_reports_preview():
         if filters.get('assignee'):
             where_conditions.append('b.assigned_to = %s')
             params.append(filters['assignee'])
+
+        # 类型筛选
+        if filters.get('type'):
+            type_list = filters['type']
+            if type_list:
+                placeholders = ','.join(['%s'] * len(type_list))
+                where_conditions.append(f'b.type IN ({placeholders})')
+                params.extend(type_list)
 
         # 组合查询
         if where_conditions:
@@ -3536,7 +3548,7 @@ def admin_reports_chart_data():
 
         # 基础查询
         base_query = '''
-            SELECT b.id, b.title, b.status, b.project,
+            SELECT b.id, b.title, b.status, b.type, b.project,
                    b.created_at, b.resolved_at,
                    u1.username as creator_username, u1.chinese_name as creator_name,
                    u2.username as assignee_username, u2.chinese_name as assignee_name,
@@ -3582,6 +3594,14 @@ def admin_reports_chart_data():
             where_conditions.append('b.assigned_to = %s')
             params.append(filters['assignee'])
 
+        # 类型筛选
+        if filters.get('type'):
+            type_list = filters['type']
+            if type_list:
+                placeholders = ','.join(['%s'] * len(type_list))
+                where_conditions.append(f'b.type IN ({placeholders})')
+                params.extend(type_list)
+
         # 组合查询
         if where_conditions:
             query = base_query + ' WHERE ' + ' AND '.join(where_conditions)
@@ -3603,8 +3623,9 @@ def admin_reports_chart_data():
         conn.close()
 
         # 统计数据（只统计已完成的问题）
-        creator_stats = {}  # 提交人统计（只统计已完成的）
-        assignee_stats = {}  # 处理人统计（只统计已完成的）
+        creator_stats = {'bug': {}, '需求': {}}  # 提交人统计（按类型分别统计）
+        assignee_stats = {'bug': {}, '需求': {}}  # 处理人统计（按类型分别统计）
+        type_stats = {}  # 类型统计
 
         for row in results:
             # 统一转换为字典格式
@@ -3619,42 +3640,69 @@ def admin_reports_chart_data():
                         'id': row[0],
                         'title': row[1],
                         'status': row[2],
-                        'project': row[3],
-                        'created_at': row[4],
-                        'resolved_at': row[5],
-                        'creator_username': row[6],
-                        'creator_name': row[7],
-                        'assignee_username': row[8],
-                        'assignee_name': row[9],
-                        'creator_team': row[10],
-                        'assignee_team': row[11]
+                        'type': row[3],
+                        'project': row[4],
+                        'created_at': row[5],
+                        'resolved_at': row[6],
+                        'creator_username': row[7],
+                        'creator_name': row[8],
+                        'assignee_username': row[9],
+                        'assignee_name': row[10],
+                        'creator_team': row[11],
+                        'assignee_team': row[12]
                     }
+
+            # 获取问题类型
+            bug_type = row_data.get('type') or 'bug'
+
+            # 统计类型分布
+            type_stats[bug_type] = type_stats.get(bug_type, 0) + 1
 
             # 只统计已完成状态的问题
             if row_data.get('status') == '已完成' and row_data.get('resolved_at'):
-                # 统计提交人数据（已完成的问题）
+                # 统计提交人数据（按类型分别统计）
                 creator_name = row_data.get('creator_name') or row_data.get('creator_username') or '未知'
-                creator_stats[creator_name] = creator_stats.get(creator_name, 0) + 1
+                if bug_type not in creator_stats:
+                    creator_stats[bug_type] = {}
+                creator_stats[bug_type][creator_name] = creator_stats[bug_type].get(creator_name, 0) + 1
 
-                # 统计处理人数据（已完成的问题）
+                # 统计处理人数据（按类型分别统计）
                 assignee_name = row_data.get('assignee_name') or row_data.get('assignee_username') or '未分配'
                 if assignee_name != '未分配':
-                    assignee_stats[assignee_name] = assignee_stats.get(assignee_name, 0) + 1
+                    if bug_type not in assignee_stats:
+                        assignee_stats[bug_type] = {}
+                    assignee_stats[bug_type][assignee_name] = assignee_stats[bug_type].get(assignee_name, 0) + 1
 
-        # 转换为图表数据格式
-        creator_chart_data = {
-            'labels': list(creator_stats.keys()),
-            'values': list(creator_stats.values())
-        }
+        # 转换为图表数据格式（按类型分别统计）
+        creator_chart_data = {}
+        assignee_chart_data = {}
 
-        assignee_chart_data = {
-            'labels': list(assignee_stats.keys()),
-            'values': list(assignee_stats.values())
+        # 处理提交人统计数据
+        for bug_type, stats in creator_stats.items():
+            if stats:  # 只有当该类型有数据时才添加
+                creator_chart_data[bug_type] = {
+                    'labels': list(stats.keys()),
+                    'values': list(stats.values())
+                }
+
+        # 处理处理人统计数据
+        for bug_type, stats in assignee_stats.items():
+            if stats:  # 只有当该类型有数据时才添加
+                assignee_chart_data[bug_type] = {
+                    'labels': list(stats.keys()),
+                    'values': list(stats.values())
+                }
+
+        # 类型分布图表数据
+        type_chart_data = {
+            'labels': list(type_stats.keys()),
+            'values': list(type_stats.values())
         }
 
         chart_data = {
             'creator': creator_chart_data,
-            'assignee': assignee_chart_data
+            'assignee': assignee_chart_data,
+            'type': type_chart_data
         }
 
         return jsonify({'success': True, 'data': chart_data})
@@ -3663,6 +3711,43 @@ def admin_reports_chart_data():
         app.logger.error(f"获取图表数据失败: {e}")
         import traceback
         app.logger.error(f"详细错误: {traceback.format_exc()}")
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/admin/reports/projects', methods=['GET'])
+@login_required
+@role_required('gly')
+def admin_reports_projects():
+    """获取所有项目列表"""
+    try:
+        conn = get_db_connection()
+        if DB_TYPE == 'postgres':
+            from psycopg2.extras import DictCursor
+            cursor = conn.cursor(cursor_factory=DictCursor)
+        else:
+            cursor = conn.cursor()
+
+        # 查询所有不同的项目
+        cursor.execute('SELECT DISTINCT project FROM bugs WHERE project IS NOT NULL AND project != \'\' ORDER BY project')
+        results = cursor.fetchall()
+        conn.close()
+
+        # 提取项目名称
+        projects = []
+        for row in results:
+            if DB_TYPE == 'postgres':
+                project = row['project']
+            else:
+                project = row[0]
+            if project:
+                projects.append(project)
+
+        return jsonify({
+            'success': True,
+            'projects': projects
+        })
+
+    except Exception as e:
+        app.logger.error(f"获取项目列表失败: {e}")
         return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/admin/reports/export', methods=['POST'])
@@ -3688,7 +3773,7 @@ def admin_reports_export():
 
         # 构建查询（与预览相同，但不限制条数）
         base_query = '''
-            SELECT b.id, b.title, b.description, b.status, b.project,
+            SELECT b.id, b.title, b.description, b.status, b.type, b.project,
                    b.created_at, b.resolved_at, b.resolution, b.image_path,
                    u1.username as creator_username, u1.chinese_name as creator_name,
                    u2.username as assignee_username, u2.chinese_name as assignee_name,
@@ -3736,6 +3821,14 @@ def admin_reports_export():
         if filters.get('assignee'):
             where_conditions.append('b.assigned_to = %s')
             params.append(filters['assignee'])
+
+        # 类型筛选
+        if filters.get('type'):
+            type_list = filters['type']
+            if type_list:
+                placeholders = ','.join(['%s'] * len(type_list))
+                where_conditions.append(f'b.type IN ({placeholders})')
+                params.extend(type_list)
 
         # 组合查询
         if where_conditions:
