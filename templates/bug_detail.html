@@ -769,6 +769,92 @@
             box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
         }
 
+        /* 驳回Modal footer样式 */
+        .reject-footer {
+            background: linear-gradient(135deg, rgba(220, 53, 69, 0.1), rgba(200, 35, 51, 0.1));
+            border: none;
+            padding: 20px 30px;
+            text-align: center;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .reject-footer .btn-modern {
+            color: white !important;
+            font-weight: 600;
+            padding: 12px 24px;
+            border-radius: 25px;
+            border: none;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .reject-footer .btn-secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+        }
+
+        .reject-footer .btn-secondary:hover {
+            background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+        }
+
+        .reject-footer .btn-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+
+        .reject-footer .btn-danger:hover {
+            background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+        }
+
+        /* 驳回Modal body样式 */
+        .reject-body {
+            padding: 30px;
+            text-align: center;
+        }
+
+        .reject-body .confirm-message {
+            font-size: 1.1rem;
+            color: #dc3545;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .reject-body .form-control {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 12px 15px;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        .reject-body .form-control:focus {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+        }
+
+        .reject-body .form-control.is-invalid {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+        }
+
+        .reject-body .invalid-feedback {
+            display: block;
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 8px;
+            font-weight: 500;
+        }
+
+        .reject-body .invalid-feedback i {
+            margin-right: 5px;
+        }
+
         /* 动画效果 */
         @keyframes stroke {
             100% {
@@ -977,9 +1063,24 @@
             </div>
             {% endif %}
 
-            <!-- 解决方案 -->
+            <!-- 解决方案/驳回原因 -->
             {% if bug.resolution %}
             <div class="content-card">
+                {% if bug.status == '已驳回' %}
+                <div class="section-title">
+                    <i class="fas fa-times-circle"></i>
+                    驳回信息
+                </div>
+                <div class="bug-resolution" style="background: linear-gradient(135deg, rgba(220, 53, 69, 0.1), rgba(200, 35, 51, 0.1)); border-left: 5px solid #dc3545; box-shadow: 0 4px 15px rgba(220, 53, 69, 0.1);">
+                    <div class="resolution-title" style="color: #dc3545;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        驳回详情
+                    </div>
+                    <div class="resolution-content">
+                        {{ bug.resolution|replace('\n', '<br>')|safe }}
+                    </div>
+                </div>
+                {% else %}
                 <div class="section-title">
                     <i class="fas fa-lightbulb"></i>
                     解决方案
@@ -993,6 +1094,7 @@
                         {{ bug.resolution|replace('\n', '<br>')|safe }}
                     </div>
                 </div>
+                {% endif %}
             </div>
             {% endif %}
 
@@ -1003,6 +1105,14 @@
                     <i class="fas fa-user-plus"></i>
                     指派问题
                 </a>
+
+                <!-- 驳回按钮 - 只有待处理和已分配的问题才能驳回 -->
+                {% if bug.status in ['待处理', '已分配'] %}
+                <button onclick="showRejectModal('{{ bug.id }}')" class="btn-modern btn-danger-modern">
+                    <i class="fas fa-times-circle"></i>
+                    驳回问题
+                </button>
+                {% endif %}
                 {% endif %}
 
                 {% if user.role_en == 'ssz' and bug.status == '已解决' and user.id == created_by %}
@@ -1148,6 +1258,42 @@
         </div>
     </div>
 
+    <!-- 驳回问题Modal -->
+    <div class="modal fade" id="rejectModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modern-modal">
+                <div class="modal-header error-header">
+                    <div class="error-icon">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <h5 class="modal-title">驳回问题</h5>
+                </div>
+                <div class="modal-body reject-body">
+                    <div class="error-animation">
+                        <div class="error-icon-large">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                    </div>
+                    <p class="confirm-message">请输入驳回原因：</p>
+                    <div class="form-group mt-3">
+                        <textarea class="form-control" id="rejectReason" rows="4" placeholder="请详细说明驳回原因，以便提出人了解问题所在..." required></textarea>
+                        <div class="invalid-feedback" id="rejectReasonError" style="display: none;">
+                            <i class="fas fa-exclamation-circle"></i> 请输入驳回原因
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer reject-footer">
+                    <button type="button" class="btn-modern btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>取消
+                    </button>
+                    <button type="button" class="btn-modern btn-danger" id="confirmRejectBtn">
+                        <i class="fas fa-times-circle me-2"></i>确认驳回
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -1199,6 +1345,91 @@
             }).catch(function(error) {
                 // 显示错误Modal
                 document.getElementById('errorModalMessage').textContent = '确认闭环请求失败: ' + error.message;
+                const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                errorModal.show();
+            });
+        };
+    }
+
+    // 显示驳回模态框
+    function showRejectModal(bugId) {
+        // 清空之前的输入和错误状态
+        const textarea = document.getElementById('rejectReason');
+        const errorDiv = document.getElementById('rejectReasonError');
+
+        textarea.value = '';
+        textarea.classList.remove('is-invalid');
+        errorDiv.style.display = 'none';
+        textarea.oninput = null; // 清除之前的事件监听器
+
+        const modal = new bootstrap.Modal(document.getElementById('rejectModal'));
+        modal.show();
+
+        // 模态框显示后自动聚焦到文本域
+        document.getElementById('rejectModal').addEventListener('shown.bs.modal', function() {
+            textarea.focus();
+        }, { once: true });
+
+        // 绑定确认驳回按钮事件
+        document.getElementById('confirmRejectBtn').onclick = function() {
+            const rejectReason = document.getElementById('rejectReason').value.trim();
+
+            if (!rejectReason) {
+                // 显示内联错误提示，不弹出额外的模态框
+                const textarea = document.getElementById('rejectReason');
+                const errorDiv = document.getElementById('rejectReasonError');
+
+                textarea.classList.add('is-invalid');
+                errorDiv.style.display = 'block';
+                textarea.focus();
+
+                // 当用户开始输入时，隐藏错误提示
+                textarea.oninput = function() {
+                    if (this.value.trim()) {
+                        this.classList.remove('is-invalid');
+                        errorDiv.style.display = 'none';
+                        this.oninput = null; // 移除事件监听器
+                    }
+                };
+
+                return;
+            }
+
+            modal.hide();
+
+            // 创建表单数据
+            const formData = new FormData();
+            formData.append('reject_reason', rejectReason);
+
+            fetch('/bug/reject/' + bugId, {
+                method: 'POST',
+                body: formData
+            }).then(function(response) {
+                if (!response.ok) {
+                    throw new Error('网络响应不正常');
+                }
+                return response.json();
+            }).then(function(data) {
+                if(data.success) {
+                    // 显示成功Modal
+                    document.getElementById('successModalTitle').textContent = '驳回成功！';
+                    document.getElementById('successModalMessage').textContent = '问题已成功驳回，提出人将收到通知';
+                    const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                    successModal.show();
+
+                    // 2秒后刷新页面
+                    setTimeout(function() {
+                        location.reload();
+                    }, 2000);
+                } else {
+                    // 显示错误Modal
+                    document.getElementById('errorModalMessage').textContent = '驳回失败：' + (data.message || '未知错误');
+                    const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+                    errorModal.show();
+                }
+            }).catch(function(error) {
+                // 显示错误Modal
+                document.getElementById('errorModalMessage').textContent = '驳回请求失败: ' + error.message;
                 const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
                 errorModal.show();
             });

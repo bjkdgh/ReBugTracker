@@ -1876,6 +1876,103 @@ def assign_bug(bug_id):
         'redirect': f'/bug/{bug_id}?message=问题已成功指派给 {assignee_name}'
     }
 
+# 驳回问题API
+@app.route('/bug/reject/<int:bug_id>', methods=['POST'])
+@login_required
+@role_required('fzr')
+def reject_bug(bug_id):
+    """负责人驳回问题"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'success': False, 'message': '用户未登录'})
+
+    reject_reason = request.form.get('reject_reason', '').strip()
+    if not reject_reason:
+        return jsonify({'success': False, 'message': '驳回原因不能为空'})
+
+    conn = get_db_connection()
+    if DB_TYPE == 'postgres':
+        c = conn.cursor(cursor_factory=DictCursor)
+    else:
+        c = conn.cursor()
+
+    try:
+        # 检查问题是否存在
+        query, params = adapt_sql('SELECT * FROM bugs WHERE id = %s', (bug_id,))
+        c.execute(query, params)
+        bug = c.fetchone()
+        if not bug:
+            return jsonify({'success': False, 'message': '问题不存在'}), 404
+
+        # 检查问题状态是否可以驳回（只有待处理和已分配的问题可以驳回）
+        if bug['status'] not in ['待处理', '已分配']:
+            return jsonify({'success': False, 'message': '只有待处理或已分配的问题才能驳回'}), 400
+
+        # 获取问题信息（用于通知）
+        if hasattr(bug, 'keys'):
+            bug_info = dict(bug)
+        else:
+            # SQLite返回的是tuple，需要手动映射
+            bug_info = {
+                'id': bug[0], 'title': bug[1], 'description': bug[2],
+                'status': bug[3], 'assigned_to': bug[4], 'created_by': bug[5],
+                'project': bug[6], 'created_at': bug[7], 'resolved_at': bug[8],
+                'resolution': bug[9], 'image_path': bug[10]
+            }
+
+        # 更新问题状态为"已驳回"，清除指派人，并记录驳回原因
+        query, params = adapt_sql('''
+            UPDATE bugs
+            SET status = '已驳回',
+                assigned_to = NULL,
+                resolution = %s
+            WHERE id = %s
+        ''', (f'驳回原因：{reject_reason}', bug_id))
+        c.execute(query, params)
+        conn.commit()
+        conn.close()
+
+        # 异步发送通知（在后台处理）
+        def send_reject_notification_async():
+            try:
+                app.logger.info(f"后台发送问题驳回通知 - bug_id: {bug_id}")
+                from notification.simple_notifier import simple_notifier
+                from datetime import datetime
+
+                notification_data = {
+                    'bug_id': bug_id,
+                    'title': bug_info['title'],
+                    'description': bug_info['description'],
+                    'reject_reason': reject_reason,
+                    'rejector_name': user['chinese_name'] or user['username'],
+                    'rejected_time': datetime.now().isoformat(),
+                    'creator_id': bug_info['created_by'],
+                    'old_assignee_id': bug_info.get('assigned_to')
+                }
+
+                simple_notifier.send_flow_notification('bug_rejected', notification_data)
+                app.logger.info(f"问题驳回通知发送完成 - bug_id: {bug_id}")
+
+            except Exception as e:
+                app.logger.error(f"发送问题驳回通知失败 - bug_id: {bug_id}, error: {str(e)}")
+
+        # 在后台线程中发送通知
+        import threading
+        notification_thread = threading.Thread(target=send_reject_notification_async)
+        notification_thread.daemon = True
+        notification_thread.start()
+
+        return jsonify({
+            'success': True,
+            'message': '问题已成功驳回',
+            'redirect': f'/bug/{bug_id}?message=问题已成功驳回'
+        })
+
+    except Exception as e:
+        conn.close()
+        app.logger.error(f"驳回问题失败 - bug_id: {bug_id}, error: {str(e)}")
+        return jsonify({'success': False, 'message': f'驳回失败：{str(e)}'}), 500
+
     # 异步发送通知（在后台处理）
     def send_assignment_notification_async():
         try:
@@ -2519,6 +2616,7 @@ def get_notification_config():
             'flow_rules': {
                 'bug_created': config_dict.get('notification_flow_bug_created', 'true') == 'true',
                 'bug_assigned': config_dict.get('notification_flow_bug_assigned', 'true') == 'true',
+                'bug_rejected': config_dict.get('notification_flow_bug_rejected', 'true') == 'true',
                 'bug_status_changed': config_dict.get('notification_flow_bug_status_changed', 'true') == 'true',
                 'bug_resolved': config_dict.get('notification_flow_bug_resolved', 'true') == 'true',
                 'bug_closed': config_dict.get('notification_flow_bug_closed', 'true') == 'true'
@@ -2573,6 +2671,7 @@ def save_notification_config():
             # 流程规则
             'notification_flow_bug_created': str(data.get('flow_rules', {}).get('bug_created', True)).lower(),
             'notification_flow_bug_assigned': str(data.get('flow_rules', {}).get('bug_assigned', True)).lower(),
+            'notification_flow_bug_rejected': str(data.get('flow_rules', {}).get('bug_rejected', True)).lower(),
             'notification_flow_bug_status_changed': str(data.get('flow_rules', {}).get('bug_status_changed', True)).lower(),
             'notification_flow_bug_resolved': str(data.get('flow_rules', {}).get('bug_resolved', True)).lower(),
             'notification_flow_bug_closed': str(data.get('flow_rules', {}).get('bug_closed', True)).lower(),

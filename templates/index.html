@@ -586,6 +586,7 @@
     .status-已分配 { background: #d1ecf1; color: #0c5460; }
     .status-处理中 { background: #d4edda; color: #155724; }
     .status-已解决 { background: #f8d7da; color: #721c24; }
+    .status-已驳回 { background: #f5c6cb; color: #721c24; }
     .status-已完成 { background: #e2e3e5; color: #383d41; }
     
     .filter-section-container {
@@ -1333,6 +1334,12 @@
                         <input type="checkbox" class="status-checkbox" value="已解决" checked>
                         <span class="bug-status status-已解决">已解决</span>
                     </label>
+                    {% if user.role_en in ['ssz', 'fzr', 'gly'] %}
+                    <label class="filter-checkbox">
+                        <input type="checkbox" class="status-checkbox" value="已驳回" checked>
+                        <span class="bug-status status-已驳回">已驳回</span>
+                    </label>
+                    {% endif %}
                     <label class="filter-checkbox">
                         <input type="checkbox" class="status-checkbox" value="已完成" checked>
                         <span class="bug-status status-已完成">已完成</span>
@@ -1420,6 +1427,18 @@
                         <div class="stat-label-inline">已解决</div>
                     </div>
                 </div>
+
+                {% if user.role_en in ['ssz', 'fzr', 'gly'] %}
+                <div class="stat-card-inline clickable" data-status="rejected" onclick="filterByStatus('rejected')">
+                    <div class="stat-icon-inline" style="background: linear-gradient(135deg, #dc3545, #c82333);">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <div class="stat-content-inline">
+                        <div class="stat-number-inline" id="rejectedBugs">0</div>
+                        <div class="stat-label-inline">已驳回</div>
+                    </div>
+                </div>
+                {% endif %}
 
                 <div class="stat-card-inline clickable" data-status="completed" onclick="filterByStatus('completed')">
                     <div class="stat-icon-inline" style="background: linear-gradient(135deg, #6c757d, #495057);">
@@ -1642,6 +1661,7 @@ function updateStats() {
     let assignedCount = 0;
     let processingCount = 0;
     let resolvedCount = 0;
+    let rejectedCount = 0;
     let completedCount = 0;
 
     allBugs.forEach(bug => {
@@ -1654,6 +1674,8 @@ function updateStats() {
             processingCount++;
         } else if (status === '已解决') {
             resolvedCount++;
+        } else if (status === '已驳回') {
+            rejectedCount++;
         } else if (status === '已完成') {
             completedCount++;
         }
@@ -1664,6 +1686,13 @@ function updateStats() {
     document.getElementById('assignedBugs').textContent = assignedCount;
     document.getElementById('processingBugs').textContent = processingCount;
     document.getElementById('resolvedBugs').textContent = resolvedCount;
+
+    // 只有特定角色才有rejectedBugs元素
+    const rejectedElement = document.getElementById('rejectedBugs');
+    if (rejectedElement) {
+        rejectedElement.textContent = rejectedCount;
+    }
+
     document.getElementById('completedBugs').textContent = completedCount;
 
     // 计算未完成问题数（总数减去已完成）
@@ -1708,6 +1737,8 @@ function filterByStatus(status) {
             shouldShow = bugStatus === '处理中';
         } else if (status === 'resolved') {
             shouldShow = bugStatus === '已解决';
+        } else if (status === 'rejected') {
+            shouldShow = bugStatus === '已驳回';
         } else if (status === 'completed') {
             shouldShow = bugStatus === '已完成';
         }
@@ -1747,6 +1778,8 @@ function updateFilterCheckboxes(status) {
                 checkbox.checked = checkboxStatus === '处理中';
             } else if (status === 'resolved') {
                 checkbox.checked = checkboxStatus === '已解决';
+            } else if (status === 'rejected') {
+                checkbox.checked = checkboxStatus === '已驳回';
             } else if (status === 'completed') {
                 checkbox.checked = checkboxStatus === '已完成';
             } else {

@@ -145,6 +145,11 @@ class SimpleNotifier:
                 "content": "您好 {user_name}，有问题分配给您：\n\n📋 标题：{title}\n📝 描述：{description}\n👤 分配人：{assigner_name}\n⏰ 时间：{assigned_time}",
                 "priority": 3
             },
+            "bug_rejected": {
+                "title": "❌ 问题已被驳回",
+                "content": "您提交的问题已被驳回：\n\n📋 标题：{title}\n📝 描述：{description}\n🚫 驳回原因：{reject_reason}\n👤 驳回人：{rejector_name}\n⏰ 时间：{rejected_time}",
+                "priority": 3
+            },
             "bug_status_changed": {
                 "title": "🔄 问题状态更新",
                 "content": "问题状态已更新：\n\n📋 标题：{title}\n📊 状态：{old_status} → {new_status}\n👤 操作人：{operator_name}\n⏰ 时间：{updated_time}",

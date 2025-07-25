@@ -2288,6 +2288,10 @@
                                 <span>已解决</span>
                             </label>
                             <label class="filter-checkbox">
+                                <input type="checkbox" class="status-checkbox" value="已驳回">
+                                <span>已驳回</span>
+                            </label>
+                            <label class="filter-checkbox">
                                 <input type="checkbox" class="status-checkbox" value="已完成">
                                 <span>已完成</span>
                             </label>
@@ -2602,6 +2606,23 @@
                                             <div class="form-check form-switch">
                                                 <input class="form-check-input" type="checkbox" id="notifyBugAssigned" checked>
                                                 <label class="form-check-label" for="notifyBugAssigned">启用</label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="notification-type-item">
+                                        <div class="type-info">
+                                            <i class="fas fa-times-circle text-danger"></i>
+                                            <div>
+                                                <h5>问题驳回通知</h5>
+                                                <p><strong>触发：</strong>负责人驳回问题<br>
+                                                <strong>通知对象：</strong>问题提出人（实施组）和原指派人</p>
+                                            </div>
+                                        </div>
+                                        <div class="type-controls">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="notifyBugRejected" checked>
+                                                <label class="form-check-label" for="notifyBugRejected">启用</label>
                                             </div>
                                         </div>
                                     </div>
@@ -2968,6 +2989,10 @@
                                                     <div class="form-check form-check-inline">
                                                         <input class="form-check-input" type="checkbox" id="statusResolved" checked>
                                                         <label class="form-check-label" for="statusResolved">已解决</label>
+                                                    </div>
+                                                    <div class="form-check form-check-inline">
+                                                        <input class="form-check-input" type="checkbox" id="statusRejected" checked>
+                                                        <label class="form-check-label" for="statusRejected">已驳回</label>
                                                     </div>
                                                     <div class="form-check form-check-inline">
                                                         <input class="form-check-input" type="checkbox" id="statusCompleted" checked>
@@ -3738,6 +3763,7 @@ function updateStats() {
     let assignedCount = 0;
     let processingCount = 0;
     let resolvedCount = 0;
+    let rejectedCount = 0;
     let completedCount = 0;
 
     allBugs.forEach(bug => {
@@ -3750,6 +3776,8 @@ function updateStats() {
             processingCount++;
         } else if (status === '已解决') {
             resolvedCount++;
+        } else if (status === '已驳回') {
+            rejectedCount++;
         } else if (status === '已完成') {
             completedCount++;
         }
@@ -3824,6 +3852,8 @@ function filterByStatus(status) {
                 } else if (status === 'processing' && bugStatus === '处理中') {
                     row.style.display = '';
                 } else if (status === 'resolved' && bugStatus === '已解决') {
+                    row.style.display = '';
+                } else if (status === 'rejected' && bugStatus === '已驳回') {
                     row.style.display = '';
                 } else if (status === 'completed' && bugStatus === '已完成') {
                     row.style.display = '';
@@ -4359,6 +4389,7 @@ async function loadNotificationConfig() {
             if (data.flow_rules) {
                 document.getElementById('notifyBugCreated').checked = data.flow_rules.bug_created !== false;
                 document.getElementById('notifyBugAssigned').checked = data.flow_rules.bug_assigned !== false;
+                document.getElementById('notifyBugRejected').checked = data.flow_rules.bug_rejected !== false;
                 document.getElementById('notifyBugStatusChanged').checked = data.flow_rules.bug_status_changed !== false;
                 document.getElementById('notifyBugResolved').checked = data.flow_rules.bug_resolved !== false;
                 document.getElementById('notifyBugClosed').checked = data.flow_rules.bug_closed !== false;
@@ -4420,6 +4451,7 @@ async function saveNotificationConfig() {
         flow_rules: {
             bug_created: document.getElementById('notifyBugCreated').checked,
             bug_assigned: document.getElementById('notifyBugAssigned').checked,
+            bug_rejected: document.getElementById('notifyBugRejected').checked,
             bug_status_changed: document.getElementById('notifyBugStatusChanged').checked,
             bug_resolved: document.getElementById('notifyBugResolved').checked,
             bug_closed: document.getElementById('notifyBugClosed').checked
@@ -4570,6 +4602,7 @@ function resetNotificationConfig() {
         // 通知类型
         document.getElementById('notifyBugCreated').checked = true;
         document.getElementById('notifyBugAssigned').checked = true;
+        document.getElementById('notifyBugRejected').checked = true;
         document.getElementById('notifyBugStatusChanged').checked = true;
         document.getElementById('notifyBugResolved').checked = true;
         document.getElementById('notifyBugClosed').checked = true;
@@ -5002,6 +5035,7 @@ function getExportConfig() {
         if (document.getElementById('statusAssigned').checked) statusList.push('已分配');
         if (document.getElementById('statusInProgress').checked) statusList.push('处理中');
         if (document.getElementById('statusResolved').checked) statusList.push('已解决');
+        if (document.getElementById('statusRejected').checked) statusList.push('已驳回');
         if (document.getElementById('statusCompleted').checked) statusList.push('已完成');
         filters.status = statusList;
     }

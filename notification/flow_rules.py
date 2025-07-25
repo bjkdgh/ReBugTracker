@@ -44,6 +44,19 @@ class FlowNotificationRules:
                 if assignee_id:
                     targets.add(str(assignee_id))
                     logger.debug(f"Bug assigned notification target: {assignee_id}")
+
+            elif event_type == "bug_rejected":
+                # 问题驳回：负责人驳回问题，通知提出人
+                creator_id = event_data.get('creator_id')
+                if creator_id:
+                    targets.add(str(creator_id))
+                    logger.debug(f"Bug rejected notification target: creator {creator_id}")
+
+                # 如果问题之前已分配给某人，也通知被分配者
+                old_assignee_id = event_data.get('old_assignee_id')
+                if old_assignee_id:
+                    targets.add(str(old_assignee_id))
+                    logger.debug(f"Bug rejected notification target: old assignee {old_assignee_id}")
                     
             elif event_type == "bug_status_changed":
                 # 状态变更：通知创建者、分配者、当前处理人
@@ -217,6 +230,7 @@ class FlowNotificationRules:
         event_participants = {
             "bug_created": ['fzr'],  # 指定的负责人（接收实施组提交的问题）
             "bug_assigned": ['zncy'],  # 组内成员（接收负责人分配的问题）
+            "bug_rejected": ['ssz', 'zncy'],  # 实施组和组内成员（接收负责人驳回的问题）
             "bug_status_changed": ['ssz', 'zncy', 'fzr'],  # 实施组、组内成员、负责人
             "bug_resolved": ['ssz', 'fzr'],  # 实施组和负责人（接收组内成员解决的问题）
             "bug_closed": ['fzr', 'gly']  # 负责人和管理员
