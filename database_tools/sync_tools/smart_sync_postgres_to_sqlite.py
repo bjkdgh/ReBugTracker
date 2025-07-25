@@ -14,8 +14,8 @@ from datetime import datetime
 
 # PostgreSQL配置
 POSTGRES_CONFIG = {
-    'dbname': 'postgres',
-    'user': 'postgres', 
+    'dbname': 'rebugtracker',
+    'user': 'postgres',
     'password': '$RFV5tgb',
     'host': '192.168.1.5',
     'port': 5432
@@ -128,6 +128,7 @@ def recreate_sqlite_tables(conn):
             title TEXT NOT NULL,
             description TEXT,
             status TEXT DEFAULT '待处理',
+            type TEXT DEFAULT 'bug',
             assigned_to INTEGER,
             created_by INTEGER,
             project TEXT,
@@ -307,15 +308,26 @@ def main():
         # 2. 同步bugs表
         count = sync_table_data(
             pg_cursor, sqlite_conn, "bugs",
-            "SELECT title, description, status, assigned_to, created_by, project, created_at, resolved_at, resolution, image_path FROM bugs ORDER BY id",
-            '''INSERT INTO bugs 
-               (title, description, status, assigned_to, created_by, project, created_at, resolved_at, resolution, image_path)
+            "SELECT title, description, status, type, assigned_to, created_by, project, created_at, resolved_at, resolution, image_path FROM bugs ORDER BY id",
+            '''INSERT INTO bugs
+               (title, description, status, type, assigned_to, created_by, project, created_at, resolved_at, resolution, image_path)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        )
+        total_records += count
+        
+        # 3. 同步projects表
+        count = sync_table_data(
+            pg_cursor, sqlite_conn, "projects",
+            "SELECT name, type, city, start_date, factory_acceptance_date, site_acceptance_date, practical_date, description, created_at, updated_at FROM projects ORDER BY id",
+            '''INSERT INTO projects
+               (name, type, city, start_date, factory_acceptance_date, site_acceptance_date, practical_date, description, created_at, updated_at)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
             [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
         )
         total_records += count
-        
-        # 3. 同步其他表
+
+        # 4. 同步其他表
         count = sync_table_data(
             pg_cursor, sqlite_conn, "bug_images",
             "SELECT bug_id, image_path, created_at FROM bug_images ORDER BY id",
@@ -344,7 +356,7 @@ def main():
         )
         total_records += count
         
-        # 4. 智能同步notifications表（过滤孤儿记录）
+        # 5. 智能同步notifications表（过滤孤儿记录）
         count = smart_sync_notifications(pg_cursor, sqlite_conn, valid_user_ids)
         total_records += count
         

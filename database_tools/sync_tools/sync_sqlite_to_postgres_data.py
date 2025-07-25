@@ -29,8 +29,9 @@ def clear_postgres_tables(pg_cursor, pg_conn):
     # 按依赖关系顺序清空表
     tables = [
         'notifications',
-        'user_notification_preferences', 
+        'user_notification_preferences',
         'bugs',
+        'projects',
         'users'
     ]
     
@@ -94,7 +95,7 @@ def sync_bugs_table(sqlite_cursor, pg_cursor, pg_conn):
     bugs = sqlite_cursor.fetchall()
     
     for bug in bugs:
-        # SQLite字段: id, title, description, status, assigned_to, created_by, project, created_at, resolved_at, resolution, image_path
+        # SQLite字段: id, title, description, status, assigned_to, created_by, project, created_at, resolved_at, resolution, image_path, type
         values = [
             bug[0],   # id
             bug[1],   # title
@@ -106,14 +107,15 @@ def sync_bugs_table(sqlite_cursor, pg_cursor, pg_conn):
             bug[7],   # created_at
             bug[8],   # resolved_at
             bug[9],   # resolution
-            bug[10]   # image_path
+            bug[10],  # image_path
+            bug[11] if len(bug) > 11 else 'bug'   # type (默认为'bug'如果字段不存在)
         ]
-        
+
         pg_cursor.execute('''
-            INSERT INTO bugs 
+            INSERT INTO bugs
             (id, title, description, status, assigned_to, created_by, project,
-             created_at, resolved_at, resolution, image_path)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+             created_at, resolved_at, resolution, image_path, type)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ''', values)
     
     # 更新序列
@@ -123,6 +125,49 @@ def sync_bugs_table(sqlite_cursor, pg_cursor, pg_conn):
     
     pg_conn.commit()
     print(f"  ✅ 同步了 {len(bugs)} 个问题")
+
+def sync_projects_table(sqlite_cursor, pg_cursor, pg_conn):
+    """同步projects表"""
+    print("📋 同步projects表到PostgreSQL...")
+
+    try:
+        sqlite_cursor.execute("SELECT * FROM projects ORDER BY id")
+        projects = sqlite_cursor.fetchall()
+
+        for project in projects:
+            # SQLite字段: id, name, type, city, start_date, factory_acceptance_date,
+            #            site_acceptance_date, practical_date, description, created_at, updated_at
+            values = [
+                project[0],   # id
+                project[1],   # name
+                project[2],   # type
+                project[3],   # city
+                project[4],   # start_date
+                project[5],   # factory_acceptance_date
+                project[6],   # site_acceptance_date
+                project[7],   # practical_date
+                project[8],   # description
+                project[9],   # created_at
+                project[10]   # updated_at
+            ]
+
+            pg_cursor.execute('''
+                INSERT INTO projects
+                (id, name, type, city, start_date, factory_acceptance_date,
+                 site_acceptance_date, practical_date, description, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ''', values)
+
+        # 更新序列
+        if projects:
+            max_id = max(project[0] for project in projects)
+            pg_cursor.execute(f"SELECT setval('projects_id_seq', {max_id})")
+
+        pg_conn.commit()
+        print(f"  ✅ 同步了 {len(projects)} 个项目")
+
+    except Exception as e:
+        print(f"  ❌ 同步projects表失败: {e}")
 
 def sync_user_notification_preferences_table(sqlite_cursor, pg_cursor, pg_conn):
     """同步user_notification_preferences表"""
@@ -196,7 +241,7 @@ def verify_postgres_data(pg_cursor):
     """验证PostgreSQL数据"""
     print("\n📊 验证PostgreSQL同步结果:")
     
-    tables = ['users', 'bugs', 'user_notification_preferences', 'notifications']
+    tables = ['users', 'projects', 'bugs', 'user_notification_preferences', 'notifications']
     for table in tables:
         pg_cursor.execute(f"SELECT COUNT(*) FROM {table}")
         count = pg_cursor.fetchone()[0]
@@ -241,6 +286,7 @@ def main():
         
         # 2. 同步各个表的数据
         sync_users_table(sqlite_cursor, pg_cursor, pg_conn)
+        sync_projects_table(sqlite_cursor, pg_cursor, pg_conn)
         sync_bugs_table(sqlite_cursor, pg_cursor, pg_conn)
         sync_user_notification_preferences_table(sqlite_cursor, pg_cursor, pg_conn)
         sync_notifications_table(sqlite_cursor, pg_cursor, pg_conn)

@@ -681,7 +681,7 @@
         margin-bottom: 10px;
         gap: 15px;
     }
-    
+
     .bug-title {
         font-size: 1.1rem;
         font-weight: 600;
@@ -689,6 +689,40 @@
         margin: 0;
         flex: 1;
         text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+    }
+
+    .bug-meta {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+    }
+
+    .bug-type-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .bug-type-badge.type-bug {
+        background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+        color: white;
+    }
+
+    .bug-type-badge.type-requirement {
+        background: linear-gradient(135deg, #4ecdc4, #44a08d);
+        color: white;
+    }
+
+    .bug-type-badge i {
+        font-size: 0.8rem;
     }
     
     .bug-id {
@@ -1402,10 +1436,16 @@
         <div id="bugsList">
             {% if bugs %}
                 {% for bug in bugs %}
-                <div class="bug-item" data-status="{{ bug.status }}" onclick="window.location.href='/bug/{{ bug.id }}'">
+                <div class="bug-item" data-status="{{ bug.status }}" data-type="{{ bug.type or 'bug' }}" onclick="window.location.href='/bug/{{ bug.id }}'">
                     <div class="bug-header">
                         <h3 class="bug-title">{{ bug.title }}</h3>
-                        <div class="bug-id">#{{ bug.id }}</div>
+                        <div class="bug-meta">
+                            <span class="bug-type-badge {{ 'type-requirement' if bug.type == '需求' else 'type-bug' }}">
+                                <i class="fas {{ 'fa-lightbulb' if bug.type == '需求' else 'fa-bug' }}"></i>
+                                {{ bug.type or 'Bug' }}
+                            </span>
+                            <div class="bug-id">#{{ bug.id }}</div>
+                        </div>
                     </div>
 
                     <div class="bug-meta">

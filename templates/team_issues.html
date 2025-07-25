@@ -418,6 +418,41 @@
         line-height: 1.4;
     }
 
+    .bug-meta {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .bug-type-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        flex-shrink: 0;
+    }
+
+    .bug-type-badge.type-bug {
+        background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+        color: white;
+    }
+
+    .bug-type-badge.type-requirement {
+        background: linear-gradient(135deg, #4ecdc4, #44a08d);
+        color: white;
+    }
+
+    .bug-type-badge i {
+        font-size: 0.9rem;
+    }
+
     .bug-id {
         background: linear-gradient(135deg, #667eea, #764ba2);
         color: white;
@@ -444,7 +479,7 @@
         line-height: 1.5;
     }
 
-    .bug-meta {
+    .bug-meta-container {
         display: flex;
         flex-wrap: wrap;
         gap: 20px;
@@ -1332,10 +1367,16 @@ bug.created_at = 创建时间 (数据库字段: created_at)
                 <div id="bugsList">
                     {% if bugs %}
                         {% for bug in bugs %}
-                        <div class="bug-item" data-status="{{ bug.status }}" onclick="window.location.href='/bug/{{ bug.id }}'">
+                        <div class="bug-item" data-status="{{ bug.status }}" data-type="{{ bug.type or 'bug' }}" onclick="window.location.href='/bug/{{ bug.id }}'">
                             <div class="bug-header">
                                 <h3 class="bug-title">{{ bug.title }}</h3>
-                                <div class="bug-id">#{{ bug.id }}</div>
+                                <div class="bug-meta">
+                                    <span class="bug-type-badge {{ 'type-requirement' if bug.type == '需求' else 'type-bug' }}">
+                                        <i class="fas {{ 'fa-lightbulb' if bug.type == '需求' else 'fa-bug' }}"></i>
+                                        {{ bug.type or 'Bug' }}
+                                    </span>
+                                    <div class="bug-id">#{{ bug.id }}</div>
+                                </div>
                             </div>
 
                             <!-- 问题描述 -->
@@ -1345,7 +1386,7 @@ bug.created_at = 创建时间 (数据库字段: created_at)
                             </div>
                             {% endif %}
 
-                            <div class="bug-meta">
+                            <div class="bug-meta-container">
                                 <div class="bug-meta-item">
                                     <i class="fas fa-tag"></i>
                                     <span class="bug-status status-{{ bug.status }}">{{ bug.status }}</span>

@@ -1,5 +1,9 @@
 # 数据库配置
 import os
+from dotenv import load_dotenv
+
+# 加载.env文件
+load_dotenv()
 
 # 数据库类型配置
 DB_TYPE = os.getenv('DB_TYPE', 'sqlite')  # postgres/sqlite

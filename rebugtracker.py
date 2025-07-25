@@ -379,6 +379,7 @@ def init_db():
                 title TEXT NOT NULL,
                 description TEXT,
                 status TEXT DEFAULT '待处理',
+                type TEXT DEFAULT 'bug',
                 assigned_to INTEGER,
                 created_by INTEGER,
                 project TEXT,
@@ -395,6 +396,7 @@ def init_db():
                 title TEXT NOT NULL,
                 description TEXT,
                 status TEXT DEFAULT '待处理',
+                type TEXT DEFAULT 'bug',    -- 类型：需求/bug
                 assigned_to INTEGER,         -- 负责人ID
                 created_by INTEGER,          -- 提交人ID
                 project TEXT,               -- 所属项目名称
@@ -437,6 +439,40 @@ def init_db():
                 image_path TEXT NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (bug_id) REFERENCES bugs (id) ON DELETE CASCADE
+            )
+        ''')
+
+    # 创建项目表
+    if DB_TYPE == 'postgres':
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS projects (
+                id SERIAL PRIMARY KEY,
+                name TEXT NOT NULL UNIQUE,
+                type TEXT NOT NULL,
+                city TEXT NOT NULL,
+                start_date DATE,
+                factory_acceptance_date DATE,
+                site_acceptance_date DATE,
+                practical_date DATE,
+                description TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+    else:
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS projects (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                type TEXT NOT NULL,
+                city TEXT NOT NULL,
+                start_date DATE,
+                factory_acceptance_date DATE,
+                site_acceptance_date DATE,
+                practical_date DATE,
+                description TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
 
@@ -1223,9 +1259,15 @@ def admin():
             bug_dict['resolved_at'] = '--'
 
         formatted_bugs.append(bug_dict)
+
+    # 获取所有项目
+    query, params = adapt_sql('SELECT id, name, type, city FROM projects ORDER BY name', ())
+    c.execute(query, params)
+    projects = c.fetchall()
+
     conn.close()
 
-    return render_template('admin.html', users=users, bugs=formatted_bugs, user=user, total_users=total_users)
+    return render_template('admin.html', users=users, bugs=formatted_bugs, projects=projects, user=user, total_users=total_users)
 
 @app.route('/team-issues')
 @login_required
@@ -1246,7 +1288,7 @@ def team_issues():
         else:
             c = conn.cursor()
         query, params = adapt_sql('''
-            SELECT b.id, b.title, b.description, b.status, b.assigned_to, b.created_by, b.project,
+            SELECT b.id, b.title, b.description, b.status, b.type, b.assigned_to, b.created_by, b.project,
                    b.created_at as local_created_at,
                    b.resolved_at as local_resolved_at,
                    b.resolution, b.image_path,
@@ -1348,7 +1390,13 @@ def submit_page():
         # 调试：打印实际查询到的负责人显示名称
         app.logger.debug(f"实际负责人显示名称: {managers}")
 
-        return render_template('submit.html', managers=managers, projects=[], user=user)
+        # 获取项目列表
+        query, params = adapt_sql('SELECT name FROM projects ORDER BY name', ())
+        c.execute(query, params)
+        projects = [row['name'] if DB_TYPE == 'postgres' else row[0] for row in c.fetchall()]
+        app.logger.debug(f"获取到的项目列表: {projects}")
+
+        return render_template('submit.html', managers=managers, projects=projects, user=user)
     finally:
         conn.close()
 
@@ -1399,6 +1447,7 @@ def submit_bug_handler(user):
 
         manager_id = manager['id'] if DB_TYPE == 'postgres' else manager[0]
         project_id = request.form.get('project', '')
+        bug_type = request.form.get('type', 'bug')  # 获取类型，默认为bug
 
         # 获取当前时间，精确到秒
         from datetime import datetime
@@ -1406,17 +1455,17 @@ def submit_bug_handler(user):
 
         if DB_TYPE == 'postgres':
             query, params = adapt_sql('''
-                INSERT INTO bugs (title, description, created_by, project, image_path, assigned_to, status, created_at)
-                VALUES (%s, %s, %s, %s, %s, %s, '待处理', %s)
+                INSERT INTO bugs (title, description, created_by, project, image_path, assigned_to, status, type, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s, '待处理', %s, %s)
                 RETURNING id
-            ''', (title, description, created_by, project_id, image_path, manager_id, current_time))
+            ''', (title, description, created_by, project_id, image_path, manager_id, bug_type, current_time))
             c.execute(query, params)
             bug_id = c.fetchone()['id']
         else:
             query, params = adapt_sql('''
-                INSERT INTO bugs (title, description, created_by, project, image_path, assigned_to, status, created_at)
-                VALUES (%s, %s, %s, %s, %s, %s, '待处理', %s)
-            ''', (title, description, created_by, project_id, image_path, manager_id, current_time))
+                INSERT INTO bugs (title, description, created_by, project, image_path, assigned_to, status, type, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s, '待处理', %s, %s)
+            ''', (title, description, created_by, project_id, image_path, manager_id, bug_type, current_time))
             c.execute(query, params)
             bug_id = c.lastrowid
 
@@ -1557,16 +1606,17 @@ def submit_bug():
 
         manager_id = manager['id']
         project_id = request.form.get('project', '')
+        bug_type = request.form.get('type', 'bug')  # 获取类型，默认为bug
 
         # 获取当前时间，精确到秒
         from datetime import datetime
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         query, params = adapt_sql('''
-            INSERT INTO bugs (title, description, created_by, project, image_path, assigned_to, status, created_at)
-            VALUES (%s, %s, %s, %s, %s, %s, '待处理', %s)
+            INSERT INTO bugs (title, description, created_by, project, image_path, assigned_to, status, type, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, '待处理', %s, %s)
             RETURNING id
-        ''', (title, description, created_by, project_id, main_image_path, manager_id, current_time))
+        ''', (title, description, created_by, project_id, main_image_path, manager_id, bug_type, current_time))
         c.execute(query, params)
 
         bug_id = c.fetchone()['id']
@@ -2816,6 +2866,320 @@ def admin_cleanup_stats():
         app.logger.error(f"获取清理统计失败: {e}")
         return jsonify({'success': False, 'message': str(e)})
 
+# 项目管理API
+@app.route('/admin/projects', methods=['GET', 'POST'])
+@login_required
+@role_required('gly')
+def admin_projects():
+    """项目管理API"""
+    conn = get_db_connection()
+    if DB_TYPE == 'postgres':
+        c = conn.cursor(cursor_factory=DictCursor)
+    else:
+        c = conn.cursor()
+
+    try:
+        if request.method == 'GET':
+            # 获取所有项目
+            query = '''
+                SELECT id, name, type, city, start_date, factory_acceptance_date,
+                       site_acceptance_date, practical_date, description,
+                       created_at, updated_at
+                FROM projects
+                ORDER BY created_at DESC
+            '''
+            adapted_query, adapted_params = adapt_sql(query, ())
+            c.execute(adapted_query, adapted_params)
+            rows = c.fetchall()
+
+            projects = []
+            for row in rows:
+                project = dict(row)
+                # 处理日期字段
+                for date_field in ['start_date', 'factory_acceptance_date', 'site_acceptance_date', 'practical_date']:
+                    if project[date_field]:
+                        if isinstance(project[date_field], str):
+                            project[date_field] = project[date_field]
+                        else:
+                            project[date_field] = project[date_field].strftime('%Y-%m-%d')
+                    else:
+                        project[date_field] = ''
+
+                # 处理时间戳字段
+                for timestamp_field in ['created_at', 'updated_at']:
+                    if project[timestamp_field]:
+                        if isinstance(project[timestamp_field], str):
+                            project[timestamp_field] = project[timestamp_field]
+                        else:
+                            project[timestamp_field] = project[timestamp_field].strftime('%Y-%m-%d %H:%M:%S')
+                    else:
+                        project[timestamp_field] = ''
+
+                projects.append(project)
+
+            return jsonify({'success': True, 'data': projects})
+
+        elif request.method == 'POST':
+            # 创建新项目
+            data = request.get_json()
+
+            project_type = data.get('type', '')
+            city = data.get('city', '')
+
+            # 自动生成项目名称：类型#地市名称+项目
+            if project_type and city:
+                auto_name = f"{project_type}#{city}项目"
+            else:
+                return jsonify({'success': False, 'message': '项目类型和地市名称不能为空'})
+
+            # 检查项目名称是否已存在
+            check_query, check_params = adapt_sql('SELECT id FROM projects WHERE name = %s', (auto_name,))
+            c.execute(check_query, check_params)
+            if c.fetchone():
+                return jsonify({'success': False, 'message': f'项目名称 "{auto_name}" 已存在'})
+
+            # 插入新项目
+            from datetime import datetime
+            current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+            insert_query = '''
+                INSERT INTO projects (name, type, city, start_date, factory_acceptance_date,
+                                    site_acceptance_date, practical_date, description,
+                                    created_at, updated_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            '''
+            insert_params = (
+                auto_name,
+                project_type,
+                city,
+                data.get('start_date') or None,
+                data.get('factory_acceptance_date') or None,
+                data.get('site_acceptance_date') or None,
+                data.get('practical_date') or None,
+                data.get('description', ''),
+                current_time,
+                current_time
+            )
+
+            adapted_insert_query, adapted_insert_params = adapt_sql(insert_query, insert_params)
+            c.execute(adapted_insert_query, adapted_insert_params)
+
+            # 提交事务（SQLite和PostgreSQL都需要）
+            conn.commit()
+
+            return jsonify({'success': True, 'message': f'项目 "{auto_name}" 创建成功'})
+
+    except Exception as e:
+        if DB_TYPE == 'postgres':
+            conn.rollback()
+        app.logger.error(f"项目管理API错误: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+    finally:
+        conn.close()
+
+@app.route('/admin/projects/export', methods=['GET'])
+@login_required
+@role_required('gly')
+def export_projects():
+    """导出项目数据为Excel"""
+    try:
+        from datetime import datetime
+
+        conn = get_db_connection()
+        if DB_TYPE == 'postgres':
+            c = conn.cursor(cursor_factory=DictCursor)
+        else:
+            c = conn.cursor()
+
+        # 获取所有项目数据
+        query = '''
+            SELECT name, type, city, start_date, factory_acceptance_date,
+                   site_acceptance_date, practical_date, description, created_at
+            FROM projects
+            ORDER BY created_at DESC
+        '''
+        adapted_query, adapted_params = adapt_sql(query, ())
+        c.execute(adapted_query, adapted_params)
+
+        # 转换为字典列表
+        projects_data = []
+        for row in c.fetchall():
+            project = dict(row)
+            # 处理日期格式
+            for date_field in ['start_date', 'factory_acceptance_date', 'site_acceptance_date', 'practical_date', 'created_at']:
+                if project.get(date_field):
+                    try:
+                        if isinstance(project[date_field], str):
+                            # 如果是字符串，尝试解析
+                            dt = datetime.strptime(project[date_field][:10], '%Y-%m-%d')
+                            project[date_field] = dt.strftime('%Y-%m-%d')
+                        else:
+                            # 如果是datetime对象，直接格式化
+                            project[date_field] = project[date_field].strftime('%Y-%m-%d')
+                    except:
+                        project[date_field] = str(project[date_field]) if project[date_field] else ''
+                else:
+                    project[date_field] = ''
+            projects_data.append(project)
+
+        conn.close()
+
+        # 定义导出字段
+        fields = [
+            {'key': 'name', 'label': '项目名称'},
+            {'key': 'type', 'label': '项目类型'},
+            {'key': 'city', 'label': '地市名称'},
+            {'key': 'start_date', 'label': '启动时间'},
+            {'key': 'factory_acceptance_date', 'label': '工厂验收时间'},
+            {'key': 'site_acceptance_date', 'label': '现场验收时间'},
+            {'key': 'practical_date', 'label': '实用化时间'},
+            {'key': 'description', 'label': '项目描述'},
+            {'key': 'created_at', 'label': '创建时间'}
+        ]
+
+        # 生成文件名
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f'项目列表_{timestamp}'
+
+        # 使用报表导出的Excel方法
+        return export_to_excel(projects_data, fields, filename)
+
+    except Exception as e:
+        app.logger.error(f"导出项目数据错误: {e}")
+        return jsonify({'success': False, 'message': f'导出失败: {str(e)}'})
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@app.route('/admin/projects/<int:project_id>', methods=['GET', 'PUT', 'DELETE'])
+@login_required
+@role_required('gly')
+def admin_project_detail(project_id):
+    """项目详情管理API"""
+    conn = get_db_connection()
+    if DB_TYPE == 'postgres':
+        c = conn.cursor(cursor_factory=DictCursor)
+    else:
+        c = conn.cursor()
+
+    try:
+        if request.method == 'GET':
+            # 获取单个项目信息
+            query, params = adapt_sql('''
+                SELECT id, name, type, city, start_date, factory_acceptance_date,
+                       site_acceptance_date, practical_date, description, created_at
+                FROM projects WHERE id = %s
+            ''', (project_id,))
+            c.execute(query, params)
+            project = c.fetchone()
+
+            if not project:
+                return jsonify({'success': False, 'message': '项目不存在'}), 404
+
+            return jsonify(dict(project))
+
+        elif request.method == 'PUT':
+            # 更新项目
+            data = request.get_json()
+
+            project_type = data.get('type', '')
+            city = data.get('city', '')
+
+            # 重新生成项目名称
+            if project_type and city:
+                auto_name = f"{project_type}#{city}项目"
+            else:
+                return jsonify({'success': False, 'message': '项目类型和地市名称不能为空'})
+
+            # 检查项目名称是否与其他项目冲突
+            check_query, check_params = adapt_sql('SELECT id FROM projects WHERE name = %s AND id != %s', (auto_name, project_id))
+            c.execute(check_query, check_params)
+            if c.fetchone():
+                return jsonify({'success': False, 'message': f'项目名称 "{auto_name}" 已被其他项目使用'})
+
+            # 更新项目
+            from datetime import datetime
+            current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+            update_query = '''
+                UPDATE projects
+                SET name = %s, type = %s, city = %s, start_date = %s,
+                    factory_acceptance_date = %s, site_acceptance_date = %s,
+                    practical_date = %s, description = %s, updated_at = %s
+                WHERE id = %s
+            '''
+            update_params = (
+                auto_name,
+                project_type,
+                city,
+                data.get('start_date') or None,
+                data.get('factory_acceptance_date') or None,
+                data.get('site_acceptance_date') or None,
+                data.get('practical_date') or None,
+                data.get('description', ''),
+                current_time,
+                project_id
+            )
+
+            adapted_update_query, adapted_update_params = adapt_sql(update_query, update_params)
+            c.execute(adapted_update_query, adapted_update_params)
+
+            # 提交事务（SQLite和PostgreSQL都需要）
+            conn.commit()
+
+            return jsonify({'success': True, 'message': f'项目 "{auto_name}" 更新成功'})
+
+        elif request.method == 'DELETE':
+            # 检查项目是否被bugs引用
+            check_bugs_query, check_bugs_params = adapt_sql('SELECT COUNT(*) as count FROM bugs WHERE project = (SELECT name FROM projects WHERE id = %s)', (project_id,))
+            c.execute(check_bugs_query, check_bugs_params)
+            result = c.fetchone()
+            bug_count = result['count'] if DB_TYPE == 'postgres' else result[0]
+
+            if bug_count > 0:
+                return jsonify({'success': False, 'message': f'无法删除项目，该项目下还有 {bug_count} 个问题'})
+
+            # 删除项目
+            delete_query, delete_params = adapt_sql('DELETE FROM projects WHERE id = %s', (project_id,))
+            c.execute(delete_query, delete_params)
+
+            # 提交事务（SQLite和PostgreSQL都需要）
+            conn.commit()
+
+            return jsonify({'success': True, 'message': '项目删除成功'})
+
+    except Exception as e:
+        if DB_TYPE == 'postgres':
+            conn.rollback()
+        app.logger.error(f"项目详情管理API错误: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+    finally:
+        conn.close()
+
+@app.route('/api/projects/list', methods=['GET'])
+@login_required
+def get_projects_list():
+    """获取项目列表（用于下拉菜单）"""
+    conn = get_db_connection()
+    if DB_TYPE == 'postgres':
+        c = conn.cursor(cursor_factory=DictCursor)
+    else:
+        c = conn.cursor()
+
+    try:
+        query = 'SELECT name FROM projects ORDER BY name'
+        adapted_query, adapted_params = adapt_sql(query, ())
+        c.execute(adapted_query, adapted_params)
+        projects = [row['name'] if DB_TYPE == 'postgres' else row[0] for row in c.fetchall()]
+
+        return jsonify({'success': True, 'data': projects})
+
+    except Exception as e:
+        app.logger.error(f"获取项目列表错误: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+    finally:
+        conn.close()
+
 @app.route('/favicon.ico')
 def favicon():
     return send_from_directory(os.path.join(app.root_path, 'static'),
@@ -3234,7 +3598,7 @@ def admin_reports_preview():
 
         # 基础查询
         base_query = '''
-            SELECT b.id, b.title, b.description, b.status, b.project,
+            SELECT b.id, b.title, b.description, b.status, b.type, b.project,
                    b.created_at, b.resolved_at, b.resolution, b.image_path,
                    u1.username as creator_username, u1.chinese_name as creator_name,
                    u2.username as assignee_username, u2.chinese_name as assignee_name,
@@ -3281,6 +3645,14 @@ def admin_reports_preview():
         if filters.get('assignee'):
             where_conditions.append('b.assigned_to = %s')
             params.append(filters['assignee'])
+
+        # 类型筛选
+        if filters.get('type'):
+            type_list = filters['type']
+            if type_list:
+                placeholders = ','.join(['%s'] * len(type_list))
+                where_conditions.append(f'b.type IN ({placeholders})')
+                params.extend(type_list)
 
         # 组合查询
         if where_conditions:
@@ -3536,7 +3908,7 @@ def admin_reports_chart_data():
 
         # 基础查询
         base_query = '''
-            SELECT b.id, b.title, b.status, b.project,
+            SELECT b.id, b.title, b.status, b.type, b.project,
                    b.created_at, b.resolved_at,
                    u1.username as creator_username, u1.chinese_name as creator_name,
                    u2.username as assignee_username, u2.chinese_name as assignee_name,
@@ -3582,6 +3954,14 @@ def admin_reports_chart_data():
             where_conditions.append('b.assigned_to = %s')
             params.append(filters['assignee'])
 
+        # 类型筛选
+        if filters.get('type'):
+            type_list = filters['type']
+            if type_list:
+                placeholders = ','.join(['%s'] * len(type_list))
+                where_conditions.append(f'b.type IN ({placeholders})')
+                params.extend(type_list)
+
         # 组合查询
         if where_conditions:
             query = base_query + ' WHERE ' + ' AND '.join(where_conditions)
@@ -3603,8 +3983,9 @@ def admin_reports_chart_data():
         conn.close()
 
         # 统计数据（只统计已完成的问题）
-        creator_stats = {}  # 提交人统计（只统计已完成的）
-        assignee_stats = {}  # 处理人统计（只统计已完成的）
+        creator_stats = {'bug': {}, '需求': {}}  # 提交人统计（按类型分别统计）
+        assignee_stats = {'bug': {}, '需求': {}}  # 处理人统计（按类型分别统计）
+        type_stats = {}  # 类型统计
 
         for row in results:
             # 统一转换为字典格式
@@ -3619,42 +4000,69 @@ def admin_reports_chart_data():
                         'id': row[0],
                         'title': row[1],
                         'status': row[2],
-                        'project': row[3],
-                        'created_at': row[4],
-                        'resolved_at': row[5],
-                        'creator_username': row[6],
-                        'creator_name': row[7],
-                        'assignee_username': row[8],
-                        'assignee_name': row[9],
-                        'creator_team': row[10],
-                        'assignee_team': row[11]
+                        'type': row[3],
+                        'project': row[4],
+                        'created_at': row[5],
+                        'resolved_at': row[6],
+                        'creator_username': row[7],
+                        'creator_name': row[8],
+                        'assignee_username': row[9],
+                        'assignee_name': row[10],
+                        'creator_team': row[11],
+                        'assignee_team': row[12]
                     }
+
+            # 获取问题类型
+            bug_type = row_data.get('type') or 'bug'
+
+            # 统计类型分布
+            type_stats[bug_type] = type_stats.get(bug_type, 0) + 1
 
             # 只统计已完成状态的问题
             if row_data.get('status') == '已完成' and row_data.get('resolved_at'):
-                # 统计提交人数据（已完成的问题）
+                # 统计提交人数据（按类型分别统计）
                 creator_name = row_data.get('creator_name') or row_data.get('creator_username') or '未知'
-                creator_stats[creator_name] = creator_stats.get(creator_name, 0) + 1
+                if bug_type not in creator_stats:
+                    creator_stats[bug_type] = {}
+                creator_stats[bug_type][creator_name] = creator_stats[bug_type].get(creator_name, 0) + 1
 
-                # 统计处理人数据（已完成的问题）
+                # 统计处理人数据（按类型分别统计）
                 assignee_name = row_data.get('assignee_name') or row_data.get('assignee_username') or '未分配'
                 if assignee_name != '未分配':
-                    assignee_stats[assignee_name] = assignee_stats.get(assignee_name, 0) + 1
+                    if bug_type not in assignee_stats:
+                        assignee_stats[bug_type] = {}
+                    assignee_stats[bug_type][assignee_name] = assignee_stats[bug_type].get(assignee_name, 0) + 1
 
-        # 转换为图表数据格式
-        creator_chart_data = {
-            'labels': list(creator_stats.keys()),
-            'values': list(creator_stats.values())
-        }
+        # 转换为图表数据格式（按类型分别统计）
+        creator_chart_data = {}
+        assignee_chart_data = {}
 
-        assignee_chart_data = {
-            'labels': list(assignee_stats.keys()),
-            'values': list(assignee_stats.values())
+        # 处理提交人统计数据
+        for bug_type, stats in creator_stats.items():
+            if stats:  # 只有当该类型有数据时才添加
+                creator_chart_data[bug_type] = {
+                    'labels': list(stats.keys()),
+                    'values': list(stats.values())
+                }
+
+        # 处理处理人统计数据
+        for bug_type, stats in assignee_stats.items():
+            if stats:  # 只有当该类型有数据时才添加
+                assignee_chart_data[bug_type] = {
+                    'labels': list(stats.keys()),
+                    'values': list(stats.values())
+                }
+
+        # 类型分布图表数据
+        type_chart_data = {
+            'labels': list(type_stats.keys()),
+            'values': list(type_stats.values())
         }
 
         chart_data = {
             'creator': creator_chart_data,
-            'assignee': assignee_chart_data
+            'assignee': assignee_chart_data,
+            'type': type_chart_data
         }
 
         return jsonify({'success': True, 'data': chart_data})
@@ -3663,6 +4071,43 @@ def admin_reports_chart_data():
         app.logger.error(f"获取图表数据失败: {e}")
         import traceback
         app.logger.error(f"详细错误: {traceback.format_exc()}")
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/admin/reports/projects', methods=['GET'])
+@login_required
+@role_required('gly')
+def admin_reports_projects():
+    """获取所有项目列表"""
+    try:
+        conn = get_db_connection()
+        if DB_TYPE == 'postgres':
+            from psycopg2.extras import DictCursor
+            cursor = conn.cursor(cursor_factory=DictCursor)
+        else:
+            cursor = conn.cursor()
+
+        # 查询所有不同的项目
+        cursor.execute('SELECT DISTINCT project FROM bugs WHERE project IS NOT NULL AND project != \'\' ORDER BY project')
+        results = cursor.fetchall()
+        conn.close()
+
+        # 提取项目名称
+        projects = []
+        for row in results:
+            if DB_TYPE == 'postgres':
+                project = row['project']
+            else:
+                project = row[0]
+            if project:
+                projects.append(project)
+
+        return jsonify({
+            'success': True,
+            'projects': projects
+        })
+
+    except Exception as e:
+        app.logger.error(f"获取项目列表失败: {e}")
         return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/admin/reports/export', methods=['POST'])
@@ -3688,7 +4133,7 @@ def admin_reports_export():
 
         # 构建查询（与预览相同，但不限制条数）
         base_query = '''
-            SELECT b.id, b.title, b.description, b.status, b.project,
+            SELECT b.id, b.title, b.description, b.status, b.type, b.project,
                    b.created_at, b.resolved_at, b.resolution, b.image_path,
                    u1.username as creator_username, u1.chinese_name as creator_name,
                    u2.username as assignee_username, u2.chinese_name as assignee_name,
@@ -3736,6 +4181,14 @@ def admin_reports_export():
         if filters.get('assignee'):
             where_conditions.append('b.assigned_to = %s')
             params.append(filters['assignee'])
+
+        # 类型筛选
+        if filters.get('type'):
+            type_list = filters['type']
+            if type_list:
+                placeholders = ','.join(['%s'] * len(type_list))
+                where_conditions.append(f'b.type IN ({placeholders})')
+                params.extend(type_list)
 
         # 组合查询
         if where_conditions:
@@ -3970,7 +4423,11 @@ def export_to_excel(data, fields, filename):
 
         wb = Workbook()
         ws = wb.active
-        ws.title = "问题列表"
+        # 根据文件名判断工作表标题
+        if '项目列表' in filename:
+            ws.title = "项目列表"
+        else:
+            ws.title = "问题列表"
 
         # 设置表头样式
         header_font = Font(bold=True, color="FFFFFF")

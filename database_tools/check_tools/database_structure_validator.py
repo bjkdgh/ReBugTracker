@@ -32,7 +32,7 @@ def validate_sqlite_structure():
         validation_results = []
         
         # 验证必需的表是否存在
-        expected_tables = ['users', 'bugs', 'bug_images', 'system_config', 'user_notification_preferences', 'notifications']
+        expected_tables = ['users', 'bugs', 'bug_images', 'projects', 'system_config', 'user_notification_preferences', 'notifications']
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
         existing_tables = [row[0] for row in cursor.fetchall()]
         
@@ -145,7 +145,7 @@ def validate_postgres_structure():
         validation_results = []
         
         # 验证必需的表是否存在
-        expected_tables = ['users', 'bugs', 'bug_images', 'system_config', 'user_notification_preferences', 'notifications']
+        expected_tables = ['users', 'bugs', 'bug_images', 'projects', 'system_config', 'user_notification_preferences', 'notifications']
         cursor.execute("""
             SELECT table_name 
             FROM information_schema.tables 

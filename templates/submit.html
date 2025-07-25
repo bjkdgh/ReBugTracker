@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
+
 <style>
     .submit-container {
         background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
@@ -145,6 +146,79 @@
         box-shadow: 0 6px 20px rgba(245, 87, 108, 0.4);
         color: white;
     }
+
+
+
+    /* 项目选择器增强样式 */
+    .project-search-info {
+        font-size: 12px;
+        color: #6c757d;
+        margin-top: 5px;
+        padding: 8px 12px;
+        background: #f8f9fa;
+        border-radius: 6px;
+        border-left: 3px solid #007bff;
+    }
+
+    .project-search-info i {
+        color: #007bff;
+        margin-right: 5px;
+    }
+
+    /* 自定义项目搜索样式 */
+    .project-search-container {
+        position: relative;
+    }
+
+    .project-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 2px solid #e1e5e9;
+        border-top: none;
+        border-radius: 0 0 15px 15px;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1000;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .project-option {
+        padding: 12px 15px;
+        cursor: pointer;
+        border-bottom: 1px solid #f1f3f4;
+        transition: background-color 0.2s ease;
+    }
+
+    .project-option:hover {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .project-option:last-child {
+        border-bottom: none;
+    }
+
+    .project-option.highlighted {
+        background: #f8f9fa;
+    }
+
+    .search-highlight {
+        background: #fff3cd;
+        color: #856404;
+        font-weight: bold;
+        padding: 1px 3px;
+        border-radius: 3px;
+    }
+
+    .no-results {
+        padding: 15px;
+        text-align: center;
+        color: #6c757d;
+        font-style: italic;
+    }
 </style>
 
 <div class="submit-container">
@@ -214,9 +288,21 @@
                         <label for="project" class="form-label">
                             <i class="fas fa-folder me-2"></i>所属项目<span class="required">*</span>
                         </label>
-                        <input type="text" id="project" name="project" class="form-control-modern"
-                               placeholder="请输入项目名称，如：大连新一代项目、合肥D5000项目等" required>
+                        <div class="project-search-container">
+                            <input type="text" id="project-search" class="form-control-modern" placeholder="输入项目名称或关键字搜索..." autocomplete="off">
+                            <select id="project" name="project" class="form-control-modern" required style="display: none;">
+                                <option value="">请选择项目</option>
+                                {% for project in projects %}
+                                <option value="{{ project }}">{{ project }}</option>
+                                {% endfor %}
+                            </select>
+                            <div id="project-dropdown" class="project-dropdown" style="display: none;"></div>
+                        </div>
                         <div class="validation-message"></div>
+                        <small class="form-text text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            如果没有找到合适的项目，请联系管理员添加
+                        </small>
                     </div>
 
                     <div class="form-group">
@@ -228,6 +314,18 @@
                             {% for manager in managers %}
                             <option value="{{ manager }}">{{ manager }}</option>
                             {% endfor %}
+                        </select>
+                        <div class="validation-message"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="type" class="form-label">
+                            <i class="fas fa-tags me-2"></i>类型<span class="required">*</span>
+                        </label>
+                        <select id="type" name="type" class="form-control-modern" required>
+                            <option value="">请选择类型</option>
+                            <option value="bug">Bug（缺陷）</option>
+                            <option value="需求">需求</option>
                         </select>
                         <div class="validation-message"></div>
                     </div>
@@ -787,6 +885,8 @@
     }
 </style>
 
+
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const imagesInput = document.getElementById('images');
@@ -799,6 +899,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 存储已选择的文件
     let selectedFiles = [];
+        placeholder: '请选择项目',
 
     // 文件拖拽上传功能
     fileUploadArea.addEventListener('dragover', (e) => {
@@ -1098,6 +1199,128 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     `;
     document.head.appendChild(style);
+});
+
+// 原生项目搜索实现
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('开始初始化项目搜索功能...');
+
+    const searchInput = document.getElementById('project-search');
+    const projectSelect = document.getElementById('project');
+    const dropdown = document.getElementById('project-dropdown');
+
+    if (!searchInput || !projectSelect || !dropdown) {
+        console.error('搜索元素未找到');
+        return;
+    }
+
+    // 获取所有项目选项
+    const allProjects = Array.from(projectSelect.options).slice(1).map(option => ({
+        value: option.value,
+        text: option.textContent
+    }));
+
+    console.log('找到项目:', allProjects);
+
+    // 拼音首字母映射
+    function getPinyinInitials(str) {
+        const pinyinMap = {
+            '新': 'x', '一': 'y', '代': 'd',
+            '技': 'j', '改': 'g',
+            '其': 'q', '他': 't',
+            '安': 'a', '徽': 'h', '合': 'h', '肥': 'f',
+            '江': 'j', '苏': 's', '南': 'n', '京': 'j',
+            '北': 'b', '朝': 'c', '阳': 'y',
+            '辽': 'l', '宁': 'n', '大': 'd', '连': 'l',
+            '四': 's', '川': 'c', '岷': 'm',
+            '项': 'x', '目': 'm'
+        };
+        return str.split('').map(char => pinyinMap[char] || char.toLowerCase()).join('');
+    }
+
+    // 搜索匹配函数
+    function matchProject(project, term) {
+        const text = project.text.toLowerCase();
+        const searchTerm = term.toLowerCase();
+
+        // 基本文本匹配
+        if (text.indexOf(searchTerm) > -1) return true;
+
+        // 拼音首字母匹配
+        const pinyinInitials = getPinyinInitials(text);
+        if (pinyinInitials.indexOf(searchTerm) > -1) return true;
+
+        // 分段匹配
+        const parts = text.split('#');
+        if (parts[0] && parts[0].indexOf(searchTerm) > -1) return true; // 项目类型
+        if (parts[1] && parts[1].indexOf(searchTerm) > -1) return true; // 地市名称
+
+        return false;
+    }
+
+    // 高亮匹配文本
+    function highlightMatch(text, term) {
+        if (!term) return text;
+        const regex = new RegExp('(' + term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+        return text.replace(regex, '<span class="search-highlight">$1</span>');
+    }
+
+    // 显示搜索结果
+    function showResults(results, searchTerm) {
+        dropdown.innerHTML = '';
+
+        if (results.length === 0) {
+            dropdown.innerHTML = '<div class="no-results">未找到匹配的项目</div>';
+        } else {
+            results.forEach(project => {
+                const option = document.createElement('div');
+                option.className = 'project-option';
+                option.innerHTML = highlightMatch(project.text, searchTerm);
+                option.addEventListener('click', function() {
+                    selectProject(project);
+                });
+                dropdown.appendChild(option);
+            });
+        }
+
+        dropdown.style.display = 'block';
+    }
+
+    // 选择项目
+    function selectProject(project) {
+        searchInput.value = project.text;
+        projectSelect.value = project.value;
+        dropdown.style.display = 'none';
+    }
+
+    // 搜索输入事件
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.trim();
+
+        if (searchTerm === '') {
+            dropdown.style.display = 'none';
+            return;
+        }
+
+        const results = allProjects.filter(project => matchProject(project, searchTerm));
+        showResults(results, searchTerm);
+    });
+
+    // 点击外部关闭下拉框
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.style.display = 'none';
+        }
+    });
+
+    // 获得焦点时显示所有选项
+    searchInput.addEventListener('focus', function() {
+        if (this.value.trim() === '') {
+            showResults(allProjects, '');
+        }
+    });
+
+    console.log('项目搜索功能初始化完成');
 });
 </script>
 {% endblock %}

@@ -41,12 +41,13 @@ def get_current_postgres_structure():
                 "description TEXT",
                 "status TEXT DEFAULT '待处理'",
                 "assigned_to INTEGER",
-                "created_by INTEGER", 
+                "created_by INTEGER",
                 "project TEXT",
                 "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
                 "resolved_at TIMESTAMP",
                 "resolution TEXT",
-                "image_path TEXT"
+                "image_path TEXT",
+                "type TEXT DEFAULT 'bug'"
             ],
             "indexes": ["bugs_pkey (PRIMARY KEY UNIQUE)"],
             "foreign_keys": []
@@ -155,11 +156,12 @@ def get_code_structure():
                 "status TEXT DEFAULT '待处理'",
                 "assigned_to INTEGER",
                 "created_by INTEGER",
-                "project TEXT", 
+                "project TEXT",
                 "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
                 "resolved_at TIMESTAMP",
                 "resolution TEXT",
-                "image_path TEXT"
+                "image_path TEXT",
+                "type TEXT DEFAULT 'bug'"
             ],
             "indexes": [],
             "foreign_keys": []

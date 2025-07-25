@@ -22,7 +22,7 @@ except ImportError:
 
 # PostgreSQL配置
 POSTGRES_CONFIG = {
-    'dbname': 'postgres',
+    'dbname': 'rebugtracker',
     'user': 'postgres',
     'password': '$RFV5tgb',
     'host': '192.168.1.5',
@@ -44,7 +44,7 @@ def check_sqlite_status():
         cursor = conn.cursor()
         
         # 获取表统计
-        tables = ['users', 'bugs', 'notifications', 'system_config', 'user_notification_preferences', 'bug_images']
+        tables = ['users', 'bugs', 'projects', 'notifications', 'system_config', 'user_notification_preferences', 'bug_images']
         stats = {}
         
         for table in tables:
@@ -93,7 +93,7 @@ def check_postgres_status():
         cursor = conn.cursor(cursor_factory=DictCursor)
         
         # 获取表统计
-        tables = ['users', 'bugs', 'notifications', 'system_config', 'user_notification_preferences', 'bug_images']
+        tables = ['users', 'bugs', 'projects', 'notifications', 'system_config', 'user_notification_preferences', 'bug_images']
         stats = {}
         
         for table in tables:

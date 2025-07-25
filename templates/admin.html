@@ -1875,6 +1875,103 @@
     #previewTable td {
         border-bottom: 1px solid rgba(156, 39, 176, 0.1);
     }
+
+    /* 项目管理样式 */
+    .projects-theme {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 20px 20px 0 0;
+        margin-bottom: 0;
+    }
+
+    .projects-title {
+        font-size: 2rem;
+        font-weight: 700;
+        margin: 0;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .projects-subtitle {
+        margin: 10px 0 0 0;
+        opacity: 0.9;
+        font-size: 1.1rem;
+    }
+
+    .projects-content {
+        background: white;
+        border-radius: 0 0 20px 20px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .project-form-section {
+        background: linear-gradient(135deg, rgba(40, 167, 69, 0.05), rgba(32, 201, 151, 0.05));
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 30px;
+        border: 1px solid rgba(40, 167, 69, 0.1);
+    }
+
+    .project-form-section .form-header {
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid rgba(40, 167, 69, 0.2);
+    }
+
+    .project-form-section .form-header h3 {
+        color: #28a745;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .projects-list-section {
+        background: linear-gradient(135deg, rgba(32, 201, 151, 0.05), rgba(40, 167, 69, 0.05));
+        border-radius: 15px;
+        padding: 25px;
+        border: 1px solid rgba(32, 201, 151, 0.1);
+    }
+
+    .projects-list-section .list-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid rgba(32, 201, 151, 0.2);
+    }
+
+    .projects-list-section .list-header h3 {
+        color: #20c997;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .list-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    #projectsTable th {
+        background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(32, 201, 151, 0.1));
+        color: #333;
+        font-weight: 600;
+        border-bottom: 2px solid rgba(40, 167, 69, 0.3);
+    }
+
+    #projectsTable td {
+        border-bottom: 1px solid rgba(40, 167, 69, 0.1);
+    }
+
+    .project-actions {
+        display: flex;
+        gap: 5px;
+    }
+
+    .project-actions .btn {
+        padding: 5px 10px;
+        font-size: 0.8rem;
+    }
 </style>
 
 <div class="dashboard-container">
@@ -2056,6 +2153,11 @@
                     <i class="fas fa-file-export"></i>
                     报表导出
                     <span class="badge" style="background: rgba(255,255,255,0.25); padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; margin-left: 8px; font-weight: 700; border: 1px solid rgba(255,255,255,0.3);">Excel</span>
+                </button>
+                <button class="tab-button" onclick="switchTab('projects')" id="projectsTab">
+                    <i class="fas fa-project-diagram"></i>
+                    项目管理
+                    <span class="badge" style="background: rgba(255,255,255,0.25); padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; margin-left: 8px; font-weight: 700; border: 1px solid rgba(255,255,255,0.3);">{{ projects|length }}</span>
                 </button>
             </div>
 
@@ -2872,6 +2974,41 @@
                                                         <label class="form-check-label" for="statusCompleted">已完成</label>
                                                     </div>
                                                 </div>
+
+                                                <!-- 类型筛选 -->
+                                                <div class="form-check mt-3">
+                                                    <input class="form-check-input" type="checkbox" id="filterByType" checked>
+                                                    <label class="form-check-label" for="filterByType">
+                                                        按类型筛选
+                                                    </label>
+                                                </div>
+                                                <div class="type-filters ms-3" id="typeFilters">
+                                                    <div class="form-check form-check-inline">
+                                                        <input class="form-check-input" type="checkbox" id="typeBug" checked>
+                                                        <label class="form-check-label" for="typeBug">
+                                                            <i class="fas fa-bug text-danger me-1"></i>Bug
+                                                        </label>
+                                                    </div>
+                                                    <div class="form-check form-check-inline">
+                                                        <input class="form-check-input" type="checkbox" id="typeRequirement" checked>
+                                                        <label class="form-check-label" for="typeRequirement">
+                                                            <i class="fas fa-lightbulb text-success me-1"></i>需求
+                                                        </label>
+                                                    </div>
+                                                </div>
+
+                                                <!-- 项目筛选 -->
+                                                <div class="form-check mt-3">
+                                                    <input class="form-check-input" type="checkbox" id="filterByProject">
+                                                    <label class="form-check-label" for="filterByProject">
+                                                        按项目筛选
+                                                    </label>
+                                                </div>
+                                                <div class="project-filters ms-3" id="projectFilters" style="display: none;">
+                                                    <select class="form-select" id="projectSelect">
+                                                        <option value="">选择项目...</option>
+                                                    </select>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -2937,6 +3074,14 @@
                                                 <div class="form-check">
                                                     <input class="form-check-input" type="checkbox" id="fieldStatus" checked>
                                                     <label class="form-check-label" for="fieldStatus">状态</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="fieldType" checked>
+                                                    <label class="form-check-label" for="fieldType">类型</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="fieldProject" checked>
+                                                    <label class="form-check-label" for="fieldProject">项目</label>
                                                 </div>
                                             </div>
                                         </div>
@@ -3061,12 +3206,53 @@
                                 <h3><i class="fas fa-chart-bar"></i> 数据统计图表</h3>
                             </div>
                             <div class="export-body">
-                                <!-- 图表切换按钮 -->
+                                <!-- 类型分布图表 -->
                                 <div class="chart-controls mb-4">
                                     <div class="row">
+                                        <div class="col-12">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <h5 class="mb-0"><i class="fas fa-chart-pie"></i> 问题类型分布</h5>
+                                                <button type="button" class="btn btn-outline-info btn-sm" onclick="exportChart('type')" title="导出图表">
+                                                    <i class="fas fa-download"></i> 导出
+                                                </button>
+                                            </div>
+                                            <div class="btn-group" role="group">
+                                                <button type="button" class="btn btn-outline-warning active" onclick="switchChart('type', 'pie')">
+                                                    <i class="fas fa-chart-pie"></i> 饼状图
+                                                </button>
+                                                <button type="button" class="btn btn-outline-warning" onclick="switchChart('type', 'bar')">
+                                                    <i class="fas fa-chart-bar"></i> 柱状图
+                                                </button>
+                                            </div>
+                                            <div class="chart-container mt-3" style="max-width: 400px; margin: 0 auto;">
+                                                <canvas id="typeChart" width="400" height="300"></canvas>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 按类型分别统计的图表 -->
+                                <div class="chart-controls mb-4">
+                                    <div class="row">
+                                        <div class="col-12 mb-3">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <h5 class="mb-0"><i class="fas fa-filter"></i> 按类型分别统计（已完成）</h5>
+                                                <div class="btn-group" role="group">
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm active" onclick="switchTypeFilter('all')" id="typeFilterAll">
+                                                        全部
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="switchTypeFilter('bug')" id="typeFilterBug">
+                                                        <i class="fas fa-bug"></i> Bug
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-success btn-sm" onclick="switchTypeFilter('需求')" id="typeFilterRequirement">
+                                                        <i class="fas fa-lightbulb"></i> 需求
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
                                         <div class="col-md-6">
                                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                                <h5 class="mb-0"><i class="fas fa-user-edit"></i> 提交人统计（已完成）</h5>
+                                                <h5 class="mb-0"><i class="fas fa-user-edit"></i> 提交人统计</h5>
                                                 <button type="button" class="btn btn-outline-info btn-sm" onclick="exportChart('creator')" title="导出图表">
                                                     <i class="fas fa-download"></i> 导出
                                                 </button>
@@ -3088,7 +3274,7 @@
                                         </div>
                                         <div class="col-md-6">
                                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                                <h5 class="mb-0"><i class="fas fa-user-check"></i> 处理人统计（已完成）</h5>
+                                                <h5 class="mb-0"><i class="fas fa-user-check"></i> 处理人统计</h5>
                                                 <button type="button" class="btn btn-outline-info btn-sm" onclick="exportChart('assignee')" title="导出图表">
                                                     <i class="fas fa-download"></i> 导出
                                                 </button>
@@ -3129,6 +3315,107 @@
                                         <tbody id="previewTableBody"></tbody>
                                     </table>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 项目管理选项卡 -->
+                <div class="tab-pane" id="projectsPane">
+                    <div class="projects-header projects-theme">
+                        <h2 class="projects-title">
+                            <i class="fas fa-project-diagram"></i>
+                            项目管理
+                        </h2>
+                        <p class="projects-subtitle">管理系统中的所有项目信息</p>
+                    </div>
+
+                    <div class="projects-content">
+                        <!-- 新建项目表单 -->
+                        <div class="project-form-section">
+                            <div class="form-header">
+                                <h3><i class="fas fa-plus-circle"></i> 新建项目</h3>
+                            </div>
+                            <div class="form-body">
+                                <form id="newProjectForm" class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="projectType" class="form-label">项目类型 <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="projectType" name="type" required>
+                                            <option value="">请选择项目类型</option>
+                                            <option value="新一代">新一代</option>
+                                            <option value="D5000">D5000</option>
+                                            <option value="技改">技改</option>
+                                            <option value="其他">其他</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="projectCity" class="form-label">地市名称 <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="projectCity" name="city" placeholder="如：辽宁大连" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="projectStartDate" class="form-label">启动时间</label>
+                                        <input type="date" class="form-control" id="projectStartDate" name="start_date">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="projectFactoryDate" class="form-label">工厂验收时间</label>
+                                        <input type="date" class="form-control" id="projectFactoryDate" name="factory_acceptance_date">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="projectSiteDate" class="form-label">现场验收时间</label>
+                                        <input type="date" class="form-control" id="projectSiteDate" name="site_acceptance_date">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="projectPracticalDate" class="form-label">实用化时间</label>
+                                        <input type="date" class="form-control" id="projectPracticalDate" name="practical_date">
+                                    </div>
+                                    <div class="col-12">
+                                        <label for="projectDescription" class="form-label">项目描述</label>
+                                        <textarea class="form-control" id="projectDescription" name="description" rows="3" placeholder="请输入项目描述..."></textarea>
+                                    </div>
+                                    <div class="col-12">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-plus me-2"></i>创建项目
+                                        </button>
+                                        <button type="reset" class="btn btn-secondary ms-2">
+                                            <i class="fas fa-undo me-2"></i>重置
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- 项目列表 -->
+                        <div class="projects-list-section">
+                            <div class="list-header">
+                                <h3><i class="fas fa-list"></i> 项目列表</h3>
+                                <div class="list-actions">
+                                    <button class="btn btn-success" onclick="exportProjects()">
+                                        <i class="fas fa-file-excel me-2"></i>导出Excel
+                                    </button>
+                                    <button class="btn btn-info" onclick="refreshProjectsList()">
+                                        <i class="fas fa-sync-alt me-2"></i>刷新
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover" id="projectsTable">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th>项目名称</th>
+                                            <th>类型</th>
+                                            <th>地市</th>
+                                            <th>启动时间</th>
+                                            <th>工厂验收</th>
+                                            <th>现场验收</th>
+                                            <th>实用化时间</th>
+                                            <th>创建时间</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="projectsTableBody">
+                                        <!-- 项目数据将通过JavaScript动态加载 -->
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -3186,15 +3473,18 @@
                             </select>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="editTeam" class="form-label">团队</label>
+                            <label for="editTeam" class="form-label">产品线</label>
                             <select class="form-select" id="editTeam" name="team">
-                                <option value="">请选择团队</option>
-                                <option value="网络分析">网络分析</option>
+                                <option value="">请选择产品线</option>
                                 <option value="实施组">实施组</option>
-                                <option value="第三道防线">第三道防线</option>
                                 <option value="新能源">新能源</option>
-                                <option value="管理员">管理员</option>
-                                <option value="开发组">开发组</option>
+                                <option value="网络分析">网络分析</option>
+                                <option value="第三道防线">第三道防线</option>
+                                <option value="智能告警">智能告警</option>
+                                <option value="操作票及防误">操作票及防误</option>
+                                <option value="电量">电量</option>
+                                <option value="消纳">消纳</option>
+                                <option value="自动发电控制">自动发电控制</option>
                             </select>
                         </div>
                     </div>
@@ -3211,6 +3501,80 @@
                     取消
                 </button>
                 <button type="button" class="btn btn-primary" onclick="saveUserChanges()">
+                    <i class="fas fa-save"></i>
+                    保存更改
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑项目模态框 -->
+<div class="modal fade" id="editProjectModal" tabindex="-1" aria-labelledby="editProjectModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="border-radius: 20px; border: none; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);">
+            <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 20px 20px 0 0; border: none;">
+                <h5 class="modal-title" id="editProjectModalLabel">
+                    <i class="fas fa-project-diagram"></i>
+                    编辑项目信息
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="padding: 30px;">
+                <form id="editProjectForm">
+                    <input type="hidden" id="editProjectId" name="project_id">
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="editProjectType" class="form-label">项目类型</label>
+                            <select class="form-control" id="editProjectType" name="type" required>
+                                <option value="">请选择项目类型</option>
+                                <option value="新一代">新一代</option>
+                                <option value="技改">技改</option>
+                                <option value="D5000">D5000</option>
+                                <option value="其他">其他</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="editProjectCity" class="form-label">地市名称</label>
+                            <input type="text" class="form-control" id="editProjectCity" name="city" required placeholder="如：安徽合肥">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="editStartDate" class="form-label">启动时间</label>
+                            <input type="date" class="form-control" id="editStartDate" name="start_date">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="editFactoryAcceptanceDate" class="form-label">工厂验收时间</label>
+                            <input type="date" class="form-control" id="editFactoryAcceptanceDate" name="factory_acceptance_date">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="editSiteAcceptanceDate" class="form-label">现场验收时间</label>
+                            <input type="date" class="form-control" id="editSiteAcceptanceDate" name="site_acceptance_date">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="editPracticalDate" class="form-label">实用化时间</label>
+                            <input type="date" class="form-control" id="editPracticalDate" name="practical_date">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="editProjectDescription" class="form-label">项目描述</label>
+                        <textarea class="form-control" id="editProjectDescription" name="description" rows="3" placeholder="项目详细描述（可选）"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer" style="border: none; padding: 20px 30px;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i>
+                    取消
+                </button>
+                <button type="button" class="btn btn-primary" onclick="saveProjectChanges()">
                     <i class="fas fa-save"></i>
                     保存更改
                 </button>
@@ -3420,6 +3784,8 @@ function switchTab(tabName) {
         loadNotificationConfig();
     } else if (tabName === 'reports') {
         initializeReportsTab();
+    } else if (tabName === 'projects') {
+        loadProjectsList();
     }
 }
 
@@ -4389,6 +4755,41 @@ function initializeReportsTab() {
         const statusFilters = document.getElementById('statusFilters');
         statusFilters.style.display = this.checked ? 'block' : 'none';
     });
+
+    document.getElementById('filterByType').addEventListener('change', function() {
+        const typeFilters = document.getElementById('typeFilters');
+        typeFilters.style.display = this.checked ? 'block' : 'none';
+    });
+
+    document.getElementById('filterByProject').addEventListener('change', function() {
+        const projectFilters = document.getElementById('projectFilters');
+        projectFilters.style.display = this.checked ? 'block' : 'none';
+    });
+
+    // 加载项目列表
+    loadProjectList();
+}
+
+// 加载项目列表
+async function loadProjectList() {
+    try {
+        const response = await fetch('/admin/reports/projects');
+        const result = await response.json();
+
+        if (result.success) {
+            const projectSelect = document.getElementById('projectSelect');
+            projectSelect.innerHTML = '<option value="">选择项目...</option>';
+
+            result.projects.forEach(project => {
+                const option = document.createElement('option');
+                option.value = project;
+                option.textContent = project;
+                projectSelect.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('加载项目列表失败:', error);
+    }
 }
 
 function setDateRange(range) {
@@ -4605,6 +5006,22 @@ function getExportConfig() {
         filters.status = statusList;
     }
 
+    // 类型筛选
+    if (document.getElementById('filterByType').checked) {
+        const typeList = [];
+        if (document.getElementById('typeBug').checked) typeList.push('bug');
+        if (document.getElementById('typeRequirement').checked) typeList.push('需求');
+        filters.type = typeList;
+    }
+
+    // 项目筛选
+    if (document.getElementById('filterByProject').checked) {
+        const selectedProject = document.getElementById('projectSelect').value;
+        if (selectedProject) {
+            filters.project = selectedProject;
+        }
+    }
+
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
     if (startDate) filters.startDate = startDate;
@@ -4617,6 +5034,8 @@ function getExportConfig() {
         'fieldTitle': { key: 'title', label: '问题标题' },
         'fieldDescription': { key: 'description', label: '问题描述' },
         'fieldStatus': { key: 'status', label: '状态' },
+        'fieldType': { key: 'type', label: '类型' },
+        'fieldProject': { key: 'project', label: '项目' },
         'fieldCreator': { key: 'creator', label: '创建人' },
         'fieldAssignee': { key: 'assignee', label: '分配给' },
         'fieldManager': { key: 'manager', label: '负责人' },
@@ -4766,7 +5185,9 @@ async function cleanupNotifications(type) {
 // 图表相关变量
 let creatorChart = null;
 let assigneeChart = null;
+let typeChart = null;
 let chartData = null;
+let currentTypeFilter = 'all'; // 当前选择的类型筛选
 
 // 图表切换函数
 function switchChart(type, chartType) {
@@ -4782,20 +5203,113 @@ function switchChart(type, chartType) {
         currentButton.classList.add('active');
     }
 
-    // 获取对应的图表实例和数据
-    const chart = type === 'creator' ? creatorChart : assigneeChart;
-    const data = type === 'creator' ? chartData.creator : chartData.assignee;
-
-    if (chart) {
-        chart.destroy();
-    }
-
-    // 创建新图表
-    if (type === 'creator') {
-        creatorChart = createChart('creatorChart', data, chartType, '已完成需求数量（提交人）');
+    // 处理不同类型的图表
+    if (type === 'type') {
+        // 类型分布图表
+        if (typeChart) {
+            typeChart.destroy();
+        }
+        typeChart = createChart('typeChart', chartData.type, chartType, '问题类型分布');
     } else {
-        assigneeChart = createChart('assigneeChart', data, chartType, '已完成需求数量（处理人）');
+        // 提交人和处理人图表（按类型筛选）
+        const chart = type === 'creator' ? creatorChart : assigneeChart;
+        let data;
+
+        console.log(`切换${type}图表，当前筛选:`, currentTypeFilter);
+        console.log(`可用的${type}数据类型:`, Object.keys(chartData[type] || {}));
+
+        if (currentTypeFilter === 'all') {
+            // 合并所有类型的数据
+            data = mergeChartData(chartData[type]);
+            console.log(`${type}合并数据:`, data);
+        } else {
+            // 使用特定类型的数据
+            data = chartData[type][currentTypeFilter] || { labels: [], values: [] };
+            console.log(`${type}特定类型数据(${currentTypeFilter}):`, data);
+        }
+
+        if (chart) {
+            chart.destroy();
+        }
+
+        // 创建新图表
+        const typeLabel = currentTypeFilter === 'all' ? '全部' :
+                         currentTypeFilter === 'bug' ? 'Bug' : '需求';
+        if (type === 'creator') {
+            creatorChart = createChart('creatorChart', data, chartType, `已完成问题数量（提交人-${typeLabel}）`);
+        } else {
+            assigneeChart = createChart('assigneeChart', data, chartType, `已完成问题数量（处理人-${typeLabel}）`);
+        }
     }
+}
+
+// 类型筛选切换函数
+function switchTypeFilter(filterType) {
+    console.log('切换类型筛选:', filterType);
+    currentTypeFilter = filterType;
+
+    // 更新按钮状态
+    document.querySelectorAll('[id^="typeFilter"]').forEach(btn => btn.classList.remove('active'));
+
+    // 根据filterType映射到正确的按钮ID
+    let buttonId;
+    if (filterType === 'all') {
+        buttonId = 'typeFilterAll';
+    } else if (filterType === 'bug') {
+        buttonId = 'typeFilterBug';
+    } else if (filterType === '需求') {
+        buttonId = 'typeFilterRequirement';
+    }
+
+    console.log('按钮ID:', buttonId);
+    if (buttonId) {
+        const button = document.getElementById(buttonId);
+        if (button) {
+            button.classList.add('active');
+            console.log('按钮状态更新成功');
+        } else {
+            console.error('找不到按钮:', buttonId);
+        }
+    }
+
+    // 重新渲染提交人和处理人图表
+    if (chartData) {
+        // 获取当前图表类型
+        const creatorActiveBtn = document.querySelector('button[onclick*="creator"].active');
+        const assigneeActiveBtn = document.querySelector('button[onclick*="assignee"].active');
+
+        if (creatorActiveBtn) {
+            const chartType = creatorActiveBtn.getAttribute('onclick').match(/'(\w+)'\)$/)[1];
+            switchChart('creator', chartType);
+        }
+
+        if (assigneeActiveBtn) {
+            const chartType = assigneeActiveBtn.getAttribute('onclick').match(/'(\w+)'\)$/)[1];
+            switchChart('assignee', chartType);
+        }
+    }
+}
+
+// 合并图表数据函数
+function mergeChartData(typeData) {
+    const mergedLabels = new Set();
+    const mergedData = {};
+
+    // 收集所有标签和数据
+    Object.values(typeData).forEach(data => {
+        if (data && data.labels && data.values) {
+            data.labels.forEach((label, index) => {
+                mergedLabels.add(label);
+                mergedData[label] = (mergedData[label] || 0) + data.values[index];
+            });
+        }
+    });
+
+    // 转换为图表格式
+    const labels = Array.from(mergedLabels);
+    const values = labels.map(label => mergedData[label]);
+
+    return { labels, values };
 }
 
 // 创建图表函数
@@ -4876,9 +5390,18 @@ async function loadChartData() {
         if (result.success) {
             chartData = result.data;
 
-            // 创建初始图表（折线图）
-            creatorChart = createChart('creatorChart', chartData.creator, 'line', '已完成需求数量（提交人）');
-            assigneeChart = createChart('assigneeChart', chartData.assignee, 'line', '已完成需求数量（处理人）');
+            // 创建类型分布图表
+            if (chartData.type) {
+                typeChart = createChart('typeChart', chartData.type, 'pie', '问题类型分布');
+            }
+
+            // 创建初始图表（折线图，显示全部类型）
+            currentTypeFilter = 'all';
+            const creatorData = mergeChartData(chartData.creator);
+            const assigneeData = mergeChartData(chartData.assignee);
+
+            creatorChart = createChart('creatorChart', creatorData, 'line', '已完成问题数量（提交人-全部）');
+            assigneeChart = createChart('assigneeChart', assigneeData, 'line', '已完成问题数量（处理人-全部）');
 
             // 显示图表区域
             document.getElementById('chartsSection').style.display = 'block';
@@ -4894,8 +5417,22 @@ async function loadChartData() {
 // 导出图表为图片
 function exportChart(type) {
     try {
-        const chart = type === 'creator' ? creatorChart : assigneeChart;
-        const chartTitle = type === 'creator' ? '提交人统计（已完成）' : '处理人统计（已完成）';
+        let chart, chartTitle;
+
+        if (type === 'type') {
+            chart = typeChart;
+            chartTitle = '问题类型分布';
+        } else if (type === 'creator') {
+            chart = creatorChart;
+            const typeLabel = currentTypeFilter === 'all' ? '全部' :
+                             currentTypeFilter === 'bug' ? 'Bug' : '需求';
+            chartTitle = `提交人统计（已完成-${typeLabel}）`;
+        } else {
+            chart = assigneeChart;
+            const typeLabel = currentTypeFilter === 'all' ? '全部' :
+                             currentTypeFilter === 'bug' ? 'Bug' : '需求';
+            chartTitle = `处理人统计（已完成-${typeLabel}）`;
+        }
 
         if (!chart) {
             alert('图表尚未加载，请先预览数据');
@@ -5057,6 +5594,252 @@ function showSuccessMessage(message) {
             toast.parentNode.removeChild(toast);
         }
     }, 3000);
+}
+
+// 项目管理相关函数
+function loadProjectsList() {
+    fetch('/admin/projects')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayProjectsList(data.data);
+            } else {
+                console.error('加载项目列表失败:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('加载项目列表错误:', error);
+        });
+}
+
+function displayProjectsList(projects) {
+    const tbody = document.getElementById('projectsTableBody');
+    tbody.innerHTML = '';
+
+    projects.forEach(project => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><strong>${project.name}</strong></td>
+            <td><span class="badge bg-primary">${project.type}</span></td>
+            <td>${project.city}</td>
+            <td>${project.start_date || '--'}</td>
+            <td>${project.factory_acceptance_date || '--'}</td>
+            <td>${project.site_acceptance_date || '--'}</td>
+            <td>${project.practical_date || '--'}</td>
+            <td>${project.created_at}</td>
+            <td>
+                <div class="project-actions">
+                    <button class="btn btn-sm btn-outline-primary" onclick="editProject(${project.id})">
+                        <i class="fas fa-edit"></i> 编辑
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteProject(${project.id}, '${project.name}')">
+                        <i class="fas fa-trash"></i> 删除
+                    </button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// 新建项目表单提交
+document.addEventListener('DOMContentLoaded', function() {
+    const newProjectForm = document.getElementById('newProjectForm');
+    if (newProjectForm) {
+        newProjectForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const projectData = Object.fromEntries(formData.entries());
+
+            fetch('/admin/projects', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(projectData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showSuccessMessage(data.message);
+                    newProjectForm.reset();
+                    loadProjectsList(); // 刷新项目列表
+                } else {
+                    showErrorMessage(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('创建项目错误:', error);
+                showErrorMessage('创建项目失败，请稍后重试');
+            });
+        });
+    }
+});
+
+async function editProject(projectId) {
+    try {
+        // 获取项目数据
+        const response = await fetch(`/admin/projects/${projectId}`);
+        if (!response.ok) {
+            throw new Error('获取项目数据失败');
+        }
+
+        const project = await response.json();
+
+        // 填充表单
+        document.getElementById('editProjectId').value = project.id;
+        document.getElementById('editProjectType').value = project.type || '';
+        document.getElementById('editProjectCity').value = project.city || '';
+        document.getElementById('editStartDate').value = project.start_date || '';
+        document.getElementById('editFactoryAcceptanceDate').value = project.factory_acceptance_date || '';
+        document.getElementById('editSiteAcceptanceDate').value = project.site_acceptance_date || '';
+        document.getElementById('editPracticalDate').value = project.practical_date || '';
+        document.getElementById('editProjectDescription').value = project.description || '';
+
+        // 显示模态框
+        const modal = new bootstrap.Modal(document.getElementById('editProjectModal'));
+        modal.show();
+
+    } catch (error) {
+        console.error('编辑项目错误:', error);
+        showErrorMessage('获取项目信息失败，请稍后重试');
+    }
+}
+
+async function saveProjectChanges() {
+    try {
+        const projectId = document.getElementById('editProjectId').value;
+        const formData = new FormData(document.getElementById('editProjectForm'));
+
+        // 转换为JSON对象
+        const projectData = {};
+        for (let [key, value] of formData.entries()) {
+            if (key !== 'project_id') {
+                projectData[key] = value.trim();
+            }
+        }
+
+        const response = await fetch(`/admin/projects/${projectId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(projectData)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // 关闭模态框
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editProjectModal'));
+            modal.hide();
+
+            // 显示成功消息
+            showSuccessMessage(result.message);
+
+            // 刷新项目列表
+            loadProjectsList();
+        } else {
+            showErrorMessage(result.message);
+        }
+
+    } catch (error) {
+        console.error('保存项目更改错误:', error);
+        showErrorMessage('保存项目更改失败，请稍后重试');
+    }
+}
+
+function deleteProject(projectId, projectName) {
+    if (confirm(`确定要删除项目 "${projectName}" 吗？此操作不可撤销！`)) {
+        fetch(`/admin/projects/${projectId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showSuccessMessage(data.message);
+                loadProjectsList(); // 刷新项目列表
+            } else {
+                showErrorMessage(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('删除项目错误:', error);
+            showErrorMessage('删除项目失败，请稍后重试');
+        });
+    }
+}
+
+function refreshProjectsList() {
+    loadProjectsList();
+}
+
+async function exportProjects() {
+    try {
+        showSuccessMessage('正在生成Excel文件，请稍候...');
+
+        const response = await fetch('/admin/projects/export', {
+            method: 'GET'
+        });
+
+        if (response.ok) {
+            // 获取文件名
+            const contentDisposition = response.headers.get('Content-Disposition');
+            let filename = '项目列表.xlsx';
+            if (contentDisposition) {
+                const filenameMatch = contentDisposition.match(/filename\*=UTF-8''(.+)/);
+                if (filenameMatch) {
+                    filename = decodeURIComponent(filenameMatch[1]);
+                } else {
+                    const simpleMatch = contentDisposition.match(/filename="(.+)"/);
+                    if (simpleMatch) {
+                        filename = simpleMatch[1];
+                    }
+                }
+            }
+
+            // 下载文件
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+
+            showSuccessMessage(`Excel文件 "${filename}" 已成功生成并开始下载`);
+        } else {
+            const result = await response.json();
+            showErrorMessage('导出失败：' + (result.message || '未知错误'));
+        }
+    } catch (error) {
+        console.error('导出项目数据错误:', error);
+        showErrorMessage('导出失败，请稍后重试');
+    }
+}
+
+function showErrorMessage(message) {
+    // 创建错误提示元素
+    const toast = document.createElement('div');
+    toast.className = 'alert alert-danger alert-dismissible fade show position-fixed';
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    toast.innerHTML = `
+        <i class="fas fa-exclamation-circle me-2"></i>${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    // 添加到页面
+    document.body.appendChild(toast);
+
+    // 5秒后自动移除
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+        }
+    }, 5000);
 }
 
 </script>
