@@ -289,7 +289,7 @@
                             <i class="fas fa-folder me-2"></i>所属项目<span class="required">*</span>
                         </label>
                         <div class="project-search-container">
-                            <input type="text" id="project-search" class="form-control-modern" placeholder="输入项目名称或关键字搜索..." autocomplete="off">
+                            <input type="text" id="project-search" class="form-control-modern" placeholder="输入项目名称或关键字搜索..." autocomplete="off" required data-validation-target="project">
                             <select id="project" name="project" class="form-control-modern" required style="display: none;">
                                 <option value="">请选择项目</option>
                                 {% for project in projects %}
@@ -1104,20 +1104,53 @@ document.addEventListener('DOMContentLoaded', function() {
     // 表单验证函数
     function validateForm() {
         let isValid = true;
+        let firstInvalidField = null;
         const requiredFields = form.querySelectorAll('[required]');
 
         requiredFields.forEach(field => {
             const validationMsg = field.closest('.form-group').querySelector('.validation-message');
+            let fieldToStyle = field;
+            let fieldToFocus = field;
 
-            if (!field.value.trim()) {
+            // 特殊处理项目搜索字段
+            if (field.id === 'project-search') {
+                const projectSelect = document.getElementById('project');
+                if (!projectSelect.value.trim()) {
+                    validationMsg.textContent = '此字段为必填项';
+                    field.style.borderColor = '#dc3545';
+                    field.style.boxShadow = '0 0 0 0.2rem rgba(220, 53, 69, 0.25)';
+                    isValid = false;
+                    if (!firstInvalidField) {
+                        firstInvalidField = field;
+                    }
+                } else {
+                    validationMsg.textContent = '';
+                    field.style.borderColor = '#28a745';
+                    field.style.boxShadow = '0 0 0 0.2rem rgba(40, 167, 69, 0.25)';
+                }
+            } else if (field.id === 'project') {
+                // 跳过隐藏的project select，因为已经在project-search中处理了
+                return;
+            } else if (!field.value.trim()) {
                 validationMsg.textContent = '此字段为必填项';
                 field.style.borderColor = '#dc3545';
+                field.style.boxShadow = '0 0 0 0.2rem rgba(220, 53, 69, 0.25)';
                 isValid = false;
+                if (!firstInvalidField) {
+                    firstInvalidField = field;
+                }
             } else {
                 validationMsg.textContent = '';
                 field.style.borderColor = '#28a745';
+                field.style.boxShadow = '0 0 0 0.2rem rgba(40, 167, 69, 0.25)';
             }
         });
+
+        // 如果有验证失败的字段，将焦点移到第一个失败的字段
+        if (!isValid && firstInvalidField) {
+            firstInvalidField.focus();
+            firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
 
         return isValid;
     }
@@ -1127,7 +1160,26 @@ document.addEventListener('DOMContentLoaded', function() {
         element.addEventListener('input', () => {
             const validationMsg = element.closest('.form-group').querySelector('.validation-message');
 
-            if (element.validity.valid && element.value.trim()) {
+            // 特殊处理项目搜索字段
+            if (element.id === 'project-search') {
+                const projectSelect = document.getElementById('project');
+                if (projectSelect.value.trim()) {
+                    validationMsg.textContent = '';
+                    element.style.borderColor = '#28a745';
+                    element.style.boxShadow = '0 0 0 0.2rem rgba(40, 167, 69, 0.25)';
+                } else if (element.hasAttribute('required')) {
+                    validationMsg.textContent = '此字段为必填项';
+                    element.style.borderColor = '#dc3545';
+                    element.style.boxShadow = '0 0 0 0.2rem rgba(220, 53, 69, 0.25)';
+                } else {
+                    validationMsg.textContent = '';
+                    element.style.borderColor = '#667eea';
+                    element.style.boxShadow = '0 0 0 0.2rem rgba(102, 126, 234, 0.25)';
+                }
+            } else if (element.id === 'project') {
+                // 跳过隐藏的project select，验证逻辑在project-search中处理
+                return;
+            } else if (element.validity.valid && element.value.trim()) {
                 validationMsg.textContent = '';
                 element.style.borderColor = '#28a745';
                 element.style.boxShadow = '0 0 0 0.2rem rgba(40, 167, 69, 0.25)';
@@ -1143,10 +1195,23 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         element.addEventListener('blur', () => {
-            if (element.hasAttribute('required') && !element.value.trim()) {
+            // 特殊处理项目搜索字段
+            if (element.id === 'project-search') {
+                const projectSelect = document.getElementById('project');
+                if (element.hasAttribute('required') && !projectSelect.value.trim()) {
+                    const validationMsg = element.closest('.form-group').querySelector('.validation-message');
+                    validationMsg.textContent = '此字段为必填项';
+                    element.style.borderColor = '#dc3545';
+                    element.style.boxShadow = '0 0 0 0.2rem rgba(220, 53, 69, 0.25)';
+                }
+            } else if (element.id === 'project') {
+                // 跳过隐藏的project select
+                return;
+            } else if (element.hasAttribute('required') && !element.value.trim()) {
                 const validationMsg = element.closest('.form-group').querySelector('.validation-message');
                 validationMsg.textContent = '此字段为必填项';
                 element.style.borderColor = '#dc3545';
+                element.style.boxShadow = '0 0 0 0.2rem rgba(220, 53, 69, 0.25)';
             }
         });
     });
@@ -1291,6 +1356,17 @@ document.addEventListener('DOMContentLoaded', function() {
         searchInput.value = project.text;
         projectSelect.value = project.value;
         dropdown.style.display = 'none';
+
+        // 更新验证状态
+        const validationMsg = searchInput.closest('.form-group').querySelector('.validation-message');
+        if (project.value) {
+            validationMsg.textContent = '';
+            searchInput.style.borderColor = '#28a745';
+            searchInput.style.boxShadow = '0 0 0 0.2rem rgba(40, 167, 69, 0.25)';
+        }
+
+        // 触发input事件以确保验证状态更新
+        searchInput.dispatchEvent(new Event('input', { bubbles: true }));
     }
 
     // 搜索输入事件
@@ -1299,7 +1375,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (searchTerm === '') {
             dropdown.style.display = 'none';
+            // 清空隐藏的select值
+            projectSelect.value = '';
             return;
+        }
+
+        // 检查输入的值是否与已选择的项目匹配
+        const exactMatch = allProjects.find(project => project.text === searchTerm);
+        if (exactMatch) {
+            projectSelect.value = exactMatch.value;
+        } else {
+            // 如果不是精确匹配，清空select值
+            projectSelect.value = '';
         }
 
         const results = allProjects.filter(project => matchProject(project, searchTerm));
