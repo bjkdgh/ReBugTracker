@@ -1869,12 +1869,44 @@ def assign_bug(bug_id):
     assignee_name = c.fetchone()['username']
     conn.close()
 
+    # 异步发送通知（在后台处理）
+    def send_assignment_notification_async():
+        try:
+            app.logger.info(f"后台发送问题分配通知 - bug_id: {bug_id}, assignee_id: {assigned_to}")
+            from notification.simple_notifier import simple_notifier
+            from datetime import datetime
+
+            notification_data = {
+                'bug_id': bug_id,
+                'title': bug_info['title'],
+                'description': bug_info['description'],
+                'assignee_id': assigned_to,
+                'assigner_name': user['chinese_name'] or user['username'],
+                'assigned_time': datetime.now().isoformat(),
+                'creator_id': bug_info['created_by']
+            }
+
+            simple_notifier.send_flow_notification('bug_assigned', notification_data)
+            app.logger.info(f"问题分配通知发送完成 - bug_id: {bug_id}")
+        except Exception as e:
+            app.logger.error(f"后台分配通知发送失败 - bug_id: {bug_id}, 错误: {e}")
+            import traceback
+            app.logger.error(f"分配通知发送错误详情: {traceback.format_exc()}")
+
+    # 启动后台线程发送通知
+    import threading
+    notification_thread = threading.Thread(target=send_assignment_notification_async, daemon=True)
+    notification_thread.start()
+
     # 立即返回响应，不等待通知发送
     response_data = {
         'success': True,
         'message': f'问题已成功指派给 {assignee_name}',
         'redirect': f'/bug/{bug_id}?message=问题已成功指派给 {assignee_name}'
     }
+
+    app.logger.info(f"问题分配成功，通知已提交后台处理 - bug_id: {bug_id}")
+    return jsonify(response_data)
 
 # 驳回问题API
 @app.route('/bug/reject/<int:bug_id>', methods=['POST'])
@@ -1972,38 +2004,6 @@ def reject_bug(bug_id):
         conn.close()
         app.logger.error(f"驳回问题失败 - bug_id: {bug_id}, error: {str(e)}")
         return jsonify({'success': False, 'message': f'驳回失败：{str(e)}'}), 500
-
-    # 异步发送通知（在后台处理）
-    def send_assignment_notification_async():
-        try:
-            app.logger.info(f"后台发送问题分配通知 - bug_id: {bug_id}, assignee_id: {assigned_to}")
-            from notification.simple_notifier import simple_notifier
-            from datetime import datetime
-
-            notification_data = {
-                'bug_id': bug_id,
-                'title': bug_info['title'],
-                'description': bug_info['description'],
-                'assignee_id': assigned_to,
-                'assigner_name': user['chinese_name'] or user['username'],
-                'assigned_time': datetime.now().isoformat(),
-                'creator_id': bug_info['created_by']
-            }
-
-            simple_notifier.send_flow_notification('bug_assigned', notification_data)
-            app.logger.info(f"问题分配通知发送完成 - bug_id: {bug_id}")
-        except Exception as e:
-            app.logger.error(f"后台分配通知发送失败 - bug_id: {bug_id}, 错误: {e}")
-            import traceback
-            app.logger.error(f"分配通知发送错误详情: {traceback.format_exc()}")
-
-    # 启动后台线程发送通知
-    import threading
-    notification_thread = threading.Thread(target=send_assignment_notification_async, daemon=True)
-    notification_thread.start()
-
-    app.logger.info(f"问题分配成功，通知已提交后台处理 - bug_id: {bug_id}")
-    return jsonify(response_data)
 
 # 解决问题页面
 @app.route('/bug/resolve/<int:bug_id>')

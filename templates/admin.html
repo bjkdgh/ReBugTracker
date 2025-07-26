@@ -2230,12 +2230,12 @@
                                     </td>
                                     <td>{{ user_item.team or '未分配' }}</td>
                                     <td>
-                                        <button class="btn btn-sm btn-outline-primary btn-action" onclick="editUser({{ user_item.id }})">
+                                        <button class="btn btn-sm btn-outline-primary btn-action" data-user-id="{{ user_item.id }}" onclick="editUser(this.dataset.userId)">
                                             <i class="fas fa-edit"></i>
                                             编辑
                                         </button>
                                         {% if user_item.id != user.id %}
-                                        <button class="btn btn-sm btn-outline-danger btn-action" onclick="deleteUser({{ user_item.id }})">
+                                        <button class="btn btn-sm btn-outline-danger btn-action" data-user-id="{{ user_item.id }}" onclick="deleteUser(this.dataset.userId)">
                                             <i class="fas fa-trash"></i>
                                             删除
                                         </button>
@@ -2345,7 +2345,7 @@
                                             <i class="fas fa-eye"></i>
                                             查看
                                         </a>
-                                        <button class="btn btn-sm btn-outline-danger btn-action" onclick="deleteBugAdmin({{ bug.id }})">
+                                        <button class="btn btn-sm btn-outline-danger btn-action" data-bug-id="{{ bug.id }}" onclick="deleteBugAdmin(this.dataset.bugId)">
                                             <i class="fas fa-trash"></i>
                                             删除
                                         </button>
@@ -2769,7 +2769,7 @@
                                                 </td>
                                                 <td class="text-center">
                                                     <button class="btn btn-sm btn-outline-primary"
-                                                            onclick="saveUserNotificationPreference({{ user_item.id }})">
+                                                            data-user-id="{{ user_item.id }}" onclick="saveUserNotificationPreference(this.dataset.userId)">
                                                         <i class="fas fa-save"></i>
                                                         保存
                                                     </button>
@@ -3502,6 +3502,7 @@
                             <select class="form-select" id="editTeam" name="team">
                                 <option value="">请选择产品线</option>
                                 <option value="实施组">实施组</option>
+                                <option value="实施组研发">实施组研发</option>
                                 <option value="新能源">新能源</option>
                                 <option value="网络分析">网络分析</option>
                                 <option value="第三道防线">第三道防线</option>
