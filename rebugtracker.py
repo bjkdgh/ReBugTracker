@@ -4,6 +4,7 @@
 
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, abort, make_response, send_from_directory
 from config import DB_TYPE, ALLOWED_EXTENSIONS, MAX_CONTENT_LENGTH, DATABASE_CONFIG
+from config_adapter import UPLOAD_FOLDER, SECRET_KEY, FLASK_DEBUG
 import psycopg2
 from psycopg2.extras import DictCursor
 from functools import wraps
@@ -50,12 +51,13 @@ app = Flask(__name__, static_folder='static', static_url_path='/static', templat
 
 # 确保默认字符集为UTF-8
 app.config.update(
-    SECRET_KEY='your-secret-key-here-change-in-production',  # 添加密钥
-    DEBUG=True,  # 开启调试模式以显示详细错误
+    SECRET_KEY=SECRET_KEY,  # 从config_adapter加载
+    DEBUG=FLASK_DEBUG,  # 从config_adapter加载
     PROPAGATE_EXCEPTIONS=True,  # 传播异常
     TRAP_HTTP_EXCEPTIONS=False,
-    UPLOAD_FOLDER='uploads',
-    ALLOWED_EXTENSIONS={'png', 'jpg', 'jpeg', 'gif'},
+    UPLOAD_FOLDER=UPLOAD_FOLDER,  # 从config_adapter加载，支持绝对路径
+    ALLOWED_EXTENSIONS=ALLOWED_EXTENSIONS,  # 从config_adapter加载
+    MAX_CONTENT_LENGTH=MAX_CONTENT_LENGTH,  # 从config_adapter加载
     JSON_AS_ASCII=False,  # 确保JSON响应不使用ASCII编码
     DEFAULT_CHARSET='utf-8'  # 设置默认字符集
 )
@@ -3287,7 +3289,49 @@ def favicon():
 # 添加上传文件访问路由
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+    upload_folder = app.config['UPLOAD_FOLDER']
+    file_path = os.path.join(upload_folder, filename)
+
+    # 调试信息
+    app.logger.debug(f"请求文件: {filename}")
+    app.logger.debug(f"上传目录: {upload_folder}")
+    app.logger.debug(f"完整路径: {file_path}")
+    app.logger.debug(f"文件是否存在: {os.path.exists(file_path)}")
+
+    if not os.path.exists(file_path):
+        app.logger.error(f"文件不存在: {file_path}")
+        abort(404)
+
+    return send_from_directory(upload_folder, filename)
+
+# 调试路由：显示上传目录信息
+@app.route('/debug/uploads')
+def debug_uploads():
+    """调试上传目录信息"""
+    upload_folder = app.config['UPLOAD_FOLDER']
+    info = {
+        'upload_folder': upload_folder,
+        'is_absolute': os.path.isabs(upload_folder),
+        'exists': os.path.exists(upload_folder),
+        'writable': os.access(upload_folder, os.W_OK) if os.path.exists(upload_folder) else False,
+        'current_dir': os.getcwd(),
+        'files': []
+    }
+
+    if os.path.exists(upload_folder):
+        try:
+            files = os.listdir(upload_folder)
+            for file in files[:20]:  # 只显示前20个文件
+                file_path = os.path.join(upload_folder, file)
+                info['files'].append({
+                    'name': file,
+                    'size': os.path.getsize(file_path),
+                    'path': file_path
+                })
+        except Exception as e:
+            info['error'] = str(e)
+
+    return jsonify(info)
 
 @app.route('/.well-known/appspecific/com.chrome.devtools.json')
 def handle_chrome_devtools():
@@ -4619,6 +4663,21 @@ if __name__ == '__main__':
     print("🗄️ 初始化数据库...")
     init_db()
     print("✅ 数据库初始化完成")
+
+    # 确保必要目录存在
+    print("📁 初始化目录...")
+    upload_dir = app.config['UPLOAD_FOLDER']
+    if not os.path.exists(upload_dir):
+        os.makedirs(upload_dir, mode=0o777, exist_ok=True)
+        print(f"✅ 创建上传目录: {upload_dir}")
+    else:
+        print(f"✅ 上传目录已存在: {upload_dir}")
+
+    # 验证目录权限
+    if not os.access(upload_dir, os.W_OK):
+        print(f"⚠️ 警告: 上传目录可能无写入权限: {upload_dir}")
+    else:
+        print(f"✅ 上传目录权限正常: {upload_dir}")
 
     try:
         # 启动通知清理调度器

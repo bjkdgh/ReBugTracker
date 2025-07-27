@@ -90,7 +90,9 @@ pip install -r requirements.txt
 
 ## 📦 构建输出
 
-构建完成后，所有文件将输出到 `dist/` 目录：
+构建完成后，所有文件将输出到项目根目录的 `dist/` 目录：
+
+**输出路径**: `项目根目录/dist/`
 
 ```
 dist/
@@ -101,13 +103,21 @@ dist/
 ├── nssm.exe                # 服务管理工具
 ├── README_EXE.md           # 使用说明
 ├── 配置说明.md              # 配置说明
+├── 故障排除指南.md          # 故障排除指南
 ├── Windows服务安装手册.md   # 服务安装手册
-├── app_config.ini          # 配置文件
+├── .env                    # 环境配置文件
 ├── rebugtracker.db         # 数据库文件
 ├── uploads/                # 上传文件目录
 ├── logs/                   # 日志目录
-└── data_exports/           # 数据导出目录
+├── data_exports/           # 数据导出目录
+├── test_upload_config.py   # 配置测试脚本
+└── fix_uploads.py          # 上传修复脚本
 ```
+
+**⚠️ 重要提示**:
+- 构建脚本会显示最终输出目录的完整路径
+- 如果遇到图片上传问题，请检查 `.env` 文件中的 `UPLOAD_FOLDER` 配置
+- 建议使用绝对路径配置 `UPLOAD_FOLDER`
 
 ## 🎯 部署方式
 

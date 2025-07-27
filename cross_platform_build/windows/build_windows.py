@@ -205,26 +205,51 @@ def create_startup_scripts():
 def show_results():
     """显示打包结果"""
     print_step(7, "打包完成")
-    
+
+    # 检查项目根目录下的dist目录（最终输出位置）
+    project_root = get_project_root()
+    final_dist_dir = Path(project_root) / 'dist'
+
+    # 检查构建目录下的dist目录（构建过程中的位置）
     windows_dir = Path(__file__).parent
-    dist_dir = windows_dir / 'dist'
-    
-    if dist_dir.exists():
-        print_success(f"输出目录: {dist_dir.absolute()}")
-        
+    build_dist_dir = windows_dir / 'dist'
+
+    if final_dist_dir.exists():
+        print_success(f"✅ 最终输出目录: {final_dist_dir.absolute()}")
+
         # 列出主要文件
-        exe_file = dist_dir / 'ReBugTracker.exe'
+        exe_file = final_dist_dir / 'ReBugTracker.exe'
         if exe_file.exists():
             size = exe_file.stat().st_size / (1024 * 1024)  # MB
-            print_success(f"可执行文件: ReBugTracker.exe ({size:.1f} MB)")
-        
+            print_success(f"✅ 可执行文件: ReBugTracker.exe ({size:.1f} MB)")
+
+        # 检查重要配置文件
+        env_file = final_dist_dir / '.env'
+        if env_file.exists():
+            print_success(f"✅ 配置文件: .env")
+
+        uploads_dir = final_dist_dir / 'uploads'
+        if uploads_dir.exists():
+            print_success(f"✅ 上传目录: uploads/")
+
         print()
         print("🚀 使用方法:")
-        print("1. 进入 dist 目录")
+        print(f"1. 进入目录: cd \"{final_dist_dir}\"")
         print("2. 双击 start_rebugtracker.bat 启动")
         print("3. 或直接运行 ReBugTracker.exe")
         print()
-        print("💡 提示: 首次运行会自动初始化数据库")
+        print("⚠️ 重要提示:")
+        print("- 首次运行会自动初始化数据库")
+        print("- 如果图片上传后无法显示，请检查.env文件中的UPLOAD_FOLDER配置")
+        print("- 建议将UPLOAD_FOLDER设置为绝对路径，例如:")
+        print(f"  UPLOAD_FOLDER={final_dist_dir}\\uploads")
+        print("- 可访问 http://localhost:5000/debug/uploads 查看上传配置")
+
+    elif build_dist_dir.exists():
+        print_warning(f"⚠️ 构建目录存在但最终输出目录不存在")
+        print_warning(f"构建目录: {build_dist_dir.absolute()}")
+        print_warning(f"预期输出: {final_dist_dir.absolute()}")
+        print_error("可能需要手动复制文件到最终位置")
     else:
         print_error("dist目录不存在，打包可能失败")
 

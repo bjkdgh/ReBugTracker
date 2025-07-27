@@ -45,6 +45,10 @@ DATABASE_CONFIG = {
 #     'port': int(os.getenv('DATABASE_PORT'))    # 默认端口
 # }
 
-# 文件上传配置
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
-MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
+# 文件上传配置 - 从config_adapter导入以支持exe环境
+try:
+    from config_adapter import ALLOWED_EXTENSIONS, MAX_CONTENT_LENGTH
+except ImportError:
+    # 如果config_adapter不可用，使用默认值
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
