@@ -59,15 +59,22 @@ class FlowNotificationRules:
                     logger.debug(f"Bug rejected notification target: old assignee {old_assignee_id}")
                     
             elif event_type == "bug_status_changed":
-                # 状态变更：通知创建者、分配者、当前处理人
+                # 状态变更：通知创建者、分配者、当前处理人、相关产品经理
                 creator_id = event_data.get('creator_id')
                 assignee_id = event_data.get('assignee_id')
-                
+                product_line_id = event_data.get('product_line_id')
+
                 if creator_id:
                     targets.add(str(creator_id))
                 if assignee_id:
                     targets.add(str(assignee_id))
-                    
+
+                # 通知相关产品经理
+                if product_line_id:
+                    product_managers = FlowNotificationRules._get_product_managers_by_product_line(product_line_id)
+                    targets.update(product_managers)
+                    logger.debug(f"Added {len(product_managers)} product managers for product line {product_line_id}")
+
                 logger.debug(f"Bug status changed notification targets: {len(targets)} users")
                     
             elif event_type == "bug_resolved":
@@ -208,9 +215,10 @@ class FlowNotificationRules:
         """获取角色中文描述"""
         role_map = {
             'gly': '管理员',
-            'fzr': '负责人', 
+            'fzr': '负责人',
             'ssz': '实施组',
-            'zncy': '组内成员'
+            'zncy': '组内成员',
+            'pm': '产品经理'
         }
         return role_map.get(role_en, role_en)
     
@@ -238,3 +246,47 @@ class FlowNotificationRules:
         
         participants = event_participants.get(event_type, [])
         return user_role in participants
+
+    @staticmethod
+    def _get_product_managers_by_product_line(product_line_id: int) -> set:
+        """根据产品线ID获取相关产品经理的ID列表"""
+        try:
+            from db_factory import get_db_connection
+            from sql_adapter import adapt_sql
+
+            conn = get_db_connection()
+            cursor = conn.cursor()
+
+            # 先获取产品线名称
+            query, params = adapt_sql("""
+                SELECT name FROM product_lines WHERE id = %s
+            """, (product_line_id,))
+
+            cursor.execute(query, params)
+            result = cursor.fetchone()
+
+            if not result:
+                conn.close()
+                return set()
+
+            product_line_name = result[0]
+
+            # 查询团队包含该产品线的产品经理
+            query, params = adapt_sql("""
+                SELECT id
+                FROM users
+                WHERE role_en = 'pm' AND (team LIKE %s OR team LIKE %s OR team LIKE %s OR team = %s)
+            """, (f"%{product_line_name},%", f"%,{product_line_name},%", f"%,{product_line_name}", product_line_name))
+
+            cursor.execute(query, params)
+            results = cursor.fetchall()
+            conn.close()
+
+            product_managers = {str(row[0]) for row in results}
+            logger.debug(f"Found {len(product_managers)} product managers for product line {product_line_name}")
+
+            return product_managers
+
+        except Exception as e:
+            logger.error(f"Error getting product managers for product line {product_line_id}: {e}")
+            return set()

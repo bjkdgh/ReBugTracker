@@ -39,6 +39,55 @@
         .notification-icon {
             position: relative;
         }
+
+        /* 底部导航栏样式 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 12px 0;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .bottom-nav .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: white;
+            text-decoration: none;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            min-width: 60px;
+        }
+
+        .bottom-nav .nav-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .bottom-nav .nav-item i {
+            font-size: 18px;
+            margin-bottom: 4px;
+        }
+
+        .bottom-nav .nav-item span {
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        /* 为页面内容添加底部间距，避免被导航栏遮挡 */
+        body {
+            padding-bottom: 80px;
+        }
     </style>
 </head>
 <body>
@@ -47,6 +96,28 @@
     <div class="container mt-4">
         {% block content %}{% endblock %}
     </div>
+
+    <!-- 底部快捷操作栏 -->
+    {% if session.user_id %}
+    <div class="bottom-nav">
+        <div class="nav-item" onclick="window.location.href='/team-issues'">
+            <i class="fas fa-list"></i>
+            <span>我的问题</span>
+        </div>
+        <div class="nav-item" onclick="window.location.href='/bugs'">
+            <i class="fas fa-bug"></i>
+            <span>所有问题</span>
+        </div>
+        <div class="nav-item" onclick="window.location.href='/notifications'">
+            <i class="fas fa-bell"></i>
+            <span>通知中心</span>
+        </div>
+        <div class="nav-item" onclick="window.location.href='/user-settings'">
+            <i class="fas fa-user-cog"></i>
+            <span>个人偏好</span>
+        </div>
+    </div>
+    {% endif %}
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>

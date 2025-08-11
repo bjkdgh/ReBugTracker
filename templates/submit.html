@@ -319,6 +319,20 @@
                     </div>
 
                     <div class="form-group">
+                        <label for="product_line" class="form-label">
+                            <i class="fas fa-sitemap me-2"></i>所属产品线
+                        </label>
+                        <select id="product_line" name="product_line" class="form-control-modern">
+                            <option value="">请选择产品线（可选）</option>
+                        </select>
+                        <div class="validation-message"></div>
+                        <small class="form-text text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            选择产品线后，相关产品经理将收到问题流转通知
+                        </small>
+                    </div>
+
+                    <div class="form-group">
                         <label for="type" class="form-label">
                             <i class="fas fa-tags me-2"></i>类型<span class="required">*</span>
                         </label>
@@ -1409,5 +1423,40 @@ document.addEventListener('DOMContentLoaded', function() {
 
     console.log('项目搜索功能初始化完成');
 });
+
+// 加载产品线列表
+document.addEventListener('DOMContentLoaded', function() {
+    loadProductLines();
+});
+
+async function loadProductLines() {
+    try {
+        const response = await fetch('/api/product-lines');
+        const result = await response.json();
+
+        if (result.success) {
+            const productLineSelect = document.getElementById('product_line');
+
+            // 清空现有选项（保留默认选项）
+            productLineSelect.innerHTML = '<option value="">请选择产品线（可选）</option>';
+
+            // 添加产品线选项
+            result.data.forEach(productLine => {
+                if (productLine.status === 'active') {
+                    const option = document.createElement('option');
+                    option.value = productLine.id;
+                    option.textContent = productLine.name;
+                    productLineSelect.appendChild(option);
+                }
+            });
+
+            console.log('产品线列表加载完成');
+        } else {
+            console.error('加载产品线失败:', result.message);
+        }
+    } catch (error) {
+        console.error('加载产品线失败:', error);
+    }
+}
 </script>
 {% endblock %}

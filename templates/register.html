@@ -212,6 +212,155 @@
             background: white;
             transform: translateY(-2px);
         }
+
+        .product-lines-container {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 10px;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .checkbox-item:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .checkbox-item.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+
+        .checkbox-item label {
+            margin: 0;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .product-line-desc {
+            font-size: 0.85rem;
+            opacity: 0.8;
+            margin-top: 3px;
+        }
+
+        .teams-container {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+
+        .teams-checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .team-checkbox-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .team-checkbox-item:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .team-checkbox-item.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .team-checkbox-item input[type="checkbox"] {
+            margin-right: 8px;
+            transform: scale(1.1);
+        }
+
+        .team-checkbox-item label {
+            margin: 0;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .teams-container {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+
+        .teams-checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .team-checkbox-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .team-checkbox-item:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .team-checkbox-item.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .team-checkbox-item input[type="checkbox"] {
+            margin-right: 8px;
+            transform: scale(1.1);
+        }
+
+        .team-checkbox-item label {
+            margin: 0;
+            cursor: pointer;
+            font-weight: 500;
+        }
         
         .form-label {
             font-weight: 500;
@@ -467,6 +616,7 @@
                                         <option value="ssz">实施组人员</option>
                                         <option value="fzr">负责人</option>
                                         <option value="zncy">组内成员</option>
+                                        <option value="pm">产品经理</option>
                                     </select>
                                 </div>
                             </div>
@@ -474,23 +624,77 @@
                                 <div class="form-group">
                                     <label class="form-label">
                                         <i class="fas fa-building"></i>
-                                        产品线
+                                        团队/部门
                                     </label>
+                                    <!-- 普通角色的单选团队 -->
                                     <select class="form-control" id="team" name="team">
-                                        <option value="">请选择产品线</option>
+                                        <option value="">请选择团队</option>
                                         <option value="实施组">实施组</option>
                                         <option value="实施组研发">实施组研发</option>
                                         <option value="新能源">新能源</option>
                                         <option value="网络分析">网络分析</option>
                                         <option value="第三道防线">第三道防线</option>
-                                        <option value="智能告警及操作票">智能告警及操作票</option>
+                                        <option value="智能告警">智能告警</option>
+                                        <option value="操作票及防误">操作票及防误</option>
                                         <option value="电量">电量</option>
                                         <option value="消纳">消纳</option>
                                         <option value="自动发电控制">自动发电控制</option>
                                     </select>
+
+                                    <!-- 产品经理的多选团队 -->
+                                    <div id="pmTeamsContainer" class="teams-container" style="display: none;">
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle"></i>
+                                            产品经理可以选择多个团队/部门
+                                        </div>
+                                        <div class="teams-checkbox-group">
+                                            <div class="team-checkbox-item" onclick="toggleTeam('实施组')">
+                                                <input type="checkbox" id="pmteam_实施组" name="pm_teams" value="实施组">
+                                                <label for="pmteam_实施组">实施组</label>
+                                            </div>
+                                            <div class="team-checkbox-item" onclick="toggleTeam('实施组研发')">
+                                                <input type="checkbox" id="pmteam_实施组研发" name="pm_teams" value="实施组研发">
+                                                <label for="pmteam_实施组研发">实施组研发</label>
+                                            </div>
+                                            <div class="team-checkbox-item" onclick="toggleTeam('新能源')">
+                                                <input type="checkbox" id="pmteam_新能源" name="pm_teams" value="新能源">
+                                                <label for="pmteam_新能源">新能源</label>
+                                            </div>
+                                            <div class="team-checkbox-item" onclick="toggleTeam('网络分析')">
+                                                <input type="checkbox" id="pmteam_网络分析" name="pm_teams" value="网络分析">
+                                                <label for="pmteam_网络分析">网络分析</label>
+                                            </div>
+                                            <div class="team-checkbox-item" onclick="toggleTeam('第三道防线')">
+                                                <input type="checkbox" id="pmteam_第三道防线" name="pm_teams" value="第三道防线">
+                                                <label for="pmteam_第三道防线">第三道防线</label>
+                                            </div>
+                                            <div class="team-checkbox-item" onclick="toggleTeam('智能告警')">
+                                                <input type="checkbox" id="pmteam_智能告警" name="pm_teams" value="智能告警">
+                                                <label for="pmteam_智能告警">智能告警</label>
+                                            </div>
+                                            <div class="team-checkbox-item" onclick="toggleTeam('操作票及防误')">
+                                                <input type="checkbox" id="pmteam_操作票及防误" name="pm_teams" value="操作票及防误">
+                                                <label for="pmteam_操作票及防误">操作票及防误</label>
+                                            </div>
+                                            <div class="team-checkbox-item" onclick="toggleTeam('电量')">
+                                                <input type="checkbox" id="pmteam_电量" name="pm_teams" value="电量">
+                                                <label for="pmteam_电量">电量</label>
+                                            </div>
+                                            <div class="team-checkbox-item" onclick="toggleTeam('消纳')">
+                                                <input type="checkbox" id="pmteam_消纳" name="pm_teams" value="消纳">
+                                                <label for="pmteam_消纳">消纳</label>
+                                            </div>
+                                            <div class="team-checkbox-item" onclick="toggleTeam('自动发电控制')">
+                                                <input type="checkbox" id="pmteam_自动发电控制" name="pm_teams" value="自动发电控制">
+                                                <label for="pmteam_自动发电控制">自动发电控制</label>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+
+
                     </div>
 
                     <!-- 通知偏好 -->
@@ -752,6 +956,74 @@
                 checkbox.checked = !checkbox.checked;
             });
         });
+
+        // ==================== 团队选择功能 ====================
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            setupRoleChangeHandler();
+        });
+
+        // 设置角色选择变化处理
+        function setupRoleChangeHandler() {
+            const roleSelect = document.getElementById('role');
+            const teamSelect = document.getElementById('team');
+            const pmTeamsContainer = document.getElementById('pmTeamsContainer');
+
+            roleSelect.addEventListener('change', function() {
+                if (this.value === 'pm') {
+                    // 产品经理角色：显示多选团队
+                    teamSelect.style.display = 'none';
+                    pmTeamsContainer.style.display = 'block';
+
+                    // 清空普通团队选择
+                    teamSelect.value = '';
+                } else {
+                    // 其他角色：显示单选团队
+                    teamSelect.style.display = 'block';
+                    pmTeamsContainer.style.display = 'none';
+
+                    // 清空产品经理团队选择
+                    clearPMTeamSelections();
+                }
+            });
+        }
+
+
+
+        // 切换团队选择（产品经理专用）
+        function toggleTeam(teamName) {
+            const checkbox = document.getElementById(`pmteam_${teamName}`);
+            if (checkbox) {
+                checkbox.checked = !checkbox.checked;
+                updateTeamCheckboxItemStyle(checkbox);
+            }
+        }
+
+
+
+        // 更新团队复选框项样式
+        function updateTeamCheckboxItemStyle(checkbox) {
+            const item = checkbox.closest('.team-checkbox-item');
+            if (checkbox.checked) {
+                item.classList.add('selected');
+            } else {
+                item.classList.remove('selected');
+            }
+        }
+
+
+
+        // 清空产品经理团队选择
+        function clearPMTeamSelections() {
+            const checkboxes = document.querySelectorAll('input[name="pm_teams"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = false;
+                updateTeamCheckboxItemStyle(checkbox);
+            });
+        }
+
+
     </script>
 </body>
 </html>

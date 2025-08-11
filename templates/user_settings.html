@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>个人设置 - ReBugTracker</title>
+    <title>个人偏好设置 - ReBugTracker</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -375,6 +375,34 @@
             返回首页
         </a>
 
+        <!-- 密码修改卡片 -->
+        <div class="settings-card">
+            <div class="card-header">
+                <h4><i class="fas fa-key me-2"></i>密码修改</h4>
+            </div>
+            <div class="card-body">
+                <form id="passwordForm">
+                    <div class="form-group">
+                        <label class="form-label">当前密码</label>
+                        <input type="password" class="form-control" id="currentPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">新密码</label>
+                        <input type="password" class="form-control" id="newPassword" required minlength="6">
+                        <div class="form-text">密码长度至少6位</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">确认新密码</label>
+                        <input type="password" class="form-control" id="confirmPassword" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>修改密码
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- 通知设置卡片 -->
         <div class="settings-card">
             <div class="card-header">
                 <h4><i class="fas fa-bell me-2"></i>通知设置</h4>
@@ -538,7 +566,57 @@
         // 页面加载时获取当前设置
         document.addEventListener('DOMContentLoaded', function() {
             loadCurrentSettings();
+
+            // 密码修改表单提交
+            document.getElementById('passwordForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                changePassword();
+            });
         });
+
+        // 密码修改函数
+        function changePassword() {
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            // 验证新密码和确认密码是否一致
+            if (newPassword !== confirmPassword) {
+                showErrorModal('新密码和确认密码不一致');
+                return;
+            }
+
+            // 验证密码长度
+            if (newPassword.length < 6) {
+                showErrorModal('新密码长度至少6位');
+                return;
+            }
+
+            fetch('/api/user/change-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    current_password: currentPassword,
+                    new_password: newPassword
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showSuccessModal('密码修改成功', '您的密码已成功修改');
+                    // 清空表单
+                    document.getElementById('passwordForm').reset();
+                } else {
+                    showErrorModal(data.message || '密码修改失败');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showErrorModal('密码修改失败，请重试');
+            });
+        }
 
         function loadCurrentSettings() {
             // 加载邮件设置

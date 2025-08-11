@@ -482,6 +482,19 @@
         font-weight: 500;
         line-height: 1;
     }
+
+    .stat-details {
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid rgba(0, 0, 0, 0.1);
+        text-align: center;
+    }
+
+    .stat-details small {
+        font-size: 0.7rem;
+        color: #6c757d;
+        line-height: 1.2;
+    }
     
     .filter-section {
         background: white;
@@ -1233,6 +1246,8 @@
                                     <i class="fas fa-user"></i> 组内成员
                                 {% elif user.role_en == 'gly' %}
                                     <i class="fas fa-user-shield"></i> 管理员
+                                {% elif user.role_en == 'pm' %}
+                                    <i class="fas fa-chart-line"></i> 产品经理
                                 {% else %}
                                     <i class="fas fa-user"></i> {{ user.role }}
                                 {% endif %}
@@ -1244,10 +1259,10 @@
                             {% endif %}
                         </div>
 
-                        <!-- 通知设置链接 -->
-                        <a href="/user/settings" class="btn btn-outline-light btn-sm" title="通知设置" style="margin-right: 10px;">
-                            <i class="fas fa-bell-slash"></i>
-                            通知设置
+                        <!-- 个人偏好设置链接 -->
+                        <a href="/user-settings" class="btn btn-outline-light btn-sm" title="个人偏好设置" style="margin-right: 10px;">
+                            <i class="fas fa-user-cog"></i>
+                            个人偏好
                         </a>
 
                         <div class="header-actions">
@@ -1290,6 +1305,16 @@
                             <a href="/submit" class="btn-modern btn-primary-modern">
                                 <i class="fas fa-plus"></i>
                                 提交新问题
+                            </a>
+                    {% elif user.role_en == 'pm' %}
+                            <a href="/product-manager" class="btn-modern btn-success-modern">
+                                <i class="fas fa-chart-line"></i>
+                                产品经理工作台
+                            </a>
+                    {% elif user.role_en == 'gly' %}
+                            <a href="/admin" class="btn-modern btn-warning-modern">
+                                <i class="fas fa-cogs"></i>
+                                管理员后台
                             </a>
                     {% endif %}
 
@@ -1367,7 +1392,7 @@
         <div class="stats-container">
             <div class="stats-grid-inline">
                 <div class="stat-card-inline clickable" data-status="all" onclick="filterByStatus('all')">
-                    <div class="stat-icon-inline" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                    <div class="stat-icon-inline" style="background: linear-gradient(135deg, #667eea, #764ba2); box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);">
                         <i class="fas fa-list"></i>
                     </div>
                     <div class="stat-content-inline">
@@ -1378,7 +1403,7 @@
 
                 {% if user.role_en == 'fzr' %}
                 <div class="stat-card-inline clickable active" data-status="not-completed" onclick="filterByStatus('not-completed')">
-                    <div class="stat-icon-inline" style="background: linear-gradient(135deg, #4facfe, #00f2fe);">
+                    <div class="stat-icon-inline" style="background: linear-gradient(135deg, #ff9a9e, #fecfef); box-shadow: 0 4px 15px rgba(255, 154, 158, 0.4);">
                         <i class="fas fa-tasks"></i>
                     </div>
                     <div class="stat-content-inline">
@@ -1389,7 +1414,7 @@
                 {% endif %}
 
                 <div class="stat-card-inline clickable" data-status="pending" onclick="filterByStatus('pending')">
-                    <div class="stat-icon-inline" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
+                    <div class="stat-icon-inline" style="background: linear-gradient(135deg, #ffecd2, #fcb69f); box-shadow: 0 4px 15px rgba(252, 182, 159, 0.4);">
                         <i class="fas fa-clock"></i>
                     </div>
                     <div class="stat-content-inline">
@@ -1399,7 +1424,7 @@
                 </div>
 
                 <div class="stat-card-inline clickable" data-status="assigned" onclick="filterByStatus('assigned')">
-                    <div class="stat-icon-inline" style="background: linear-gradient(135deg, #4facfe, #00f2fe);">
+                    <div class="stat-icon-inline" style="background: linear-gradient(135deg, #a8edea, #fed6e3); box-shadow: 0 4px 15px rgba(168, 237, 234, 0.4);">
                         <i class="fas fa-user-check"></i>
                     </div>
                     <div class="stat-content-inline">
@@ -1409,8 +1434,8 @@
                 </div>
 
                 <div class="stat-card-inline clickable" data-status="processing" onclick="filterByStatus('processing')">
-                    <div class="stat-icon-inline" style="background: linear-gradient(135deg, #43e97b, #38f9d7);">
-                        <i class="fas fa-cog"></i>
+                    <div class="stat-icon-inline" style="background: linear-gradient(135deg, #84fab0, #8fd3f4); box-shadow: 0 4px 15px rgba(132, 250, 176, 0.4);">
+                        <i class="fas fa-cog fa-spin"></i>
                     </div>
                     <div class="stat-content-inline">
                         <div class="stat-number-inline" id="processingBugs">0</div>
@@ -1419,7 +1444,7 @@
                 </div>
 
                 <div class="stat-card-inline clickable" data-status="resolved" onclick="filterByStatus('resolved')">
-                    <div class="stat-icon-inline" style="background: linear-gradient(135deg, #28a745, #20c997);">
+                    <div class="stat-icon-inline" style="background: linear-gradient(135deg, #a8e6cf, #dcedc1); box-shadow: 0 4px 15px rgba(168, 230, 207, 0.4);">
                         <i class="fas fa-check"></i>
                     </div>
                     <div class="stat-content-inline">
@@ -1430,7 +1455,7 @@
 
                 {% if user.role_en in ['ssz', 'fzr', 'gly'] %}
                 <div class="stat-card-inline clickable" data-status="rejected" onclick="filterByStatus('rejected')">
-                    <div class="stat-icon-inline" style="background: linear-gradient(135deg, #dc3545, #c82333);">
+                    <div class="stat-icon-inline" style="background: linear-gradient(135deg, #ff8a80, #ffcdd2); box-shadow: 0 4px 15px rgba(255, 138, 128, 0.4);">
                         <i class="fas fa-times-circle"></i>
                     </div>
                     <div class="stat-content-inline">
@@ -1441,7 +1466,7 @@
                 {% endif %}
 
                 <div class="stat-card-inline clickable" data-status="completed" onclick="filterByStatus('completed')">
-                    <div class="stat-icon-inline" style="background: linear-gradient(135deg, #6c757d, #495057);">
+                    <div class="stat-icon-inline" style="background: linear-gradient(135deg, #d299c2, #fef9d7); box-shadow: 0 4px 15px rgba(210, 153, 194, 0.4);">
                         <i class="fas fa-check-circle"></i>
                     </div>
                     <div class="stat-content-inline">

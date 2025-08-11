@@ -2159,6 +2159,11 @@
                     项目管理
                     <span class="badge" style="background: rgba(255,255,255,0.25); padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; margin-left: 8px; font-weight: 700; border: 1px solid rgba(255,255,255,0.3);">{{ projects|length }}</span>
                 </button>
+                <button class="tab-button" onclick="switchTab('teams')" id="teamsTab">
+                    <i class="fas fa-users"></i>
+                    团队管理
+                    <span class="badge" style="background: rgba(255,255,255,0.25); padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; margin-left: 8px; font-weight: 700; border: 1px solid rgba(255,255,255,0.3);" id="teamsCount">0</span>
+                </button>
             </div>
 
             <!-- 选项卡内容 -->
@@ -2224,6 +2229,8 @@
                                             <span class="status-badge" style="background: linear-gradient(135deg, #00b894, #00a085); color: white;">实施组</span>
                                         {% elif user_item.role_en == 'zncy' %}
                                             <span class="status-badge" style="background: linear-gradient(135deg, #fd79a8, #e84393); color: white;">组内成员</span>
+                                        {% elif user_item.role_en == 'pm' %}
+                                            <span class="status-badge" style="background: linear-gradient(135deg, #ff6b6b, #ee5a24); color: white;">产品经理</span>
                                         {% else %}
                                             <span class="status-badge" style="background: linear-gradient(135deg, #636e72, #2d3436); color: white;">{{ user_item.role }}</span>
                                         {% endif %}
@@ -3445,6 +3452,82 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- 团队管理选项卡 -->
+                <div class="tab-pane" id="teamsPane">
+                    <div class="bugs-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <h2 class="bugs-title">
+                            <i class="fas fa-users"></i>
+                            团队管理
+                        </h2>
+                        <p class="bugs-subtitle">管理团队和产品经理分配</p>
+                    </div>
+
+                    <div class="bugs-content">
+                        <!-- 团队管理区域 -->
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i>
+                                    <strong>团队说明：</strong>系统中的团队是固定的产品线团队，包括：实施组、实施组研发、新能源、网络分析、第三道防线、智能告警、操作票及防误、电量、消纳、自动发电控制。
+                                    您可以查看每个团队的成员分布和Bug统计。
+                                </div>
+                            </div></div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5><i class="fas fa-chart-bar"></i> 团队统计概览</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="text-muted mb-3">
+                                            <i class="fas fa-info-circle"></i>
+                                            查看各团队的成员分布和Bug统计情况
+                                        </p>
+                                        <button type="button" class="btn btn-primary" onclick="loadTeamStatistics()">
+                                            <i class="fas fa-sync"></i> 刷新统计数据
+                                        </button>
+                                        <button type="button" class="btn btn-success ms-2" onclick="switchTab('users')">
+                                            <i class="fas fa-users"></i> 管理团队成员
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 团队统计列表 -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5><i class="fas fa-chart-pie"></i> 团队统计概览</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>团队名称</th>
+                                                <th>成员数量</th>
+                                                <th>产品经理</th>
+                                                <th>Bug总数</th>
+                                                <th>待处理</th>
+                                                <th>处理中</th>
+                                                <th>已解决</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="teamStatsTableBody">
+                                            <tr>
+                                                <td colspan="7" class="text-center">
+                                                    <i class="fas fa-spinner fa-spin"></i> 加载统计数据中...
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -3495,22 +3578,75 @@
                                 <option value="负责人">负责人</option>
                                 <option value="实施组">实施组</option>
                                 <option value="组内成员">组内成员</option>
+                                <option value="产品经理">产品经理</option>
                             </select>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="editTeam" class="form-label">产品线</label>
+                            <label for="editTeam" class="form-label">团队</label>
+                            <!-- 普通角色的单选团队 -->
                             <select class="form-select" id="editTeam" name="team">
-                                <option value="">请选择产品线</option>
+                                <option value="">请选择团队</option>
                                 <option value="实施组">实施组</option>
                                 <option value="实施组研发">实施组研发</option>
                                 <option value="新能源">新能源</option>
                                 <option value="网络分析">网络分析</option>
                                 <option value="第三道防线">第三道防线</option>
-                                <option value="智能告警及操作票">智能告警及操作票</option>
+                                <option value="智能告警">智能告警</option>
+                                <option value="操作票及防误">操作票及防误</option>
                                 <option value="电量">电量</option>
                                 <option value="消纳">消纳</option>
                                 <option value="自动发电控制">自动发电控制</option>
                             </select>
+
+                            <!-- 产品经理的多选团队 -->
+                            <div id="editPmTeamsContainer" class="teams-container" style="display: none;">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i>
+                                    产品经理可以选择多个团队
+                                </div>
+                                <div class="teams-checkbox-group">
+                                    <div class="team-checkbox-item" onclick="toggleEditTeam('实施组')">
+                                        <input type="checkbox" id="editpmteam_实施组" name="edit_pm_teams" value="实施组">
+                                        <label for="editpmteam_实施组">实施组</label>
+                                    </div>
+                                    <div class="team-checkbox-item" onclick="toggleEditTeam('实施组研发')">
+                                        <input type="checkbox" id="editpmteam_实施组研发" name="edit_pm_teams" value="实施组研发">
+                                        <label for="editpmteam_实施组研发">实施组研发</label>
+                                    </div>
+                                    <div class="team-checkbox-item" onclick="toggleEditTeam('新能源')">
+                                        <input type="checkbox" id="editpmteam_新能源" name="edit_pm_teams" value="新能源">
+                                        <label for="editpmteam_新能源">新能源</label>
+                                    </div>
+                                    <div class="team-checkbox-item" onclick="toggleEditTeam('网络分析')">
+                                        <input type="checkbox" id="editpmteam_网络分析" name="edit_pm_teams" value="网络分析">
+                                        <label for="editpmteam_网络分析">网络分析</label>
+                                    </div>
+                                    <div class="team-checkbox-item" onclick="toggleEditTeam('第三道防线')">
+                                        <input type="checkbox" id="editpmteam_第三道防线" name="edit_pm_teams" value="第三道防线">
+                                        <label for="editpmteam_第三道防线">第三道防线</label>
+                                    </div>
+                                    <div class="team-checkbox-item" onclick="toggleEditTeam('智能告警')">
+                                        <input type="checkbox" id="editpmteam_智能告警" name="edit_pm_teams" value="智能告警">
+                                        <label for="editpmteam_智能告警">智能告警</label>
+                                    </div>
+                                    <div class="team-checkbox-item" onclick="toggleEditTeam('操作票及防误')">
+                                        <input type="checkbox" id="editpmteam_操作票及防误" name="edit_pm_teams" value="操作票及防误">
+                                        <label for="editpmteam_操作票及防误">操作票及防误</label>
+                                    </div>
+                                    <div class="team-checkbox-item" onclick="toggleEditTeam('电量')">
+                                        <input type="checkbox" id="editpmteam_电量" name="edit_pm_teams" value="电量">
+                                        <label for="editpmteam_电量">电量</label>
+                                    </div>
+                                    <div class="team-checkbox-item" onclick="toggleEditTeam('消纳')">
+                                        <input type="checkbox" id="editpmteam_消纳" name="edit_pm_teams" value="消纳">
+                                        <label for="editpmteam_消纳">消纳</label>
+                                    </div>
+                                    <div class="team-checkbox-item" onclick="toggleEditTeam('自动发电控制')">
+                                        <input type="checkbox" id="editpmteam_自动发电控制" name="edit_pm_teams" value="自动发电控制">
+                                        <label for="editpmteam_自动发电控制">自动发电控制</label>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -3814,6 +3950,8 @@ function switchTab(tabName) {
         initializeReportsTab();
     } else if (tabName === 'projects') {
         loadProjectsList();
+    } else if (tabName === 'teams') {
+        loadTeamsData();
     }
 }
 
@@ -4072,8 +4210,11 @@ async function editUser(userId) {
         document.getElementById('editEmail').value = user.email || '';
         document.getElementById('editPhone').value = user.phone || '';
         document.getElementById('editRole').value = user.role || '';
-        document.getElementById('editTeam').value = user.team || '';
         document.getElementById('editPassword').value = '';
+
+        // 处理团队选择
+        setupEditRoleChangeHandler();
+        handleEditTeamSelection(user.role, user.team);
 
         // 显示模态框
         const modal = new bootstrap.Modal(document.getElementById('editUserModal'));
@@ -4085,19 +4226,127 @@ async function editUser(userId) {
     }
 }
 
+// 设置编辑用户时的角色变化处理
+function setupEditRoleChangeHandler() {
+    const editRoleSelect = document.getElementById('editRole');
+
+    // 移除之前的事件监听器
+    editRoleSelect.removeEventListener('change', handleEditRoleChange);
+    // 添加新的事件监听器
+    editRoleSelect.addEventListener('change', handleEditRoleChange);
+}
+
+// 处理编辑用户时的角色变化
+function handleEditRoleChange() {
+    const role = this.value;
+    const editTeamSelect = document.getElementById('editTeam');
+    const editPmTeamsContainer = document.getElementById('editPmTeamsContainer');
+
+    if (role === '产品经理') {
+        // 产品经理角色：显示多选团队
+        editTeamSelect.style.display = 'none';
+        editPmTeamsContainer.style.display = 'block';
+        editTeamSelect.value = '';
+    } else {
+        // 其他角色：显示单选团队
+        editTeamSelect.style.display = 'block';
+        editPmTeamsContainer.style.display = 'none';
+        clearEditPMTeamSelections();
+    }
+}
+
+// 处理编辑用户时的团队选择
+function handleEditTeamSelection(role, team) {
+    const editTeamSelect = document.getElementById('editTeam');
+    const editPmTeamsContainer = document.getElementById('editPmTeamsContainer');
+
+    if (role === '产品经理') {
+        // 产品经理：显示多选，设置已选择的团队
+        editTeamSelect.style.display = 'none';
+        editPmTeamsContainer.style.display = 'block';
+
+        // 清空所有选择
+        clearEditPMTeamSelections();
+
+        // 设置已选择的团队
+        if (team) {
+            const teams = team.split(',');
+            teams.forEach(teamName => {
+                const checkbox = document.getElementById(`editpmteam_${teamName.trim()}`);
+                if (checkbox) {
+                    checkbox.checked = true;
+                    updateEditTeamCheckboxItemStyle(checkbox);
+                }
+            });
+        }
+    } else {
+        // 其他角色：显示单选
+        editTeamSelect.style.display = 'block';
+        editPmTeamsContainer.style.display = 'none';
+        editTeamSelect.value = team || '';
+    }
+}
+
+// 切换编辑用户时的团队选择
+function toggleEditTeam(teamName) {
+    const checkbox = document.getElementById(`editpmteam_${teamName}`);
+    if (checkbox) {
+        checkbox.checked = !checkbox.checked;
+        updateEditTeamCheckboxItemStyle(checkbox);
+    }
+}
+
+// 更新编辑用户时的团队复选框项样式
+function updateEditTeamCheckboxItemStyle(checkbox) {
+    const item = checkbox.closest('.team-checkbox-item');
+    if (checkbox.checked) {
+        item.classList.add('selected');
+    } else {
+        item.classList.remove('selected');
+    }
+}
+
+// 清空编辑用户时的产品经理团队选择
+function clearEditPMTeamSelections() {
+    const checkboxes = document.querySelectorAll('input[name="edit_pm_teams"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+        updateEditTeamCheckboxItemStyle(checkbox);
+    });
+}
+
 // 保存用户更改
 async function saveUserChanges() {
     try {
         const userId = document.getElementById('editUserId').value;
-        const formData = new FormData(document.getElementById('editUserForm'));
+        const role = document.getElementById('editRole').value;
 
-        // 转换为JSON对象
+        // 处理团队数据
+        let teamData = '';
+        if (role === '产品经理') {
+            // 产品经理：收集多选团队
+            const selectedTeams = [];
+            const checkboxes = document.querySelectorAll('input[name="edit_pm_teams"]:checked');
+            checkboxes.forEach(checkbox => {
+                selectedTeams.push(checkbox.value);
+            });
+            teamData = selectedTeams.join(',');
+        } else {
+            // 其他角色：单选团队
+            teamData = document.getElementById('editTeam').value;
+        }
+
+        // 构建用户数据
+        const formData = new FormData(document.getElementById('editUserForm'));
         const userData = {};
         for (let [key, value] of formData.entries()) {
-            if (key !== 'user_id' && value.trim() !== '') {
+            if (key !== 'user_id' && key !== 'edit_pm_teams' && value.trim() !== '') {
                 userData[key] = value.trim();
             }
         }
+
+        // 设置团队数据
+        userData.team = teamData;
 
         // 如果密码为空，不包含在更新数据中
         if (!userData.password) {
@@ -5874,6 +6123,188 @@ function showErrorMessage(message) {
             toast.parentNode.removeChild(toast);
         }
     }, 5000);
+}
+
+// ==================== 团队管理功能 ====================
+
+// 固定的团队列表
+const FIXED_TEAMS = [
+    '实施组', '实施组研发', '新能源', '网络分析', '第三道防线',
+    '智能告警', '操作票及防误', '电量', '消纳', '自动发电控制'
+];
+
+// 加载团队数据
+async function loadTeamsData() {
+    await loadTeamStatistics();
+}
+
+// 加载团队统计数据
+async function loadTeamStatistics() {
+    try {
+        const response = await fetch('/api/team-statistics');
+        const result = await response.json();
+
+        if (result.success) {
+            renderTeamStatistics(result.data);
+            updateTeamsCount(FIXED_TEAMS.length);
+        } else {
+            showToast('加载团队统计失败: ' + result.message, 'error');
+        }
+    } catch (error) {
+        console.error('加载团队统计失败:', error);
+        showToast('加载团队统计失败', 'error');
+    }
+}
+
+// 渲染团队统计
+function renderTeamStatistics(teamStats) {
+    const tbody = document.getElementById('teamStatsTableBody');
+
+    if (!teamStats || Object.keys(teamStats).length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center">暂无统计数据</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = FIXED_TEAMS.map(teamName => {
+        const stats = teamStats[teamName] || {
+            memberCount: 0,
+            productManagers: [],
+            bugStats: { total: 0, pending: 0, processing: 0, resolved: 0 }
+        };
+
+        return `
+            <tr>
+                <td>
+                    <strong>${teamName}</strong>
+                </td>
+                <td>
+                    <span class="badge bg-primary">${stats.memberCount}</span>
+                </td>
+                <td>
+                    ${stats.productManagers.length > 0
+                        ? stats.productManagers.map(pm => `<span class="badge bg-success me-1">${pm}</span>`).join('')
+                        : '<span class="text-muted">未分配</span>'
+                    }
+                </td>
+                <td>
+                    <span class="badge bg-info">${stats.bugStats.total}</span>
+                </td>
+                <td>
+                    <span class="badge bg-warning">${stats.bugStats.pending}</span>
+                </td>
+                <td>
+                    <span class="badge bg-primary">${stats.bugStats.processing}</span>
+                </td>
+                <td>
+                    <span class="badge bg-success">${stats.bugStats.resolved}</span>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// 更新团队数量
+function updateTeamsCount(count) {
+    document.getElementById('teamsCount').textContent = count;
+}
+
+// 加载产品经理列表
+async function loadProductManagers() {
+    try {
+        const response = await fetch('/api/users/product-managers');
+        const result = await response.json();
+
+        if (result.success) {
+            updateProductManagerSelect(result.data);
+        } else {
+            showToast('加载产品经理列表失败: ' + result.message, 'error');
+        }
+    } catch (error) {
+        console.error('加载产品经理列表失败:', error);
+        showToast('加载产品经理列表失败', 'error');
+    }
+}
+
+// 更新产品经理选择框
+function updateProductManagerSelect(managers) {
+    const select = document.getElementById('selectProductManager');
+    select.innerHTML = '<option value="">请选择产品经理</option>' +
+        managers.map(pm => `<option value="${pm.id}">${pm.chinese_name || pm.username}</option>`).join('');
+}
+
+// 加载产品经理分配情况
+async function loadProductManagerAssignments() {
+    try {
+        const response = await fetch('/api/product-manager-assignments');
+        const result = await response.json();
+
+        if (result.success) {
+            renderAssignmentsList(result.data);
+        } else {
+            showToast('加载分配情况失败: ' + result.message, 'error');
+        }
+    } catch (error) {
+        console.error('加载分配情况失败:', error);
+        showToast('加载分配情况失败', 'error');
+    }
+}
+
+// 渲染分配列表
+function renderAssignmentsList(assignments) {
+    const tbody = document.getElementById('assignmentsTableBody');
+
+    if (assignments.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center">暂无分配记录</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = assignments.map(assignment => `
+        <tr>
+            <td>${assignment.manager_name}</td>
+            <td>${assignment.product_line_name}</td>
+            <td>${assignment.assigned_by_name || '系统'}</td>
+            <td>${formatDate(assignment.assigned_at)}</td>
+            <td>
+                <button class="btn btn-sm btn-outline-danger" onclick="removeAssignment(${assignment.id})">
+                    <i class="fas fa-unlink"></i> 移除
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+
+
+// 移除产品经理分配
+async function removeAssignment(id) {
+    if (!confirm('确定要移除这个分配吗？')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/product-manager-assignments/${id}`, {
+            method: 'DELETE'
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showToast('分配移除成功', 'success');
+            loadProductManagerAssignments();
+        } else {
+            showToast('移除失败: ' + result.message, 'error');
+        }
+    } catch (error) {
+        console.error('移除分配失败:', error);
+        showToast('移除分配失败', 'error');
+    }
+}
+
+// 格式化日期
+function formatDate(dateStr) {
+    if (!dateStr) return '-';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('zh-CN');
 }
 
 </script>

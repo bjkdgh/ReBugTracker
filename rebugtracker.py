@@ -133,7 +133,8 @@ def get_current_user():
             'gly': '管理员',
             'fzr': '负责人',
             'zncy': '组内成员',
-            'ssz': '实施组'
+            'ssz': '实施组',
+            'pm': '产品经理'
         }
 
         role_en_lower = role_en.lower() if role_en else None
@@ -190,6 +191,11 @@ def role_required(role):
             # 允许更高权限角色访问
             if required_role == 'zncy' and user_role in ['zncy', 'fzr', 'ssz']:
                 app.logger.debug(f"权限检查通过 - 用户角色 {user_role} 满足要求 {required_role}")
+                return f(*args, **kwargs)
+
+            # 产品经理权限检查
+            if required_role == 'pm' and user_role == 'pm':
+                app.logger.debug(f"权限检查通过 - 产品经理权限")
                 return f(*args, **kwargs)
 
             if required_role == 'fzr' and user_role in ['fzr', 'ssz']:
@@ -251,7 +257,8 @@ def init_db():
                 email CHARACTER VARYING(255),
                 phone CHARACTER VARYING(20),
                 gotify_app_token CHARACTER VARYING(255),
-                gotify_user_id CHARACTER VARYING(255)
+                gotify_user_id CHARACTER VARYING(255),
+                preferences TEXT
             )
         ''')
     else:
@@ -269,7 +276,8 @@ def init_db():
                 email TEXT,
                 phone TEXT,
                 gotify_app_token TEXT,
-                gotify_user_id TEXT
+                gotify_user_id TEXT,
+                preferences TEXT
             )
         ''')
 
@@ -307,6 +315,7 @@ def init_db():
                     WHEN '负责人' THEN 'fzr'
                     WHEN '组内成员' THEN 'zncy'
                     WHEN '实施组' THEN 'ssz'
+                    WHEN '产品经理' THEN 'pm'
                     ELSE role
                 END
         ''')
@@ -319,6 +328,7 @@ def init_db():
                     WHEN '负责人' THEN 'fzr'
                     WHEN '组内成员' THEN 'zncy'
                     WHEN '实施组' THEN 'ssz'
+                    WHEN '产品经理' THEN 'pm'
                     ELSE role
                 END
         ''')
@@ -367,7 +377,7 @@ def init_db():
             DO $$
             BEGIN
                 IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
-                    CREATE TYPE user_role AS ENUM ('管理员', '负责人', '组内成员', '实施组');
+                    CREATE TYPE user_role AS ENUM ('管理员', '负责人', '组内成员', '实施组', '产品经理');
                 END IF;
             END $$;
         ''')
@@ -559,6 +569,47 @@ def init_db():
             )
         ''')
 
+    # 为bugs表添加product_line_id字段（如果不存在）
+    try:
+        if DB_TYPE == 'postgres':
+            c.execute('ALTER TABLE bugs ADD COLUMN IF NOT EXISTS product_line_id INTEGER REFERENCES product_lines(id)')
+        else:
+            # SQLite需要先检查列是否存在
+            c.execute("PRAGMA table_info(bugs)")
+            columns = [info[1] for info in c.fetchall()]
+            if 'product_line_id' not in columns:
+                c.execute('ALTER TABLE bugs ADD COLUMN product_line_id INTEGER')
+    except Exception as e:
+        print(f"添加product_line_id字段时出错: {e}")
+
+    # 插入示例产品线数据
+    try:
+        sample_products = [
+            ('实施组', '实施组产品线'),
+            ('实施组研发', '实施组研发产品线'),
+            ('新能源', '新能源产品线'),
+            ('网络分析', '网络分析产品线'),
+            ('第三道防线', '第三道防线产品线'),
+            ('智能告警', '智能告警产品线'),
+            ('操作票及防误', '操作票及防误产品线'),
+            ('电量', '电量产品线'),
+            ('消纳', '消纳产品线'),
+            ('自动发电控制', '自动发电控制产品线')
+        ]
+
+        for name, description in sample_products:
+            if DB_TYPE == 'postgres':
+                query = "INSERT INTO product_lines (name, description) VALUES (%s, %s) ON CONFLICT (name) DO NOTHING"
+            else:
+                query = "INSERT OR IGNORE INTO product_lines (name, description) VALUES (?, ?)"
+
+            if DB_TYPE == 'postgres':
+                c.execute(query, (name, description))
+            else:
+                c.execute(query, (name, description))
+    except Exception as e:
+        print(f"插入示例产品线数据时出错: {e}")
+
     # 提交事务并关闭连接
     conn.commit()
     conn.close()
@@ -670,7 +721,15 @@ def register():
     email = request.form.get('email')
     phone = request.form.get('phone')
     role = request.form.get('role')
-    team = request.form.get('team')
+
+    # 处理团队选择：产品经理支持多团队，其他角色单团队
+    if role == 'pm':
+        # 产品经理的多团队选择
+        pm_teams = request.form.getlist('pm_teams')
+        team = ','.join(pm_teams) if pm_teams else None  # 多个团队用逗号分隔
+    else:
+        # 其他角色的单团队选择
+        team = request.form.get('team')
 
     # 通知偏好设置
     email_notifications = request.form.get('email_notifications') == 'on'
@@ -690,7 +749,8 @@ def register():
     role_mapping = {
         'ssz': '实施组',
         'fzr': '负责人',
-        'zncy': '组内成员'
+        'zncy': '组内成员',
+        'pm': '产品经理'
     }
     role_cn = role_mapping.get(role, role)
     role_en = role  # 保持原英文缩写
@@ -737,6 +797,9 @@ def register():
         except Exception as e:
             app.logger.warning(f"创建用户通知偏好失败: {e}")
             # 不影响注册流程，只记录警告
+
+        # 产品经理的团队信息已经在上面通过team字段处理了（多个团队用逗号分隔）
+        # 这里不需要额外的产品线分配逻辑，因为团队就是产品线
 
         conn.commit()
         return jsonify({
@@ -828,6 +891,148 @@ def login():
     #
     return jsonify({'success': False, 'message': '无效的请求方法'}), 400
 
+# 问题列表路由
+@app.route('/bugs')
+@login_required
+def bugs_list():
+    """问题列表页面"""
+    user = get_current_user()
+    if not user:
+        return redirect('/login')
+
+    try:
+        conn = get_db_connection()
+        if DB_TYPE == 'postgres':
+            c = conn.cursor(cursor_factory=RealDictCursor)
+        else:
+            c = conn.cursor()
+
+        # 获取筛选参数
+        status_filter = request.args.get('status', '')
+        product_line_filter = request.args.get('product_line', '')
+        type_filter = request.args.get('type', '')
+        page = int(request.args.get('page', 1))
+        per_page = 20
+
+        # 构建查询条件
+        where_conditions = []
+        params = []
+
+        if status_filter:
+            where_conditions.append('b.status = %s')
+            params.append(status_filter)
+
+        if product_line_filter:
+            where_conditions.append('b.product_line_id = %s')
+            params.append(int(product_line_filter))
+
+        if type_filter:
+            where_conditions.append('b.type = %s')
+            params.append(type_filter)
+
+        where_clause = 'WHERE ' + ' AND '.join(where_conditions) if where_conditions else ''
+
+        # 获取总数
+        count_query = f'''
+            SELECT COUNT(*)
+            FROM bugs b
+            LEFT JOIN product_lines pl ON b.product_line_id = pl.id
+            {where_clause}
+        '''
+        query, count_params = adapt_sql(count_query, tuple(params))
+        c.execute(query, count_params)
+        total = c.fetchone()[0]
+
+        # 获取问题列表
+        offset = (page - 1) * per_page
+        bugs_query = f'''
+            SELECT
+                b.id, b.title, b.description, b.status, b.type,
+                b.created_at, b.resolved_at,
+                pl.name as product_line_name,
+                u1.chinese_name as creator_name, u1.username as creator_username,
+                u2.chinese_name as assignee_name, u2.username as assignee_username,
+                b.assigned_to
+            FROM bugs b
+            LEFT JOIN product_lines pl ON b.product_line_id = pl.id
+            LEFT JOIN users u1 ON b.created_by = u1.id
+            LEFT JOIN users u2 ON b.assigned_to = u2.id
+            {where_clause}
+            ORDER BY b.created_at DESC
+            LIMIT %s OFFSET %s
+        '''
+        query, bugs_params = adapt_sql(bugs_query, tuple(params + [per_page, offset]))
+        c.execute(query, bugs_params)
+        bugs = c.fetchall()
+
+        # 获取统计数据
+        stats_query = '''
+            SELECT
+                COUNT(*) as total,
+                SUM(CASE WHEN status = '待处理' THEN 1 ELSE 0 END) as pending,
+                SUM(CASE WHEN status = '处理中' THEN 1 ELSE 0 END) as processing,
+                SUM(CASE WHEN status = '已解决' THEN 1 ELSE 0 END) as resolved,
+                SUM(CASE WHEN status = '已完成' THEN 1 ELSE 0 END) as closed
+            FROM bugs
+        '''
+        query, stats_params = adapt_sql(stats_query, ())
+        c.execute(query, stats_params)
+        stats_result = c.fetchone()
+
+        stats = {
+            'total': stats_result[0] or 0,
+            'pending': stats_result[1] or 0,
+            'processing': stats_result[2] or 0,
+            'resolved': stats_result[3] or 0,
+            'closed': stats_result[4] or 0
+        }
+
+        # 获取产品线列表
+        query, pl_params = adapt_sql('SELECT id, name FROM product_lines WHERE status = %s ORDER BY name', ('active',))
+        c.execute(query, pl_params)
+        product_lines = c.fetchall()
+
+        # 分页信息
+        pagination = {
+            'page': page,
+            'per_page': per_page,
+            'total': total,
+            'pages': (total + per_page - 1) // per_page,
+            'has_prev': page > 1,
+            'has_next': page * per_page < total,
+            'prev_num': page - 1 if page > 1 else None,
+            'next_num': page + 1 if page * per_page < total else None
+        }
+
+        # 添加iter_pages方法
+        def iter_pages(left_edge=2, left_current=2, right_current=3, right_edge=2):
+            last = pagination['pages']
+            for num in range(1, last + 1):
+                if num <= left_edge or \
+                   (pagination['page'] - left_current - 1 < num < pagination['page'] + right_current) or \
+                   num > last - right_edge:
+                    yield num
+
+        pagination['iter_pages'] = iter_pages
+
+        conn.close()
+
+        return render_template('bugs.html',
+                             bugs=bugs,
+                             stats=stats,
+                             product_lines=product_lines,
+                             pagination=pagination,
+                             user=user)
+
+    except Exception as e:
+        print(f"获取问题列表失败: {e}")
+        return render_template('bugs.html',
+                             bugs=[],
+                             stats={'total': 0, 'pending': 0, 'processing': 0, 'resolved': 0, 'closed': 0},
+                             product_lines=[],
+                             pagination=None,
+                             user=user)
+
 # 首页路由
 @app.route('/')
 @login_required
@@ -842,6 +1047,9 @@ def index():
         return redirect('/team-issues')
     elif safe_get(user, 'role_en') == 'gly':
         return redirect('/admin')
+    elif safe_get(user, 'role_en') == 'pm':
+        # 产品经理直接跳转到产品经理专属页面
+        return redirect('/product-manager')
     # 实施组和负责人等角色继续执行后面的代码（渲染首页）
 
     # 确保数据库连接使用UTF-8编码
@@ -855,10 +1063,11 @@ def index():
         # 负责人看到自己团队的所有问题和待分配问题
         query = '''
             SELECT b.*, COALESCE(u1.chinese_name, u1.username) as creator_name, COALESCE(u2.chinese_name, u2.username) as assignee_name,
-                   b.created_at as local_created_at, b.resolved_at as local_resolved_at
+                   b.created_at as local_created_at, b.resolved_at as local_resolved_at, pl.name as product_line_name
             FROM bugs b
             LEFT JOIN users u1 ON b.created_by = u1.id
             LEFT JOIN users u2 ON b.assigned_to = u2.id
+            LEFT JOIN product_lines pl ON b.product_line_id = pl.id
             WHERE (b.assigned_to IS NULL OR u2.team = %s) OR u1.team = %s
             ORDER BY b.created_at DESC
         '''
@@ -868,29 +1077,57 @@ def index():
         # 实施组只能看到自己创建的问题
         query = '''
             SELECT b.*, COALESCE(u1.chinese_name, u1.username) as creator_name, COALESCE(u2.chinese_name, u2.username) as assignee_name,
-                   b.created_at as local_created_at, b.resolved_at as local_resolved_at
+                   b.created_at as local_created_at, b.resolved_at as local_resolved_at, pl.name as product_line_name
             FROM bugs b
             LEFT JOIN users u1 ON b.created_by = u1.id
             LEFT JOIN users u2 ON b.assigned_to = u2.id
+            LEFT JOIN product_lines pl ON b.product_line_id = pl.id
             WHERE b.created_by = %s
             ORDER BY b.created_at DESC
         '''
         adapted_query, adapted_params = adapt_sql(query, (user['id'],))
         c.execute(adapted_query, adapted_params)
+    elif user['role_en'] == 'pm':
+        # 产品经理看到自己团队相关的问题（通过assigned_to联合users表的team字段）
+        user_teams = user.get('team', '')
+        if user_teams:
+            team_names = [team.strip() for team in user_teams.split(',') if team.strip()]
+            placeholders = ','.join(['%s'] * len(team_names))
+            query = f'''
+                SELECT b.*, COALESCE(u1.chinese_name, u1.username) as creator_name, COALESCE(u2.chinese_name, u2.username) as assignee_name,
+                       b.created_at as local_created_at, b.resolved_at as local_resolved_at, u2.team as product_line_name
+                FROM bugs b
+                LEFT JOIN users u1 ON b.created_by = u1.id
+                LEFT JOIN users u2 ON b.assigned_to = u2.id
+                WHERE u2.team IN ({placeholders}) OR b.created_by = %s
+                ORDER BY b.created_at DESC
+            '''
+            # 参数包括团队名称和当前用户ID（显示自己创建的问题）
+            params = tuple(team_names) + (user['id'],)
+            adapted_query, adapted_params = adapt_sql(query, params)
+            c.execute(adapted_query, adapted_params)
+        else:
+            # 如果没有团队信息，显示空结果
+            bugs = []
     else:
         # 其他角色（主要是管理员）看到所有问题
         query = '''
             SELECT b.*, COALESCE(u1.chinese_name, u1.username) as creator_name, COALESCE(u2.chinese_name, u2.username) as assignee_name,
-                   b.created_at as local_created_at, b.resolved_at as local_resolved_at
+                   b.created_at as local_created_at, b.resolved_at as local_resolved_at, pl.name as product_line_name
             FROM bugs b
             LEFT JOIN users u1 ON b.created_by = u1.id
             LEFT JOIN users u2 ON b.assigned_to = u2.id
+            LEFT JOIN product_lines pl ON b.product_line_id = pl.id
             ORDER BY b.created_at DESC
         '''
         adapted_query, adapted_params = adapt_sql(query, ())
         c.execute(adapted_query, adapted_params)
 
-    bugs = c.fetchall()
+    # 获取bugs数据（如果还没有设置的话）
+    if 'bugs' not in locals():
+        bugs = c.fetchall()
+    elif bugs != []:  # 如果bugs不是空列表，说明需要从数据库获取
+        bugs = c.fetchall()
 
     # 格式化问题创建时间和解决时间
     formatted_bugs = []
@@ -913,6 +1150,7 @@ def index():
             bug_dict['resolved_at'] = '--'
 
         formatted_bugs.append(bug_dict)
+
     conn.close()
     return render_template('index.html', bugs=bugs, user=user)
 
@@ -1066,7 +1304,8 @@ def user_detail(user_id):
             '管理员': 'gly',
             '负责人': 'fzr',
             '实施组': 'ssz',
-            '组内成员': 'zncy'
+            '组内成员': 'zncy',
+            '产品经理': 'pm'
         }
         role_en = role_mapping.get(role, 'zncy')
 
@@ -1205,6 +1444,126 @@ def admin_bugs():
     conn.close()
     return jsonify(bugs)
 
+# 用户设置页面路由
+@app.route('/user-settings')
+@login_required
+def user_settings():
+    """用户设置页面"""
+    user = get_current_user()
+    if not user:
+        return redirect('/login')
+
+    return render_template('user_settings.html', user=user)
+
+# 用户修改密码API
+@app.route('/api/user/change-password', methods=['POST'])
+@login_required
+def change_password():
+    """修改用户密码"""
+    try:
+        user = get_current_user()
+        data = request.get_json()
+
+        current_password = data.get('current_password')
+        new_password = data.get('new_password')
+
+        if not current_password or not new_password:
+            return jsonify({'success': False, 'message': '密码不能为空'})
+
+        if len(new_password) < 6:
+            return jsonify({'success': False, 'message': '新密码长度至少6位'})
+
+        conn = get_db_connection()
+        if DB_TYPE == 'postgres':
+            c = conn.cursor(cursor_factory=DictCursor)
+        else:
+            c = conn.cursor()
+
+        # 验证当前密码
+        query, params = adapt_sql('SELECT password FROM users WHERE id = %s', (user['id'],))
+        c.execute(query, params)
+        result = c.fetchone()
+
+        if not result:
+            conn.close()
+            return jsonify({'success': False, 'message': '用户不存在'})
+
+        stored_password = result[0] if not isinstance(result, dict) else result['password']
+
+        if not check_password_hash(stored_password, current_password):
+            conn.close()
+            return jsonify({'success': False, 'message': '当前密码错误'})
+
+        # 更新密码
+        hashed_password = generate_password_hash(new_password)
+        query, params = adapt_sql('UPDATE users SET password = %s WHERE id = %s', (hashed_password, user['id']))
+        c.execute(query, params)
+        conn.commit()
+        conn.close()
+
+        return jsonify({'success': True, 'message': '密码修改成功'})
+
+    except Exception as e:
+        app.logger.error(f"修改密码失败: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
+# 用户偏好设置API
+@app.route('/api/user/preferences', methods=['GET', 'POST'])
+@login_required
+def user_preferences():
+    """获取或设置用户偏好"""
+    try:
+        user = get_current_user()
+
+        if request.method == 'GET':
+            # 获取用户偏好设置
+            conn = get_db_connection()
+            if DB_TYPE == 'postgres':
+                c = conn.cursor(cursor_factory=DictCursor)
+            else:
+                c = conn.cursor()
+
+            query, params = adapt_sql('SELECT preferences FROM users WHERE id = %s', (user['id'],))
+            c.execute(query, params)
+            result = c.fetchone()
+            conn.close()
+
+            if result:
+                preferences_str = result[0] if not isinstance(result, dict) else result['preferences']
+                if preferences_str:
+                    import json
+                    preferences = json.loads(preferences_str)
+                else:
+                    preferences = {}
+            else:
+                preferences = {}
+
+            return jsonify({'success': True, 'data': preferences})
+
+        else:  # POST
+            # 设置用户偏好
+            data = request.get_json()
+
+            conn = get_db_connection()
+            if DB_TYPE == 'postgres':
+                c = conn.cursor(cursor_factory=DictCursor)
+            else:
+                c = conn.cursor()
+
+            import json
+            preferences_str = json.dumps(data)
+
+            query, params = adapt_sql('UPDATE users SET preferences = %s WHERE id = %s', (preferences_str, user['id']))
+            c.execute(query, params)
+            conn.commit()
+            conn.close()
+
+            return jsonify({'success': True, 'message': '设置保存成功'})
+
+    except Exception as e:
+        app.logger.error(f"用户偏好设置操作失败: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
 @app.route('/admin')
 @login_required
 @role_required('gly')
@@ -1270,6 +1629,251 @@ def admin():
     conn.close()
 
     return render_template('admin.html', users=users, bugs=formatted_bugs, projects=projects, user=user, total_users=total_users)
+
+@app.route('/product-manager')
+@login_required
+@role_required('pm')
+def product_manager_dashboard():
+    """产品经理专用页面"""
+    user = get_current_user()
+    if not user:
+        return redirect('/login')
+
+    return render_template('product_manager.html', user=user)
+
+@app.route('/api/product-manager/my-teams')
+@login_required
+@role_required('pm')
+def get_my_teams():
+    """获取当前产品经理负责的团队"""
+    try:
+        user = get_current_user()
+
+        # 获取用户的团队信息
+        user_teams = user.get('team', '')
+        if not user_teams:
+            return jsonify({'success': True, 'data': []})
+
+        # 解析团队列表
+        team_names = [team.strip() for team in user_teams.split(',') if team.strip()]
+
+        conn = get_db_connection()
+        if DB_TYPE == 'postgres':
+            c = conn.cursor(cursor_factory=DictCursor)
+        else:
+            c = conn.cursor()
+
+        result = []
+        for team_name in team_names:
+            # 统计团队成员数量
+            query, params = adapt_sql('''
+                SELECT COUNT(*) as member_count
+                FROM users
+                WHERE team = %s OR team LIKE %s OR team LIKE %s OR team LIKE %s
+            ''', (team_name, f'{team_name},%', f'%,{team_name},%', f'%,{team_name}'))
+            c.execute(query, params)
+            member_result = c.fetchone()
+            member_count = member_result[0] if not isinstance(member_result, dict) else member_result['member_count']
+
+            # 统计团队Bug数量（通过assigned_to联合users表）
+            query, params = adapt_sql('''
+                SELECT
+                    COUNT(*) as total,
+                    SUM(CASE WHEN b.status = '待处理' THEN 1 ELSE 0 END) as pending,
+                    SUM(CASE WHEN b.status = '已分配' THEN 1 ELSE 0 END) as assigned,
+                    SUM(CASE WHEN b.status = '处理中' THEN 1 ELSE 0 END) as processing,
+                    SUM(CASE WHEN b.status = '已解决' THEN 1 ELSE 0 END) as resolved,
+                    SUM(CASE WHEN b.status = '已完成' THEN 1 ELSE 0 END) as closed
+                FROM bugs b
+                LEFT JOIN users u ON b.assigned_to = u.id
+                WHERE u.team = %s OR b.created_by = %s
+            ''', (team_name, user['id']))
+            c.execute(query, params)
+            bug_result = c.fetchone()
+
+            if isinstance(bug_result, dict):
+                bug_stats = {
+                    'total': bug_result['total'] or 0,
+                    'pending': bug_result['pending'] or 0,
+                    'assigned': bug_result['assigned'] or 0,
+                    'processing': bug_result['processing'] or 0,
+                    'resolved': bug_result['resolved'] or 0,
+                    'closed': bug_result['closed'] or 0
+                }
+            else:
+                bug_stats = {
+                    'total': bug_result[0] or 0,
+                    'pending': bug_result[1] or 0,
+                    'assigned': bug_result[2] or 0,
+                    'processing': bug_result[3] or 0,
+                    'resolved': bug_result[4] or 0,
+                    'closed': bug_result[5] or 0
+                }
+
+            result.append({
+                'name': team_name,
+                'member_count': member_count,
+                'bug_stats': bug_stats
+            })
+
+        conn.close()
+        return jsonify({'success': True, 'data': result})
+
+    except Exception as e:
+        app.logger.error(f"获取产品经理团队失败: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/product-manager/bugs')
+@login_required
+@role_required('pm')
+def get_product_manager_bugs():
+    """获取产品经理负责团队的所有bugs"""
+    try:
+        user = get_current_user()
+
+        # 获取用户的团队信息
+        user_teams = user.get('team', '')
+        if not user_teams:
+            return jsonify({'success': True, 'data': []})
+
+        # 解析团队列表
+        team_names = [team.strip() for team in user_teams.split(',') if team.strip()]
+
+        conn = get_db_connection()
+        if DB_TYPE == 'postgres':
+            c = conn.cursor(cursor_factory=DictCursor)
+        else:
+            c = conn.cursor()
+
+        # 构建IN查询的占位符
+        placeholders = ','.join(['%s'] * len(team_names))
+
+        query, params = adapt_sql(f'''
+            SELECT b.*, u2.team as product_line_name,
+                   COALESCE(u1.chinese_name, u1.username) as creator_name,
+                   COALESCE(u2.chinese_name, u2.username) as assignee_name
+            FROM bugs b
+            LEFT JOIN users u1 ON b.created_by = u1.id
+            LEFT JOIN users u2 ON b.assigned_to = u2.id
+            WHERE u2.team IN ({placeholders}) OR b.created_by = %s
+            ORDER BY u2.team, b.created_at DESC
+        ''', tuple(team_names) + (user['id'],))
+
+        c.execute(query, params)
+        bugs = c.fetchall()
+        conn.close()
+
+        # 转换为字典列表并格式化时间
+        result = []
+        for bug in bugs:
+            if isinstance(bug, dict):
+                bug_dict = dict(bug)
+            else:
+                bug_dict = {
+                    'id': bug[0],
+                    'title': bug[1],
+                    'description': bug[2],
+                    'status': bug[3],
+                    'type': bug[4],
+                    'assigned_to': bug[5],
+                    'created_by': bug[6],
+                    'project': bug[7],
+                    'created_at': bug[8],
+                    'resolved_at': bug[9],
+                    'resolution': bug[10],
+                    'image_path': bug[11],
+                    'product_line_id': bug[12],
+                    'product_line_name': bug[13],
+                    'creator_name': bug[14],
+                    'assignee_name': bug[15]
+                }
+
+            # 格式化时间
+            if bug_dict.get('created_at'):
+                if isinstance(bug_dict['created_at'], str):
+                    bug_dict['created_at'] = bug_dict['created_at']
+                else:
+                    bug_dict['created_at'] = bug_dict['created_at'].strftime('%Y-%m-%d %H:%M:%S')
+
+            if bug_dict.get('resolved_at'):
+                if isinstance(bug_dict['resolved_at'], str):
+                    bug_dict['resolved_at'] = bug_dict['resolved_at']
+                else:
+                    bug_dict['resolved_at'] = bug_dict['resolved_at'].strftime('%Y-%m-%d %H:%M:%S')
+
+            result.append(bug_dict)
+
+        return jsonify({'success': True, 'data': result})
+
+    except Exception as e:
+        app.logger.error(f"获取产品经理bugs失败: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/product-manager/statistics')
+@login_required
+@role_required('pm')
+def get_product_manager_statistics():
+    """获取产品经理的统计数据"""
+    try:
+        user = get_current_user()
+
+        # 获取用户的团队信息
+        user_teams = user.get('team', '')
+        if not user_teams:
+            return jsonify({'success': True, 'data': {
+                'total': 0, 'pending': 0, 'processing': 0, 'resolved': 0, 'closed': 0
+            }})
+
+        # 解析团队列表
+        team_names = [team.strip() for team in user_teams.split(',') if team.strip()]
+
+        conn = get_db_connection()
+        if DB_TYPE == 'postgres':
+            c = conn.cursor(cursor_factory=DictCursor)
+        else:
+            c = conn.cursor()
+
+        # 构建IN查询的占位符
+        placeholders = ','.join(['%s'] * len(team_names))
+
+        query, params = adapt_sql(f'''
+            SELECT
+                COUNT(*) as total,
+                SUM(CASE WHEN b.status = '待处理' THEN 1 ELSE 0 END) as pending,
+                SUM(CASE WHEN b.status = '处理中' THEN 1 ELSE 0 END) as processing,
+                SUM(CASE WHEN b.status = '已解决' THEN 1 ELSE 0 END) as resolved,
+                SUM(CASE WHEN b.status = '已完成' THEN 1 ELSE 0 END) as closed
+            FROM bugs b
+            LEFT JOIN users u ON b.assigned_to = u.id
+            WHERE u.team IN ({placeholders}) OR b.created_by = %s
+        ''', tuple(team_names) + (user['id'],))
+
+        c.execute(query, params)
+        result = c.fetchone()
+        conn.close()
+
+        if isinstance(result, dict):
+            stats = {
+                'total': result['total'] or 0,
+                'pending': result['pending'] or 0,
+                'processing': result['processing'] or 0,
+                'resolved': result['resolved'] or 0,
+                'closed': result['closed'] or 0
+            }
+        else:
+            stats = {
+                'total': result[0] or 0,
+                'pending': result[1] or 0,
+                'processing': result[2] or 0,
+                'resolved': result[3] or 0,
+                'closed': result[4] or 0
+            }
+
+        return jsonify({'success': True, 'data': stats})
+
+    except Exception as e:
+        app.logger.error(f"获取产品经理统计数据失败: {e}")
+        return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/team-issues')
 @login_required
@@ -1450,6 +2054,13 @@ def submit_bug_handler(user):
         manager_id = manager['id'] if DB_TYPE == 'postgres' else manager[0]
         project_id = request.form.get('project', '')
         bug_type = request.form.get('type', 'bug')  # 获取类型，默认为bug
+        product_line_id = request.form.get('product_line')  # 获取产品线ID
+
+        # 如果product_line_id为空字符串，转换为None
+        if product_line_id == '':
+            product_line_id = None
+        elif product_line_id:
+            product_line_id = int(product_line_id)
 
         # 获取当前时间，精确到秒
         from datetime import datetime
@@ -1457,17 +2068,17 @@ def submit_bug_handler(user):
 
         if DB_TYPE == 'postgres':
             query, params = adapt_sql('''
-                INSERT INTO bugs (title, description, created_by, project, image_path, assigned_to, status, type, created_at)
-                VALUES (%s, %s, %s, %s, %s, %s, '待处理', %s, %s)
+                INSERT INTO bugs (title, description, created_by, project, image_path, assigned_to, status, type, created_at, product_line_id)
+                VALUES (%s, %s, %s, %s, %s, %s, '待处理', %s, %s, %s)
                 RETURNING id
-            ''', (title, description, created_by, project_id, image_path, manager_id, bug_type, current_time))
+            ''', (title, description, created_by, project_id, image_path, manager_id, bug_type, current_time, product_line_id))
             c.execute(query, params)
             bug_id = c.fetchone()['id']
         else:
             query, params = adapt_sql('''
-                INSERT INTO bugs (title, description, created_by, project, image_path, assigned_to, status, type, created_at)
-                VALUES (%s, %s, %s, %s, %s, %s, '待处理', %s, %s)
-            ''', (title, description, created_by, project_id, image_path, manager_id, bug_type, current_time))
+                INSERT INTO bugs (title, description, created_by, project, image_path, assigned_to, status, type, created_at, product_line_id)
+                VALUES (%s, %s, %s, %s, %s, %s, '待处理', %s, %s, %s)
+            ''', (title, description, created_by, project_id, image_path, manager_id, bug_type, current_time, product_line_id))
             c.execute(query, params)
             bug_id = c.lastrowid
 
@@ -1487,7 +2098,8 @@ def submit_bug_handler(user):
                     'creator_name': user['chinese_name'] or user['username'],
                     'created_time': datetime.now().isoformat(),
                     'creator_id': created_by,
-                    'assigned_manager_id': manager_id
+                    'assigned_manager_id': manager_id,
+                    'product_line_id': product_line_id
                 }
 
                 simple_notifier.send_flow_notification('bug_created', notification_data)
@@ -3305,6 +3917,8 @@ def uploaded_file(filename):
     return send_from_directory(upload_folder, filename)
 
 # 调试路由：显示上传目录信息
+
+
 @app.route('/debug/uploads')
 def debug_uploads():
     """调试上传目录信息"""
@@ -3332,6 +3946,149 @@ def debug_uploads():
             info['error'] = str(e)
 
     return jsonify(info)
+
+
+
+@app.route('/api/users/product-managers', methods=['GET'])
+@login_required
+@role_required('gly')
+def get_product_managers():
+    """获取所有产品经理用户"""
+    try:
+        conn = get_db_connection()
+        if DB_TYPE == 'postgres':
+            c = conn.cursor(cursor_factory=DictCursor)
+        else:
+            c = conn.cursor()
+
+        query, params = adapt_sql('''
+            SELECT id, username, chinese_name, email, phone
+            FROM users
+            WHERE role_en = 'pm'
+            ORDER BY chinese_name, username
+        ''', ())
+
+        c.execute(query, params)
+        managers = c.fetchall()
+        conn.close()
+
+        # 转换为字典列表
+        result = []
+        for manager in managers:
+            if isinstance(manager, dict):
+                result.append(dict(manager))
+            else:
+                result.append({
+                    'id': manager[0],
+                    'username': manager[1],
+                    'chinese_name': manager[2],
+                    'email': manager[3],
+                    'phone': manager[4]
+                })
+
+        return jsonify({'success': True, 'data': result})
+
+    except Exception as e:
+        app.logger.error(f"获取产品经理列表失败: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/team-statistics', methods=['GET'])
+@login_required
+@role_required('gly')
+def get_team_statistics():
+    """获取团队统计数据"""
+    try:
+        # 固定的团队列表
+        fixed_teams = [
+            '实施组', '实施组研发', '新能源', '网络分析', '第三道防线',
+            '智能告警', '操作票及防误', '电量', '消纳', '自动发电控制'
+        ]
+
+        conn = get_db_connection()
+        if DB_TYPE == 'postgres':
+            c = conn.cursor(cursor_factory=DictCursor)
+        else:
+            c = conn.cursor()
+
+        team_stats = {}
+
+        for team_name in fixed_teams:
+            # 统计团队成员数量（包括多团队的产品经理）
+            query, params = adapt_sql('''
+                SELECT COUNT(*) as member_count
+                FROM users
+                WHERE team = %s OR team LIKE %s OR team LIKE %s OR team LIKE %s
+            ''', (team_name, f'{team_name},%', f'%,{team_name},%', f'%,{team_name}'))
+            c.execute(query, params)
+            member_count = c.fetchone()
+            if isinstance(member_count, dict):
+                member_count = member_count['member_count']
+            else:
+                member_count = member_count[0]
+
+            # 获取产品经理列表
+            query, params = adapt_sql('''
+                SELECT chinese_name
+                FROM users
+                WHERE role = '产品经理' AND (team = %s OR team LIKE %s OR team LIKE %s OR team LIKE %s)
+            ''', (team_name, f'{team_name},%', f'%,{team_name},%', f'%,{team_name}'))
+            c.execute(query, params)
+            pm_results = c.fetchall()
+            product_managers = []
+            for pm in pm_results:
+                if isinstance(pm, dict):
+                    product_managers.append(pm['chinese_name'])
+                else:
+                    product_managers.append(pm[0])
+
+            # 统计Bug数量 - 通过assigned_to联合users表的team字段
+            query, params = adapt_sql('''
+                SELECT
+                    COUNT(*) as total,
+                    SUM(CASE WHEN b.status = '待处理' THEN 1 ELSE 0 END) as pending,
+                    SUM(CASE WHEN b.status IN ('已分配', '处理中') THEN 1 ELSE 0 END) as processing,
+                    SUM(CASE WHEN b.status = '已解决' THEN 1 ELSE 0 END) as resolved
+                FROM bugs b
+                LEFT JOIN users u ON b.assigned_to = u.id
+                WHERE u.team = %s
+            ''', (team_name,))
+            c.execute(query, params)
+            bug_stats = c.fetchone()
+
+            if isinstance(bug_stats, dict):
+                total = bug_stats['total'] or 0
+                pending = bug_stats['pending'] or 0
+                processing = bug_stats['processing'] or 0
+                resolved = bug_stats['resolved'] or 0
+            else:
+                total = bug_stats[0] or 0
+                pending = bug_stats[1] or 0
+                processing = bug_stats[2] or 0
+                resolved = bug_stats[3] or 0
+
+            team_stats[team_name] = {
+                'memberCount': member_count,
+                'productManagers': product_managers,
+                'bugStats': {
+                    'total': total,
+                    'pending': pending,
+                    'processing': processing,
+                    'resolved': resolved
+                }
+            }
+
+        conn.close()
+
+        return jsonify({
+            'success': True,
+            'data': team_stats
+        })
+    except Exception as e:
+        app.logger.error(f'获取团队统计数据失败: {e}')
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
 
 @app.route('/.well-known/appspecific/com.chrome.devtools.json')
 def handle_chrome_devtools():
@@ -3447,15 +4204,7 @@ def check_port_available(host, port):
         print(f"继续启动应用程序...")
         return True
 
-# 用户设置相关路由
-@app.route('/user/settings')
-@login_required
-def user_settings():
-    """用户设置页面"""
-    user = get_current_user()
-    if not user:
-        return redirect('/login')
-    return render_template('user_settings.html', user=user)
+# 用户设置相关路由已在上面定义
 
 @app.route('/user/email-settings', methods=['GET', 'POST'])
 @login_required
