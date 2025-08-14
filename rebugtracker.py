@@ -488,6 +488,33 @@ def init_db():
             )
         ''')
 
+    # 创建产品线表
+    if DB_TYPE == 'postgres':
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS product_lines (
+                id SERIAL PRIMARY KEY,
+                name TEXT NOT NULL UNIQUE,
+                description TEXT,
+                status TEXT DEFAULT 'active',
+                created_by INTEGER,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+    else:
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS product_lines (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                description TEXT,
+                status TEXT DEFAULT 'active',
+                created_by INTEGER,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (created_by) REFERENCES users (id)
+            )
+        ''')
+
     # 创建系统配置表
     if DB_TYPE == 'postgres':
         # PostgreSQL建表语句 - 与当前数据库结构保持一致（暂不添加外键约束）
