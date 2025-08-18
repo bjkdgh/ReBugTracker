@@ -918,147 +918,147 @@ def login():
     #
     return jsonify({'success': False, 'message': '无效的请求方法'}), 400
 
-# 问题列表路由
-@app.route('/bugs')
-@login_required
-def bugs_list():
-    """问题列表页面"""
-    user = get_current_user()
-    if not user:
-        return redirect('/login')
-
-    try:
-        conn = get_db_connection()
-        if DB_TYPE == 'postgres':
-            c = conn.cursor(cursor_factory=RealDictCursor)
-        else:
-            c = conn.cursor()
-
-        # 获取筛选参数
-        status_filter = request.args.get('status', '')
-        product_line_filter = request.args.get('product_line', '')
-        type_filter = request.args.get('type', '')
-        page = int(request.args.get('page', 1))
-        per_page = 20
-
-        # 构建查询条件
-        where_conditions = []
-        params = []
-
-        if status_filter:
-            where_conditions.append('b.status = %s')
-            params.append(status_filter)
-
-        if product_line_filter:
-            where_conditions.append('b.product_line_id = %s')
-            params.append(int(product_line_filter))
-
-        if type_filter:
-            where_conditions.append('b.type = %s')
-            params.append(type_filter)
-
-        where_clause = 'WHERE ' + ' AND '.join(where_conditions) if where_conditions else ''
-
-        # 获取总数
-        count_query = f'''
-            SELECT COUNT(*)
-            FROM bugs b
-            LEFT JOIN product_lines pl ON b.product_line_id = pl.id
-            {where_clause}
-        '''
-        query, count_params = adapt_sql(count_query, tuple(params))
-        c.execute(query, count_params)
-        total = c.fetchone()[0]
-
-        # 获取问题列表
-        offset = (page - 1) * per_page
-        bugs_query = f'''
-            SELECT
-                b.id, b.title, b.description, b.status, b.type,
-                b.created_at, b.resolved_at,
-                pl.name as product_line_name,
-                u1.chinese_name as creator_name, u1.username as creator_username,
-                u2.chinese_name as assignee_name, u2.username as assignee_username,
-                b.assigned_to
-            FROM bugs b
-            LEFT JOIN product_lines pl ON b.product_line_id = pl.id
-            LEFT JOIN users u1 ON b.created_by = u1.id
-            LEFT JOIN users u2 ON b.assigned_to = u2.id
-            {where_clause}
-            ORDER BY b.created_at DESC
-            LIMIT %s OFFSET %s
-        '''
-        query, bugs_params = adapt_sql(bugs_query, tuple(params + [per_page, offset]))
-        c.execute(query, bugs_params)
-        bugs = c.fetchall()
-
-        # 获取统计数据
-        stats_query = '''
-            SELECT
-                COUNT(*) as total,
-                SUM(CASE WHEN status = '待处理' THEN 1 ELSE 0 END) as pending,
-                SUM(CASE WHEN status = '处理中' THEN 1 ELSE 0 END) as processing,
-                SUM(CASE WHEN status = '已解决' THEN 1 ELSE 0 END) as resolved,
-                SUM(CASE WHEN status = '已完成' THEN 1 ELSE 0 END) as closed
-            FROM bugs
-        '''
-        query, stats_params = adapt_sql(stats_query, ())
-        c.execute(query, stats_params)
-        stats_result = c.fetchone()
-
-        stats = {
-            'total': stats_result[0] or 0,
-            'pending': stats_result[1] or 0,
-            'processing': stats_result[2] or 0,
-            'resolved': stats_result[3] or 0,
-            'closed': stats_result[4] or 0
-        }
-
-        # 获取产品线列表
-        query, pl_params = adapt_sql('SELECT id, name FROM product_lines WHERE status = %s ORDER BY name', ('active',))
-        c.execute(query, pl_params)
-        product_lines = c.fetchall()
-
-        # 分页信息
-        pagination = {
-            'page': page,
-            'per_page': per_page,
-            'total': total,
-            'pages': (total + per_page - 1) // per_page,
-            'has_prev': page > 1,
-            'has_next': page * per_page < total,
-            'prev_num': page - 1 if page > 1 else None,
-            'next_num': page + 1 if page * per_page < total else None
-        }
-
-        # 添加iter_pages方法
-        def iter_pages(left_edge=2, left_current=2, right_current=3, right_edge=2):
-            last = pagination['pages']
-            for num in range(1, last + 1):
-                if num <= left_edge or \
-                   (pagination['page'] - left_current - 1 < num < pagination['page'] + right_current) or \
-                   num > last - right_edge:
-                    yield num
-
-        pagination['iter_pages'] = iter_pages
-
-        conn.close()
-
-        return render_template('bugs.html',
-                             bugs=bugs,
-                             stats=stats,
-                             product_lines=product_lines,
-                             pagination=pagination,
-                             user=user)
-
-    except Exception as e:
-        print(f"获取问题列表失败: {e}")
-        return render_template('bugs.html',
-                             bugs=[],
-                             stats={'total': 0, 'pending': 0, 'processing': 0, 'resolved': 0, 'closed': 0},
-                             product_lines=[],
-                             pagination=None,
-                             user=user)
+# 问题列表路由 (已废弃 - 缺少对应的bugs.html模板)
+# @app.route('/bugs')
+# @login_required
+# def bugs_list():
+#     """问题列表页面"""
+#     user = get_current_user()
+#     if not user:
+#         return redirect('/login')
+# 
+#     try:
+#         conn = get_db_connection()
+#         if DB_TYPE == 'postgres':
+#             c = conn.cursor(cursor_factory=RealDictCursor)
+#         else:
+#             c = conn.cursor()
+# 
+#         # 获取筛选参数
+#         status_filter = request.args.get('status', '')
+#         product_line_filter = request.args.get('product_line', '')
+#         type_filter = request.args.get('type', '')
+#         page = int(request.args.get('page', 1))
+#         per_page = 20
+# 
+#         # 构建查询条件
+#         where_conditions = []
+#         params = []
+# 
+#         if status_filter:
+#             where_conditions.append('b.status = %s')
+#             params.append(status_filter)
+# 
+#         if product_line_filter:
+#             where_conditions.append('b.product_line_id = %s')
+#             params.append(int(product_line_filter))
+# 
+#         if type_filter:
+#             where_conditions.append('b.type = %s')
+#             params.append(type_filter)
+# 
+#         where_clause = 'WHERE ' + ' AND '.join(where_conditions) if where_conditions else ''
+# 
+#         # 获取总数
+#         count_query = f'''
+#             SELECT COUNT(*)
+#             FROM bugs b
+#             LEFT JOIN product_lines pl ON b.product_line_id = pl.id
+#             {where_clause}
+#         '''
+#         query, count_params = adapt_sql(count_query, tuple(params))
+#         c.execute(query, count_params)
+#         total = c.fetchone()[0]
+# 
+#         # 获取问题列表
+#         offset = (page - 1) * per_page
+#         bugs_query = f'''
+#             SELECT
+#                 b.id, b.title, b.description, b.status, b.type,
+#                 b.created_at, b.resolved_at,
+#                 pl.name as product_line_name,
+#                 u1.chinese_name as creator_name, u1.username as creator_username,
+#                 u2.chinese_name as assignee_name, u2.username as assignee_username,
+#                 b.assigned_to
+#             FROM bugs b
+#             LEFT JOIN product_lines pl ON b.product_line_id = pl.id
+#             LEFT JOIN users u1 ON b.created_by = u1.id
+#             LEFT JOIN users u2 ON b.assigned_to = u2.id
+#             {where_clause}
+#             ORDER BY b.created_at DESC
+#             LIMIT %s OFFSET %s
+#         '''
+#         query, bugs_params = adapt_sql(bugs_query, tuple(params + [per_page, offset]))
+#         c.execute(query, bugs_params)
+#         bugs = c.fetchall()
+# 
+#         # 获取统计数据
+#         stats_query = '''
+#             SELECT
+#                 COUNT(*) as total,
+#                 SUM(CASE WHEN status = '待处理' THEN 1 ELSE 0 END) as pending,
+#                 SUM(CASE WHEN status = '处理中' THEN 1 ELSE 0 END) as processing,
+#                 SUM(CASE WHEN status = '已解决' THEN 1 ELSE 0 END) as resolved,
+#                 SUM(CASE WHEN status = '已完成' THEN 1 ELSE 0 END) as closed
+#             FROM bugs
+#         '''
+#         query, stats_params = adapt_sql(stats_query, ())
+#         c.execute(query, stats_params)
+#         stats_result = c.fetchone()
+# 
+#         stats = {
+#             'total': stats_result[0] or 0,
+#             'pending': stats_result[1] or 0,
+#             'processing': stats_result[2] or 0,
+#             'resolved': stats_result[3] or 0,
+#             'closed': stats_result[4] or 0
+#         }
+# 
+#         # 获取产品线列表
+#         query, pl_params = adapt_sql('SELECT id, name FROM product_lines WHERE status = %s ORDER BY name', ('active',))
+#         c.execute(query, pl_params)
+#         product_lines = c.fetchall()
+# 
+#         # 分页信息
+#         pagination = {
+#             'page': page,
+#             'per_page': per_page,
+#             'total': total,
+#             'pages': (total + per_page - 1) // per_page,
+#             'has_prev': page > 1,
+#             'has_next': page * per_page < total,
+#             'prev_num': page - 1 if page > 1 else None,
+#             'next_num': page + 1 if page * per_page < total else None
+#         }
+# 
+#         # 添加iter_pages方法
+#         def iter_pages(left_edge=2, left_current=2, right_current=3, right_edge=2):
+#             last = pagination['pages']
+#             for num in range(1, last + 1):
+#                 if num <= left_edge or \
+#                    (pagination['page'] - left_current - 1 < num < pagination['page'] + right_current) or \
+#                    num > last - right_edge:
+#                     yield num
+# 
+#         pagination['iter_pages'] = iter_pages
+# 
+#         conn.close()
+# 
+#         return render_template('bugs.html',
+#                              bugs=bugs,
+#                              stats=stats,
+#                              product_lines=product_lines,
+#                              pagination=pagination,
+#                              user=user)
+# 
+#     except Exception as e:
+#         print(f"获取问题列表失败: {e}")
+#         return render_template('bugs.html',
+#                              bugs=[],
+#                              stats={'total': 0, 'pending': 0, 'processing': 0, 'resolved': 0, 'closed': 0},
+#                              product_lines=[],
+#                              pagination=None,
+#                              user=user)
 
 # 首页路由
 @app.route('/')
@@ -5483,7 +5483,3 @@ if __name__ == '__main__':
             os.kill(os.getpid(), signal.SIGTERM)
         except:
             pass
-
-
-
-
