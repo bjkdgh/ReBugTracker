@@ -292,9 +292,7 @@
                             <input type="text" id="project-search" class="form-control-modern" placeholder="输入项目名称或关键字搜索..." autocomplete="off" required data-validation-target="project">
                             <select id="project" name="project" class="form-control-modern" required style="display: none;">
                                 <option value="">请选择项目</option>
-                                {% for project in projects %}
-                                <option value="{{ project }}">{{ project }}</option>
-                                {% endfor %}
+                                <!-- 项目将由JavaScript动态填充 -->
                             </select>
                             <div id="project-dropdown" class="project-dropdown" style="display: none;"></div>
                         </div>
@@ -381,17 +379,17 @@
 
                     <div class="form-group file-upload-modern">
                         <label for="images" class="form-label">
-                            <i class="fas fa-image me-2"></i>问题截图（可选，支持多张）
+                            <i class="fas fa-paperclip me-2"></i>附件上传（可选，支持多个）
                         </label>
                         <div class="file-upload-area" onclick="document.getElementById('images').click()">
                             <div class="upload-icon">
                                 <i class="fas fa-cloud-upload-alt"></i>
                             </div>
                             <div class="upload-text">
-                                <p class="upload-title">点击上传截图</p>
-                                <p class="upload-subtitle">支持 JPG、PNG、GIF 格式，最大 10MB，可选择多张图片</p>
+                                <p class="upload-title">点击或拖拽文件上传</p>
+                                <p class="upload-subtitle">支持所有文件类型，单个文件最大 1GB</p>
                             </div>
-                            <input type="file" id="images" name="images" accept="image/*" multiple style="display: none;">
+                            <input type="file" id="images" name="images" multiple style="display: none;">
                         </div>
                         <div class="images-preview" id="preview"></div>
                     </div>
@@ -504,245 +502,204 @@
 
     .form-label {
         display: block;
-        margin-bottom: 8px;
+        margin-bottom: 10px;
         font-weight: 600;
         color: #495057;
         font-size: 14px;
-        display: flex;
-        align-items: center;
     }
 
     .form-label .required {
         color: #dc3545;
-        margin-left: 5px;
-        font-weight: 700;
+        margin-left: 4px;
+        font-weight: bold;
     }
 
     .form-control-modern {
+        display: block;
         width: 100%;
-        padding: 15px 20px;
-        border: 2px solid #e9ecef;
-        border-radius: 12px;
-        font-size: 14px;
-        transition: all 0.3s ease;
-        background: white;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        padding: 12px 20px;
+        font-size: 1rem;
+        font-weight: 400;
+        line-height: 1.5;
+        color: #495057;
+        background-color: #fff;
+        background-clip: padding-box;
+        border: 2px solid #e1e5e9;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        border-radius: 15px;
+        transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
     }
 
     .form-control-modern:focus {
+        color: #495057;
+        background-color: #fff;
         border-color: #667eea;
-        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-        outline: none;
-        transform: translateY(-2px);
+        outline: 0;
+        box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
     }
 
-    .form-control-modern:invalid {
-        border-color: #dc3545;
-        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+    textarea.form-control-modern {
+        min-height: 120px;
     }
 
     .validation-message {
         color: #dc3545;
-        font-size: 13px;
-        margin-top: 8px;
-        height: 20px;
-        display: flex;
-        align-items: center;
-        font-weight: 500;
+        font-size: 0.875em;
+        margin-top: 5px;
+        height: 1em;
     }
 
-    /* 文件上传样式 */
+
+    /* 文件上传区域 */
     .file-upload-modern {
-        margin-bottom: 25px;
+        margin-top: 20px;
     }
 
     .file-upload-area {
         border: 3px dashed #dee2e6;
-        padding: 40px 20px;
         border-radius: 15px;
+        padding: 40px;
         text-align: center;
-        transition: all 0.3s ease;
         cursor: pointer;
+        transition: all 0.3s ease;
         background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
     }
 
     .file-upload-area:hover {
         border-color: #667eea;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        transform: translateY(-2px);
-        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        background: linear-gradient(135deg, #e9ecef 0%, #f8f9fa 100%);
     }
 
     .upload-icon {
-        font-size: 3rem;
-        margin-bottom: 15px;
-        color: #6c757d;
-        transition: color 0.3s ease;
-    }
-
-    .file-upload-area:hover .upload-icon {
-        color: white;
+        font-size: 4rem;
+        color: #667eea;
+        margin-bottom: 20px;
     }
 
     .upload-title {
-        font-size: 1.1rem;
+        font-size: 1.2rem;
         font-weight: 600;
+        color: #343a40;
         margin-bottom: 5px;
-        color: #495057;
-        transition: color 0.3s ease;
-    }
-
-    .file-upload-area:hover .upload-title {
-        color: white;
     }
 
     .upload-subtitle {
-        font-size: 0.9rem;
         color: #6c757d;
-        margin: 0;
-        transition: color 0.3s ease;
+        font-size: 0.9rem;
     }
 
-    .file-upload-area:hover .upload-subtitle {
-        color: rgba(255,255,255,0.8);
-    }
-
-    .image-preview img {
-        max-width: 100%;
-        max-height: 300px;
-        border-radius: 12px;
-        border: 3px solid #e9ecef;
+    .images-preview {
         margin-top: 20px;
-        box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-        transition: transform 0.3s ease;
     }
 
-    .image-preview img:hover {
-        transform: scale(1.02);
+    .images-preview-container {
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 15px;
+        border: 1px solid #e9ecef;
     }
+
 
     /* 表单操作按钮 */
     .form-actions-modern {
         display: flex;
-        gap: 15px;
-        margin-top: 40px;
         justify-content: center;
+        gap: 20px;
+        margin-top: 30px;
         padding-top: 30px;
         border-top: 2px solid #f8f9fa;
     }
 
-    .btn-submit-modern {
-        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-        color: white;
-        border: none;
-        padding: 15px 40px;
-        border-radius: 25px;
-        font-weight: 600;
-        font-size: 16px;
-        cursor: pointer;
+    .btn-submit-modern, .btn-cancel-modern {
+        padding: 15px 30px;
+        font-size: 1rem;
+        font-weight: 700;
+        border-radius: 30px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
         transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
         display: flex;
         align-items: center;
-        gap: 10px;
-        box-shadow: 0 5px 20px rgba(40, 167, 69, 0.3);
-        position: relative;
-        overflow: hidden;
+        justify-content: center;
+    }
+
+    .btn-submit-modern {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
     }
 
     .btn-submit-modern:hover {
         transform: translateY(-3px);
-        box-shadow: 0 8px 30px rgba(40, 167, 69, 0.4);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
     }
 
     .btn-submit-modern:disabled {
-        opacity: 0.7;
+        background: #adb5bd;
         cursor: not-allowed;
+        box-shadow: none;
         transform: none;
     }
 
     .btn-cancel-modern {
-        background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
-        color: white;
-        text-decoration: none;
-        padding: 15px 30px;
-        border-radius: 25px;
-        font-weight: 600;
-        font-size: 16px;
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        box-shadow: 0 5px 20px rgba(108, 117, 125, 0.3);
+        background: #f8f9fa;
+        color: #6c757d;
+        border: 2px solid #dee2e6;
     }
 
     .btn-cancel-modern:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 30px rgba(108, 117, 125, 0.4);
-        color: white;
-        text-decoration: none;
+        background: #e9ecef;
+        border-color: #adb5bd;
     }
 
     .loading-spinner {
+        display: none;
         width: 20px;
         height: 20px;
-        border: 2px solid rgba(255,255,255,0.3);
-        border-top-color: white;
+        border: 3px solid rgba(255, 255, 255, 0.3);
         border-radius: 50%;
-        animation: spin 1s linear infinite;
-        display: none;
+        border-top-color: #fff;
+        animation: spin 1s ease-in-out infinite;
         margin-left: 10px;
     }
 
     @keyframes spin {
-        to { transform: rotate(360deg); }
+        to {
+            transform: rotate(360deg);
+        }
     }
 
-    .btn-success {
-        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-        color: white;
-    }
 
-    .btn-success:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
-        color: white;
-    }
-
-    /* Modal样式 */
-    .modern-modal {
+    /* 成功Modal样式 */
+    .modern-modal .modal-content {
         border: none;
         border-radius: 20px;
-        overflow: hidden;
         box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        overflow: hidden;
     }
 
     .success-header {
-        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        background: linear-gradient(135deg, #28a745 0%, #218838 100%);
         color: white;
         border: none;
-        padding: 30px;
-        text-align: center;
-        position: relative;
+        padding: 25px 30px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
     }
 
     .success-icon {
-        font-size: 3rem;
-        margin-bottom: 15px;
-        animation: bounceIn 0.6s ease-out;
-    }
-
-    @keyframes bounceIn {
-        0% { transform: scale(0.3); opacity: 0; }
-        50% { transform: scale(1.05); }
-        70% { transform: scale(0.9); }
-        100% { transform: scale(1); opacity: 1; }
+        font-size: 2rem;
     }
 
     .success-body {
         padding: 40px 30px;
         text-align: center;
-        background: white;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     }
 
     .success-animation {
@@ -752,158 +709,77 @@
     .checkmark {
         width: 80px;
         height: 80px;
-        margin: 0 auto;
-    }
-
-    .checkmark__svg {
-        width: 80px;
-        height: 80px;
         border-radius: 50%;
         display: block;
-        stroke-width: 2;
-        stroke: #28a745;
+        stroke-width: 4;
+        stroke: #fff;
         stroke-miterlimit: 10;
-        animation: checkmark-fill 0.4s ease-in-out 0.4s forwards, checkmark-scale 0.3s ease-in-out 0.9s both;
+        margin: 10% auto;
+        box-shadow: inset 0px 0px 0px #28a745;
+        animation: fill .4s ease-in-out .4s forwards, scale .3s ease-in-out .9s both;
     }
 
     .checkmark__circle {
         stroke-dasharray: 166;
         stroke-dashoffset: 166;
-        stroke-width: 2;
+        stroke-width: 4;
         stroke-miterlimit: 10;
         stroke: #28a745;
         fill: none;
-        animation: checkmark-stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+        animation: stroke .6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
     }
 
     .checkmark__check {
         transform-origin: 50% 50%;
         stroke-dasharray: 48;
         stroke-dashoffset: 48;
-        animation: checkmark-stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+        animation: stroke .3s cubic-bezier(0.65, 0, 0.45, 1) .8s forwards;
     }
 
-    @keyframes checkmark-stroke {
-        100% { stroke-dashoffset: 0; }
+    @keyframes stroke {
+        100% {
+            stroke-dashoffset: 0;
+        }
     }
 
-    @keyframes checkmark-scale {
-        0%, 100% { transform: none; }
-        50% { transform: scale3d(1.1, 1.1, 1); }
+    @keyframes scale {
+        0%, 100% {
+            transform: none;
+        }
+        50% {
+            transform: scale3d(1.1, 1.1, 1);
+        }
     }
 
-    @keyframes checkmark-fill {
-        100% { box-shadow: inset 0px 0px 0px 30px #28a745; }
+    @keyframes fill {
+        100% {
+            box-shadow: inset 0px 0px 0px 40px #28a745;
+        }
     }
 
     .success-message {
-        font-size: 1.2rem;
+        font-size: 1.5rem;
         font-weight: 600;
-        color: #2c3e50;
+        color: #333;
         margin-bottom: 10px;
     }
 
     .success-submessage {
         color: #6c757d;
-        margin-bottom: 0;
+        font-size: 1rem;
     }
 
     .success-footer {
-        background: #f8f9fa;
+        background: white;
         border: none;
-        padding: 25px 30px;
+        padding: 20px 30px;
+        display: flex;
+        gap: 15px;
         justify-content: center;
-    }
-
-    /* 响应式设计 */
-    @media (max-width: 768px) {
-        .submit-container {
-            padding: 10px 0;
-        }
-
-        .submit-header {
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-
-        .header-title {
-            font-size: 1.8rem;
-        }
-
-        .header-top-row {
-            flex-direction: column;
-            text-align: center;
-        }
-
-        .header-right {
-            align-items: center;
-        }
-
-        .user-info-row {
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .action-buttons {
-            justify-content: center;
-        }
-
-        .form-card {
-            padding: 25px 20px;
-            margin: 0 10px 20px;
-        }
-
-        .form-section {
-            padding: 20px 15px;
-        }
-
-        .form-actions-modern {
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .btn-submit-modern,
-        .btn-cancel-modern {
-            width: 100%;
-            justify-content: center;
-            max-width: 300px;
-        }
-
-        .file-upload-area {
-            padding: 30px 15px;
-        }
-
-        .upload-icon {
-            font-size: 2.5rem;
-        }
-    }
-
-    @media (max-width: 480px) {
-        .header-title {
-            font-size: 1.5rem;
-        }
-
-        .form-title {
-            font-size: 1.4rem;
-        }
-
-        .section-title {
-            font-size: 1rem;
-        }
-
-        .form-control-modern {
-            padding: 12px 15px;
-        }
-
-        .btn-modern {
-            padding: 10px 20px;
-            font-size: 13px;
-        }
     }
 </style>
 
-
-
+<script id="projects-data" type="application/json">{{ projects | tojson | safe }}</script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const imagesInput = document.getElementById('images');
@@ -916,7 +792,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 存储已选择的文件
     let selectedFiles = [];
-        placeholder: '请选择项目',
 
     // 文件拖拽上传功能
     fileUploadArea.addEventListener('dragover', (e) => {
@@ -941,25 +816,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const files = e.dataTransfer.files;
         if (files.length > 0) {
-            // 添加新文件到已选择的文件列表
             for (let file of files) {
-                if (file.type.startsWith('image/')) {
-                    selectedFiles.push(file);
-                }
+                selectedFiles.push(file);
             }
             updateFileInput();
             updatePreview();
         }
     });
 
-    // 图片预览功能
+    // 文件点击上传功能
     imagesInput.addEventListener('change', function() {
         if (this.files && this.files.length > 0) {
-            // 添加新文件到已选择的文件列表
             for (let file of this.files) {
-                if (file.type.startsWith('image/')) {
-                    selectedFiles.push(file);
-                }
+                selectedFiles.push(file);
             }
             updateFileInput();
             updatePreview();
@@ -982,64 +851,57 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let previewHTML = '<div class="images-preview-container" style="margin-top: 20px;">';
         previewHTML += `<div style="margin-bottom: 15px; color: #6c757d; font-size: 14px;">
-                            <i class="fas fa-images me-1"></i>已选择 ${selectedFiles.length} 张图片
+                            <i class="fas fa-paperclip me-1"></i>已选择 ${selectedFiles.length} 个文件
                         </div>`;
         previewHTML += '<div class="images-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px;">';
 
         selectedFiles.forEach((file, index) => {
-            // 文件大小检查
-            if (file.size > 10 * 1024 * 1024) {
-                showNotification('文件大小不能超过10MB', 'error');
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const imageContainer = document.getElementById(`image-container-${index}`);
-                if (imageContainer) {
-                    imageContainer.innerHTML = `
-                        <div style="position: relative; border-radius: 8px; overflow: hidden; box-shadow: 0 3px 10px rgba(0,0,0,0.1);">
-                            <img src="${e.target.result}"
-                                 alt="预览图 ${index + 1}"
-                                 style="width: 100%; height: 120px; object-fit: cover; cursor: pointer;"
-                                 onclick="this.style.transform = this.style.transform ? '' : 'scale(2)'; this.style.zIndex = this.style.zIndex ? '' : '1000'; this.style.position = this.style.position ? '' : 'fixed'; this.style.top = this.style.top ? '' : '50%'; this.style.left = this.style.left ? '' : '50%'; this.style.transform = this.style.transform ? '' : 'translate(-50%, -50%) scale(2)'; this.style.background = this.style.background ? '' : 'rgba(0,0,0,0.8)';">
-                            <button type="button" class="remove-image-btn"
-                                    style="position: absolute; top: 5px; right: 5px; background: #dc3545; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"
-                                    onclick="removeImage(${index})">
-                                <i class="fas fa-times"></i>
-                            </button>
-                            <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; padding: 5px; font-size: 12px; text-align: center;">
-                                ${file.name.length > 15 ? file.name.substring(0, 12) + '...' : file.name}
+            const isImage = file.type.startsWith('image/');
+            
+            let filePreview;
+            if (isImage) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const imageContainer = document.getElementById(`file-container-${index}`);
+                    if (imageContainer) {
+                        imageContainer.innerHTML = `
+                            <div style="position: relative; border-radius: 8px; overflow: hidden; box-shadow: 0 3px 10px rgba(0,0,0,0.1); height: 100%;">
+                                <img src="${e.target.result}" alt="预览 ${index + 1}" style="width: 100%; height: 120px; object-fit: cover;">
+                                <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: white; padding: 5px; font-size: 12px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    ${file.name}
+                                </div>
+                                <button type="button" class="remove-image-btn" style="position: absolute; top: 5px; right: 5px; background: #dc3545; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.3);" onclick="removeImage(${index})"><i class="fas fa-times"></i></button>
                             </div>
-                        </div>
-                    `;
-                }
-            };
-            reader.readAsDataURL(file);
-
-            previewHTML += `<div id="image-container-${index}" style="min-height: 120px; background: #f8f9fa; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                                <i class="fas fa-spinner fa-spin" style="color: #6c757d;"></i>
-                            </div>`;
+                        `;
+                    }
+                };
+                reader.readAsDataURL(file);
+                filePreview = `<div id="file-container-${index}" style="min-height: 120px; background: #f8f9fa; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i class="fas fa-spinner fa-spin" style="color: #6c757d;"></i></div>`;
+            } else {
+                // 非图片文件预览
+                filePreview = `
+                    <div id="file-container-${index}" style="height: 120px; background: #f8f9fa; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px; box-shadow: 0 3px 10px rgba(0,0,0,0.1); position: relative;">
+                        <i class="fas fa-file-alt" style="font-size: 40px; color: #6c757d;"></i>
+                        <div style="margin-top: 10px; font-size: 12px; color: #333; text-align: center; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${file.name}</div>
+                        <button type="button" class="remove-image-btn" style="position: absolute; top: 5px; right: 5px; background: #dc3545; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.3);" onclick="removeImage(${index})"><i class="fas fa-times"></i></button>
+                    </div>
+                `;
+            }
+            previewHTML += filePreview;
         });
 
-        previewHTML += '</div>';
-        previewHTML += `<div style="text-align: center; margin-top: 15px; color: #6c757d; font-size: 14px;">
-                            <i class="fas fa-info-circle me-1"></i>点击图片可放大查看
-                        </div>`;
-        previewHTML += '</div>';
+        previewHTML += '</div></div>';
         previewDiv.innerHTML = previewHTML;
     }
 
     // 移除图片函数
     window.removeImage = function(index) {
         if (typeof index === 'number') {
-            // 删除指定索引的图片
             selectedFiles.splice(index, 1);
-            showNotification('图片已移除', 'success');
+            showNotification('文件已移除', 'success');
         } else {
-            // 删除所有图片
             selectedFiles = [];
-            showNotification('所有图片已移除', 'success');
+            showNotification('所有文件已移除', 'success');
         }
         updateFileInput();
         updatePreview();
@@ -1048,62 +910,30 @@ document.addEventListener('DOMContentLoaded', function() {
     // 表单提交处理
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
+        if (!validateForm()) return;
 
-        // 表单验证
-        if (!validateForm()) {
-            return;
-        }
-
-        // 显示加载状态
         submitText.textContent = '提交中...';
         loadingSpinner.style.display = 'inline-block';
         submitBtn.disabled = true;
 
-        // 添加提交动画
-        submitBtn.style.transform = 'scale(0.95)';
-        setTimeout(() => {
-            submitBtn.style.transform = '';
-        }, 150);
-
         try {
             const formData = new FormData(form);
-
-            // 移除所有图片字段，避免重复
-            if (formData.has('images')) {
-                formData.delete('images');
-            }
-            if (formData.has('image')) {
-                formData.delete('image');
-            }
-
-            // 只添加selectedFiles中的图片
+            if (formData.has('images')) formData.delete('images');
+            if (formData.has('image')) formData.delete('image');
             if (selectedFiles.length > 0) {
-                selectedFiles.forEach(file => {
-                    formData.append('images', file);
-                });
+                selectedFiles.forEach(file => formData.append('images', file));
             }
 
-            const response = await fetch('/bug/submit', {
-                method: 'POST',
-                body: formData
-            });
-
+            const response = await fetch('/bug/submit', { method: 'POST', body: formData });
             if (!response.ok) throw new Error('Network error');
             const data = await response.json();
 
             if (data.success) {
-                // 显示成功Modal
                 const modal = new bootstrap.Modal(document.getElementById('successModal'));
                 modal.show();
-
-                // 重置表单
                 form.reset();
                 previewDiv.innerHTML = '';
-
-                // 5秒后自动跳转
-                setTimeout(() => {
-                    window.location.href = data.redirect || '/';
-                }, 5000);
+                setTimeout(() => { window.location.href = data.redirect || '/'; }, 5000);
             } else {
                 showNotification(data.message || '提交失败，请稍后重试', 'error');
             }
@@ -1111,7 +941,6 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error:', error);
             showNotification('网络错误，请检查网络连接后重试', 'error');
         } finally {
-            // 恢复按钮状态
             submitText.textContent = '提交问题';
             loadingSpinner.style.display = 'none';
             submitBtn.disabled = false;
@@ -1122,113 +951,36 @@ document.addEventListener('DOMContentLoaded', function() {
     function validateForm() {
         let isValid = true;
         let firstInvalidField = null;
-        const requiredFields = form.querySelectorAll('[required]');
-
-        requiredFields.forEach(field => {
+        form.querySelectorAll('[required]').forEach(field => {
             const validationMsg = field.closest('.form-group').querySelector('.validation-message');
-            let fieldToStyle = field;
-            let fieldToFocus = field;
+            let fieldToValidate = field.id === 'project-search' ? document.getElementById('project') : field;
 
-            // 特殊处理项目搜索字段
-            if (field.id === 'project-search') {
-                const projectSelect = document.getElementById('project');
-                if (!projectSelect.value.trim()) {
-                    validationMsg.textContent = '此字段为必填项';
-                    field.style.borderColor = '#dc3545';
-                    field.style.boxShadow = '0 0 0 0.2rem rgba(220, 53, 69, 0.25)';
-                    isValid = false;
-                    if (!firstInvalidField) {
-                        firstInvalidField = field;
-                    }
-                } else {
-                    validationMsg.textContent = '';
-                    field.style.borderColor = '#28a745';
-                    field.style.boxShadow = '0 0 0 0.2rem rgba(40, 167, 69, 0.25)';
-                }
-            } else if (field.id === 'project') {
-                // 跳过隐藏的project select，因为已经在project-search中处理了
-                return;
-            } else if (!field.value.trim()) {
+            if (!fieldToValidate.value.trim()) {
                 validationMsg.textContent = '此字段为必填项';
                 field.style.borderColor = '#dc3545';
-                field.style.boxShadow = '0 0 0 0.2rem rgba(220, 53, 69, 0.25)';
                 isValid = false;
-                if (!firstInvalidField) {
-                    firstInvalidField = field;
-                }
+                if (!firstInvalidField) firstInvalidField = field;
             } else {
                 validationMsg.textContent = '';
                 field.style.borderColor = '#28a745';
-                field.style.boxShadow = '0 0 0 0.2rem rgba(40, 167, 69, 0.25)';
             }
         });
-
-        // 如果有验证失败的字段，将焦点移到第一个失败的字段
-        if (!isValid && firstInvalidField) {
-            firstInvalidField.focus();
-            firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-
+        if (!isValid && firstInvalidField) firstInvalidField.focus();
         return isValid;
     }
 
     // 实时表单验证
     form.querySelectorAll('input, select, textarea').forEach(element => {
         element.addEventListener('input', () => {
+            if(element.id === 'project') return;
+            const fieldToValidate = element.id === 'project-search' ? document.getElementById('project') : element;
             const validationMsg = element.closest('.form-group').querySelector('.validation-message');
-
-            // 特殊处理项目搜索字段
-            if (element.id === 'project-search') {
-                const projectSelect = document.getElementById('project');
-                if (projectSelect.value.trim()) {
-                    validationMsg.textContent = '';
-                    element.style.borderColor = '#28a745';
-                    element.style.boxShadow = '0 0 0 0.2rem rgba(40, 167, 69, 0.25)';
-                } else if (element.hasAttribute('required')) {
-                    validationMsg.textContent = '此字段为必填项';
-                    element.style.borderColor = '#dc3545';
-                    element.style.boxShadow = '0 0 0 0.2rem rgba(220, 53, 69, 0.25)';
-                } else {
-                    validationMsg.textContent = '';
-                    element.style.borderColor = '#667eea';
-                    element.style.boxShadow = '0 0 0 0.2rem rgba(102, 126, 234, 0.25)';
-                }
-            } else if (element.id === 'project') {
-                // 跳过隐藏的project select，验证逻辑在project-search中处理
-                return;
-            } else if (element.validity.valid && element.value.trim()) {
+            if (fieldToValidate.value.trim()) {
                 validationMsg.textContent = '';
                 element.style.borderColor = '#28a745';
-                element.style.boxShadow = '0 0 0 0.2rem rgba(40, 167, 69, 0.25)';
-            } else if (element.value.trim() === '' && element.hasAttribute('required')) {
+            } else if (element.hasAttribute('required')) {
                 validationMsg.textContent = '此字段为必填项';
                 element.style.borderColor = '#dc3545';
-                element.style.boxShadow = '0 0 0 0.2rem rgba(220, 53, 69, 0.25)';
-            } else {
-                validationMsg.textContent = '';
-                element.style.borderColor = '#667eea';
-                element.style.boxShadow = '0 0 0 0.2rem rgba(102, 126, 234, 0.25)';
-            }
-        });
-
-        element.addEventListener('blur', () => {
-            // 特殊处理项目搜索字段
-            if (element.id === 'project-search') {
-                const projectSelect = document.getElementById('project');
-                if (element.hasAttribute('required') && !projectSelect.value.trim()) {
-                    const validationMsg = element.closest('.form-group').querySelector('.validation-message');
-                    validationMsg.textContent = '此字段为必填项';
-                    element.style.borderColor = '#dc3545';
-                    element.style.boxShadow = '0 0 0 0.2rem rgba(220, 53, 69, 0.25)';
-                }
-            } else if (element.id === 'project') {
-                // 跳过隐藏的project select
-                return;
-            } else if (element.hasAttribute('required') && !element.value.trim()) {
-                const validationMsg = element.closest('.form-group').querySelector('.validation-message');
-                validationMsg.textContent = '此字段为必填项';
-                element.style.borderColor = '#dc3545';
-                element.style.boxShadow = '0 0 0 0.2rem rgba(220, 53, 69, 0.25)';
             }
         });
     });
@@ -1237,29 +989,10 @@ document.addEventListener('DOMContentLoaded', function() {
     function showNotification(message, type = 'info') {
         const notification = document.createElement('div');
         notification.className = `alert alert-${type === 'error' ? 'danger' : type} notification-toast`;
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 9999;
-            min-width: 300px;
-            padding: 15px 20px;
-            border-radius: 10px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-            animation: slideInRight 0.3s ease-out;
-        `;
-
-        const icon = type === 'error' ? 'fas fa-exclamation-circle' :
-                    type === 'success' ? 'fas fa-check-circle' : 'fas fa-info-circle';
-
-        notification.innerHTML = `
-            <i class="${icon} me-2"></i>${message}
-            <button type="button" class="btn-close float-end" onclick="this.parentElement.remove()"></button>
-        `;
-
+        notification.style.cssText = `position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px; padding: 15px 20px; border-radius: 10px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); animation: slideInRight 0.3s ease-out;`;
+        const icon = type === 'error' ? 'fas fa-exclamation-circle' : type === 'success' ? 'fas fa-check-circle' : 'fas fa-info-circle';
+        notification.innerHTML = `<i class="${icon} me-2"></i>${message}<button type="button" class="btn-close float-end" onclick="this.parentElement.remove()"></button>`;
         document.body.appendChild(notification);
-
-        // 3秒后自动移除
         setTimeout(() => {
             if (notification.parentElement) {
                 notification.style.animation = 'slideOutRight 0.3s ease-in';
@@ -1270,196 +1003,117 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 添加CSS动画
     const style = document.createElement('style');
-    style.textContent = `
-        @keyframes slideInRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        @keyframes slideOutRight {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(100%); opacity: 0; }
-        }
-    `;
+    style.textContent = `@keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } } @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }`;
     document.head.appendChild(style);
-});
 
-// 原生项目搜索实现
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('开始初始化项目搜索功能...');
+    // 项目搜索功能
+    function initializeProjectSearch() {
+        const searchInput = document.getElementById('project-search');
+        const projectSelect = document.getElementById('project');
+        const dropdown = document.getElementById('project-dropdown');
+        let allProjects = [];
 
-    const searchInput = document.getElementById('project-search');
-    const projectSelect = document.getElementById('project');
-    const dropdown = document.getElementById('project-dropdown');
-
-    if (!searchInput || !projectSelect || !dropdown) {
-        console.error('搜索元素未找到');
-        return;
-    }
-
-    // 获取所有项目选项
-    const allProjects = Array.from(projectSelect.options).slice(1).map(option => ({
-        value: option.value,
-        text: option.textContent
-    }));
-
-    console.log('找到项目:', allProjects);
-
-    // 拼音首字母映射
-    function getPinyinInitials(str) {
-        const pinyinMap = {
-            '新': 'x', '一': 'y', '代': 'd',
-            '技': 'j', '改': 'g',
-            '其': 'q', '他': 't',
-            '安': 'a', '徽': 'h', '合': 'h', '肥': 'f',
-            '江': 'j', '苏': 's', '南': 'n', '京': 'j',
-            '北': 'b', '朝': 'c', '阳': 'y',
-            '辽': 'l', '宁': 'n', '大': 'd', '连': 'l',
-            '四': 's', '川': 'c', '岷': 'm',
-            '项': 'x', '目': 'm'
-        };
-        return str.split('').map(char => pinyinMap[char] || char.toLowerCase()).join('');
-    }
-
-    // 搜索匹配函数
-    function matchProject(project, term) {
-        const text = project.text.toLowerCase();
-        const searchTerm = term.toLowerCase();
-
-        // 基本文本匹配
-        if (text.indexOf(searchTerm) > -1) return true;
-
-        // 拼音首字母匹配
-        const pinyinInitials = getPinyinInitials(text);
-        if (pinyinInitials.indexOf(searchTerm) > -1) return true;
-
-        // 分段匹配
-        const parts = text.split('#');
-        if (parts[0] && parts[0].indexOf(searchTerm) > -1) return true; // 项目类型
-        if (parts[1] && parts[1].indexOf(searchTerm) > -1) return true; // 地市名称
-
-        return false;
-    }
-
-    // 高亮匹配文本
-    function highlightMatch(text, term) {
-        if (!term) return text;
-        const regex = new RegExp('(' + term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
-        return text.replace(regex, '<span class="search-highlight">$1</span>');
-    }
-
-    // 显示搜索结果
-    function showResults(results, searchTerm) {
-        dropdown.innerHTML = '';
-
-        if (results.length === 0) {
-            dropdown.innerHTML = '<div class="no-results">未找到匹配的项目</div>';
-        } else {
-            results.forEach(project => {
-                const option = document.createElement('div');
-                option.className = 'project-option';
-                option.innerHTML = highlightMatch(project.text, searchTerm);
-                option.addEventListener('click', function() {
-                    selectProject(project);
-                });
-                dropdown.appendChild(option);
-            });
+        function loadProjects(projects) {
+            allProjects = projects.map(p => ({ value: p, text: p }));
+            projectSelect.innerHTML = '<option value="">请选择项目</option>';
+            allProjects.forEach(p => projectSelect.add(new Option(p.text, p.value)));
         }
 
-        dropdown.style.display = 'block';
-    }
-
-    // 选择项目
-    function selectProject(project) {
-        searchInput.value = project.text;
-        projectSelect.value = project.value;
-        dropdown.style.display = 'none';
-
-        // 更新验证状态
-        const validationMsg = searchInput.closest('.form-group').querySelector('.validation-message');
-        if (project.value) {
-            validationMsg.textContent = '';
-            searchInput.style.borderColor = '#28a745';
-            searchInput.style.boxShadow = '0 0 0 0.2rem rgba(40, 167, 69, 0.25)';
-        }
-
-        // 触发input事件以确保验证状态更新
-        searchInput.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-
-    // 搜索输入事件
-    searchInput.addEventListener('input', function() {
-        const searchTerm = this.value.trim();
-
-        if (searchTerm === '') {
-            dropdown.style.display = 'none';
-            // 清空隐藏的select值
-            projectSelect.value = '';
-            return;
-        }
-
-        // 检查输入的值是否与已选择的项目匹配
-        const exactMatch = allProjects.find(project => project.text === searchTerm);
-        if (exactMatch) {
-            projectSelect.value = exactMatch.value;
-        } else {
-            // 如果不是精确匹配，清空select值
-            projectSelect.value = '';
-        }
-
-        const results = allProjects.filter(project => matchProject(project, searchTerm));
-        showResults(results, searchTerm);
-    });
-
-    // 点击外部关闭下拉框
-    document.addEventListener('click', function(e) {
-        if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
-            dropdown.style.display = 'none';
-        }
-    });
-
-    // 获得焦点时显示所有选项
-    searchInput.addEventListener('focus', function() {
-        if (this.value.trim() === '') {
-            showResults(allProjects, '');
-        }
-    });
-
-    console.log('项目搜索功能初始化完成');
-});
-
-// 加载产品线列表
-document.addEventListener('DOMContentLoaded', function() {
-    loadProductLines();
-});
-
-async function loadProductLines() {
-    try {
-        const response = await fetch('/api/product-lines');
-        const result = await response.json();
-
-        if (result.success) {
-            const productLineSelect = document.getElementById('product_line');
-
-            // 清空现有选项（保留默认选项）
-            productLineSelect.innerHTML = '<option value="">请选择产品线（可选）</option>';
-
-            // 添加产品线选项
-            result.data.forEach(productLine => {
-                if (productLine.status === 'active') {
-                    const option = document.createElement('option');
-                    option.value = productLine.id;
-                    option.textContent = productLine.name;
-                    productLineSelect.appendChild(option);
+        fetch('/api/projects/list')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.data.length > 0) {
+                    loadProjects(data.data);
+                } else {
+                    const projectsDataElement = document.getElementById('projects-data');
+                    if(projectsDataElement) {
+                        try {
+                            const projects = JSON.parse(projectsDataElement.textContent);
+                            loadProjects(projects);
+                        } catch(e) {
+                            console.error('Error parsing local projects data:', e);
+                        }
+                    }
+                }
+            })
+            .catch(() => {
+                const projectsDataElement = document.getElementById('projects-data');
+                if(projectsDataElement) {
+                    try {
+                        const projects = JSON.parse(projectsDataElement.textContent);
+                        loadProjects(projects);
+                    } catch(e) {
+                        console.error('Error parsing local projects data:', e);
+                    }
                 }
             });
 
-            console.log('产品线列表加载完成');
-        } else {
-            console.error('加载产品线失败:', result.message);
+        function matchProject(project, term) {
+            const text = project.text.toLowerCase();
+            const searchTerm = term.toLowerCase();
+            return text.includes(searchTerm);
         }
-    } catch (error) {
-        console.error('加载产品线失败:', error);
+
+        function highlightMatch(text, term) {
+            if (!term) return text;
+            return text.replace(new RegExp('(' + term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi'), '<span class="search-highlight">$1</span>');
+        }
+
+        function showResults(results, searchTerm) {
+            dropdown.innerHTML = '';
+            if (results.length === 0) {
+                dropdown.innerHTML = '<div class="no-results">未找到匹配的项目</div>';
+            } else {
+                results.forEach(project => {
+                    const option = document.createElement('div');
+                    option.className = 'project-option';
+                    option.innerHTML = highlightMatch(project.text, searchTerm);
+                    option.addEventListener('click', () => selectProject(project));
+                    dropdown.appendChild(option);
+                });
+            }
+            dropdown.style.display = 'block';
+        }
+
+        function selectProject(project) {
+            searchInput.value = project.text;
+            projectSelect.value = project.value;
+            dropdown.style.display = 'none';
+            searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.trim();
+            if (searchTerm === '') {
+                dropdown.style.display = 'none';
+                projectSelect.value = '';
+                return;
+            }
+            const exactMatch = allProjects.find(project => project.text === searchTerm);
+            if (exactMatch) {
+                dropdown.style.display = 'none';
+                return;
+            }
+            const results = allProjects.filter(project => matchProject(project, searchTerm));
+            showResults(results, searchTerm);
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.style.display = 'none';
+            }
+        });
+
+        searchInput.addEventListener('focus', function() {
+            if (this.value.trim() !== '') {
+                const results = allProjects.filter(project => matchProject(project, this.value.trim()));
+                showResults(results, this.value.trim());
+            }
+        });
     }
-}
+
+    initializeProjectSearch();
+
+});
 </script>
 {% endblock %}

@@ -50,5 +50,5 @@ try:
     from config_adapter import ALLOWED_EXTENSIONS, MAX_CONTENT_LENGTH
 except ImportError:
     # 如果config_adapter不可用，使用默认值
-    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
-    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'txt', 'zip', 'rar', 'doc', 'docx', 'xls', 'xlsx', 'pdf', 'tar', 'gz'}
+    MAX_CONTENT_LENGTH = 1 * 1024 * 1024 * 1024  # 1GB

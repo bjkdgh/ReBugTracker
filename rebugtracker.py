@@ -43,8 +43,8 @@ def safe_get(obj, key, default=None):
 DB_CONFIG = DATABASE_CONFIG[DB_TYPE]
 
 def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    # 始终返回True以允许所有文件类型
+    return True
 
 # 初始化Flask应用
 app = Flask(__name__, static_folder='static', static_url_path='/static', template_folder='templates')
@@ -2198,19 +2198,26 @@ def submit_bug():
 
         for i, file in enumerate(files):
             if file and file.filename and allowed_file(file.filename):
-                # 生成唯一文件名
-                import uuid
-                file_ext = file.filename.rsplit('.', 1)[1].lower()
-                unique_filename = f"{uuid.uuid4().hex}.{file_ext}"
-                filepath = os.path.join(upload_dir, unique_filename)
+                filename = secure_filename(file.filename)
+                filepath = os.path.join(upload_dir, filename)
+                
+                # 检查文件名冲突，如果冲突则添加后缀
+                counter = 1
+                original_filepath = filepath
+                while os.path.exists(filepath):
+                    name, ext = os.path.splitext(original_filepath)
+                    filepath = f"{name}_{counter}{ext}"
+                    counter += 1
+                    
                 file.save(filepath)
 
-                image_url = f'/uploads/{unique_filename}'
-                image_paths.append(image_url)
+                # 存储相对于 static 目录的路径
+                relative_path = os.path.join(os.path.basename(upload_dir), os.path.basename(filepath))
+                image_paths.append(relative_path)
 
                 # 第一张图片作为主图片（向后兼容）
                 if i == 0:
-                    main_image_path = image_url
+                    main_image_path = relative_path
 
                 app.logger.debug(f"文件保存成功: {filepath}")
 
@@ -2225,13 +2232,21 @@ def submit_bug():
             if not os.path.exists(upload_dir):
                 os.makedirs(upload_dir, mode=0o777, exist_ok=True)
 
-            import uuid
-            file_ext = file.filename.rsplit('.', 1)[1].lower()
-            unique_filename = f"{uuid.uuid4().hex}.{file_ext}"
-            filepath = os.path.join(upload_dir, unique_filename)
+            filename = secure_filename(file.filename)
+            filepath = os.path.join(upload_dir, filename)
+            
+            # 检查文件名冲突
+            counter = 1
+            original_filepath = filepath
+            while os.path.exists(filepath):
+                name, ext = os.path.splitext(original_filepath)
+                filepath = f"{name}_{counter}{ext}"
+                counter += 1
+                
             file.save(filepath)
 
-            main_image_path = f'/uploads/{unique_filename}'
+            relative_path = os.path.join(os.path.basename(upload_dir), os.path.basename(filepath))
+            main_image_path = relative_path
             image_paths.append(main_image_path)
             app.logger.debug(f"文件保存成功: {filepath}")
 
@@ -2348,90 +2363,71 @@ def bug_detail(bug_id):
     if not user:
         return redirect('/login')
 
-    conn = get_db_connection()
-    if DB_TYPE == 'postgres':
-        c = conn.cursor(cursor_factory=DictCursor)
-    else:
-        c = conn.cursor()
-
-    # 查询bug基本信息
-    query = '''
-        SELECT b.*, COALESCE(u1.chinese_name, u1.username) as creator_name, COALESCE(u2.chinese_name, u2.username) as assignee_name,
-               b.created_at as local_created_at,
-               b.resolved_at as local_resolved_at
-        FROM bugs b
-        LEFT JOIN users u1 ON b.created_by = u1.id
-        LEFT JOIN users u2 ON b.assigned_to = u2.id
-        WHERE b.id = %s
-    '''
-    adapted_query, adapted_params = adapt_sql(query, (bug_id,))
-    c.execute(adapted_query, adapted_params)
-    bug = c.fetchone()
-
-    # 查询所有相关图片
-    images_query = '''
-        SELECT image_path, created_at
-        FROM bug_images
-        WHERE bug_id = %s
-        ORDER BY created_at ASC
-    '''
-    adapted_images_query, adapted_images_params = adapt_sql(images_query, (bug_id,))
-    c.execute(adapted_images_query, adapted_images_params)
-    bug_images = c.fetchall()
-
-    conn.close()
-    if not bug:
-        return "问题不存在", 404
-
-    # 格式化时间 - 兼容SQLite字符串和PostgreSQL datetime
-    bug_dict = dict(bug)
-    if bug_dict['local_created_at']:
-        if isinstance(bug_dict['local_created_at'], str):
-            bug_dict['local_created_at'] = bug_dict['local_created_at']  # SQLite已经是字符串格式
+    conn = None
+    try:
+        conn = get_db_connection()
+        if DB_TYPE == 'postgres':
+            c = conn.cursor(cursor_factory=DictCursor)
         else:
-            bug_dict['local_created_at'] = bug_dict['local_created_at'].strftime('%Y-%m-%d %H:%M:%S')  # PostgreSQL datetime
-    else:
-        bug_dict['local_created_at'] = '--'
-    if bug_dict['local_resolved_at']:
-        if isinstance(bug_dict['local_resolved_at'], str):
-            bug_dict['local_resolved_at'] = bug_dict['local_resolved_at']  # SQLite已经是字符串格式
-        else:
-            bug_dict['local_resolved_at'] = bug_dict['local_resolved_at'].strftime('%Y-%m-%d %H:%M:%S')  # PostgreSQL datetime
-    else:
-        bug_dict['local_resolved_at'] = '--'
+            c = conn.cursor()
 
-    message = request.args.get('message')
+        # 查询bug基本信息
+        query = '''
+            SELECT b.*, COALESCE(u1.chinese_name, u1.username) as creator_name, COALESCE(u2.chinese_name, u2.username) as assignee_name
+            FROM bugs b
+            LEFT JOIN users u1 ON b.created_by = u1.id
+            LEFT JOIN users u2 ON b.assigned_to = u2.id
+            WHERE b.id = %s
+        '''
+        adapted_query, adapted_params = adapt_sql(query, (bug_id,))
+        c.execute(adapted_query, adapted_params)
+        bug = c.fetchone()
 
-    # 处理图片列表
-    images = []
+        if not bug:
+            return "问题不存在", 404
 
-    # 添加主图片（向后兼容）
-    if bug_dict['image_path']:
-        images.append({'path': bug_dict['image_path']})
-        app.logger.debug(f"添加主图片: {bug_dict['image_path']}")
+        bug_dict = dict(bug)
 
-    # 添加其他图片
-    if bug_images:
-        app.logger.debug(f"找到 {len(bug_images)} 张关联图片")
-        for img in bug_images:
-            if DB_TYPE == 'postgres':
-                img_path = img['image_path']
-            else:
-                img_path = img[0]
+        # 查询所有相关附件
+        attachments_query, params = adapt_sql(
+            'SELECT image_path FROM bug_images WHERE bug_id = %s ORDER BY id ASC',
+            (bug_id,)
+        )
+        c.execute(attachments_query, params)
+        
+        attachments = []
+        for row in c.fetchall():
+            path = row[0] if DB_TYPE == 'sqlite' else row['image_path']
+            if path:
+                attachments.append({
+                    'path': path.replace('\\', '/'), # 确保路径分隔符
+                    'name': os.path.basename(path)
+                })
 
-            app.logger.debug(f"处理关联图片: {img_path}")
+        # 向后兼容：如果新表没有附件，但旧的 image_path 字段有，则添加它
+        if not attachments and bug_dict.get('image_path'):
+            path = bug_dict['image_path']
+            if path:
+                attachments.append({
+                    'path': path.replace('\\', '/'),
+                    'name': os.path.basename(path)
+                })
 
-            # 避免重复添加主图片
-            if not bug_dict['image_path'] or img_path != bug_dict['image_path']:
-                images.append({'path': img_path})
-                app.logger.debug(f"添加关联图片: {img_path}")
+        message = request.args.get('message')
 
-    app.logger.debug(f"总共添加了 {len(images)} 张图片")
-
-    # 将创建者ID和图片列表传递给模板
-    return render_template('bug_detail.html', bug=bug_dict, message=message,
-                          created_by=bug_dict['created_by'], user=user,
-                          images=images)
+        return render_template(
+            'bug_detail.html',
+            bug=bug_dict,
+            message=message,
+            attachments=attachments,
+            user=user
+        )
+    except Exception as e:
+        app.logger.error(f"获取问题详情失败: {str(e)}", exc_info=True)
+        return "服务器错误", 500
+    finally:
+        if conn:
+            conn.close()
 
 # 分配问题页面
 @app.route('/bug/assign/<int:bug_id>')
