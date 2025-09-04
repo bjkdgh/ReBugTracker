@@ -2029,7 +2029,16 @@ def submit_page():
         projects = [row['name'] if DB_TYPE == 'postgres' else row[0] for row in c.fetchall()]
         app.logger.debug(f"获取到的项目列表: {projects}")
 
-        return render_template('submit.html', managers=managers, projects=projects, user=user)
+        # 获取产品线列表
+        query, params = adapt_sql("SELECT id, name FROM product_lines WHERE status = 'active' ORDER BY name", ())
+        c.execute(query, params)
+        if DB_TYPE == 'postgres':
+            product_lines = c.fetchall()
+        else:
+            product_lines = [{'id': row[0], 'name': row[1]} for row in c.fetchall()]
+        app.logger.debug(f"获取到的产品线列表: {product_lines}")
+
+        return render_template('submit.html', managers=managers, projects=projects, product_lines=product_lines, user=user)
     finally:
         conn.close()
 
@@ -2836,7 +2845,8 @@ def resolve_bug(bug_id):
                 'solution': resolution,
                 'resolver_name': user['chinese_name'] or user['username'],
                 'resolved_time': datetime.now().isoformat(),
-                'creator_id': bug_info['created_by']
+                'creator_id': bug_info['created_by'],
+                'resolver_id': user['id']
             }
 
             simple_notifier.send_flow_notification('bug_resolved', notification_data)

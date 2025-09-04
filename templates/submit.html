@@ -324,6 +324,9 @@
                         </label>
                         <select id="product_line" name="product_line" class="form-control-modern">
                             <option value="">请选择产品线（可选）</option>
+                            {% for product_line in product_lines %}
+                            <option value="{{ product_line.id }}">{{ product_line.name }}</option>
+                            {% endfor %}
                         </select>
                         <div class="validation-message"></div>
                         <small class="form-text text-muted">

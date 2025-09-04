@@ -78,11 +78,28 @@ class FlowNotificationRules:
                 logger.debug(f"Bug status changed notification targets: {len(targets)} users")
                     
             elif event_type == "bug_resolved":
-                # 问题解决：组内成员解决问题，通知实施组（创建者）和负责人
+                # 问题解决：通知创建者和特定负责人
                 creator_id = event_data.get('creator_id')
+                resolver_id = event_data.get('resolver_id')
+
                 if creator_id:
                     targets.add(str(creator_id))
-                targets.update(FlowNotificationRules._get_users_by_roles(['fzr']))
+
+                # 优先通知特定负责人
+                if resolver_id:
+                    manager_id = FlowNotificationRules._get_manager_by_assignee(resolver_id)
+                    if manager_id:
+                        targets.add(str(manager_id))
+                        logger.debug(f"Bug resolved notification target: specific manager {manager_id}")
+                    else:
+                        # 如果找不到特定负责人，则通知所有负责人作为后备
+                        targets.update(FlowNotificationRules._get_users_by_roles(['fzr']))
+                        logger.warning(f"Could not find a specific manager for resolver {resolver_id}, falling back to all managers.")
+                else:
+                    # 如果没有提供resolver_id，也通知所有负责人
+                    targets.update(FlowNotificationRules._get_users_by_roles(['fzr']))
+                    logger.warning("resolver_id not found in event_data, falling back to all managers.")
+                
                 logger.debug(f"Bug resolved notification targets: {len(targets)} users")
                 
             elif event_type == "bug_closed":
