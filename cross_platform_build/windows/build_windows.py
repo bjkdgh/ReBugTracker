@@ -117,6 +117,9 @@ def run_pyinstaller():
     """运行PyInstaller"""
     print_step(4, "运行PyInstaller打包")
     
+    # 保存当前工作目录
+    original_cwd = os.getcwd()
+    
     # 使用windows目录下的spec文件
     windows_dir = Path(__file__).parent
     spec_file = windows_dir / 'rebugtracker.spec'
@@ -124,6 +127,9 @@ def run_pyinstaller():
     if not spec_file.exists():
         print_error(f"未找到spec文件: {spec_file}")
         return False
+        
+    # 切换到 windows 目录
+    os.chdir(windows_dir)
     
     cmd = [
         sys.executable, '-m', 'PyInstaller',
@@ -145,6 +151,9 @@ def run_pyinstaller():
     except Exception as e:
         print_error(f"执行PyInstaller时出错: {e}")
         return False
+    finally:
+        # 恢复原始工作目录
+        os.chdir(original_cwd)
 
 def copy_additional_files():
     """复制额外文件到dist目录"""
@@ -154,8 +163,12 @@ def copy_additional_files():
     dist_dir = windows_dir / 'dist'
     
     if not dist_dir.exists():
-        print_error("dist目录不存在")
-        return False
+        try:
+            dist_dir.mkdir(parents=True, exist_ok=True)
+            print_success(f"创建dist目录: {dist_dir}")
+        except Exception as e:
+            print_error(f"创建dist目录失败: {e}")
+            return False
     
     project_root = get_project_root()
     

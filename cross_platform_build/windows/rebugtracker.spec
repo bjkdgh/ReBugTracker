@@ -18,20 +18,33 @@ datas = [
     (os.path.join(project_root, 'templates'), 'templates'),
     # 静态文件
     (os.path.join(project_root, 'static'), 'static'),
-    # 配置文件
+    # 必要的Python模块
     (os.path.join(project_root, 'config.py'), '.'),
-    (os.path.join(spec_dir, 'app_config_exe.py'), '.'),
     (os.path.join(project_root, 'config_adapter.py'), '.'),
-
-    # 环境变量模板
-    (os.path.join(project_root, '.env.template'), '.'),
-    # 数据库工厂和适配器
     (os.path.join(project_root, 'db_factory.py'), '.'),
     (os.path.join(project_root, 'sql_adapter.py'), '.'),
+    # Windows特定配置
+    (os.path.join(spec_dir, 'app_config_exe.py'), '.'),
+    (os.path.join(spec_dir, 'rebugtracker_exe.py'), '.'),
+    # 环境配置
+    (os.path.join(project_root, '.env.template'), '.'),
     # 通知系统
     (os.path.join(project_root, 'notification'), 'notification'),
-    # 数据库文件（如果存在）
+    # 必要目录结构
+    (os.path.join(project_root, 'uploads'), 'uploads'),
+    (os.path.join(project_root, 'logs'), 'logs'),
+    (os.path.join(project_root, 'data_exports'), 'data_exports'),
+    # 文档
+    (os.path.join(project_root, 'README.md'), '.'),
+    (os.path.join(project_root, 'DEPLOYMENT_GUIDE.md'), '.'),
+    # 启动和服务脚本
+    (os.path.join(spec_dir, 'start_rebugtracker.bat'), '.'),
 ]
+
+# 数据库文件（如果存在）
+db_file = os.path.join(project_root, 'rebugtracker.db')
+if os.path.exists(db_file):
+    datas.append((db_file, '.'))
 
 # 检查并添加数据库文件
 db_file = os.path.join(project_root, 'rebugtracker.db')
@@ -40,100 +53,80 @@ if os.path.exists(db_file):
 
 # 隐藏导入（PyInstaller可能无法自动检测的模块）
 hiddenimports = [
-    # Flask核心
+    # Flask及其依赖
     'flask',
+    'flask.app',
+    'flask.cli',
+    'flask.config',
+    'flask.ctx',
+    'flask.debughelpers',
+    'flask.globals',
+    'flask.helpers',
+    'flask.json',
+    'flask.logging',
+    'flask.sessions',
+    'flask.signals',
+    'flask.templating',
+    'flask.wrappers',
+    # Flask Extensions
+    'flask_login',
+    'flask_sqlalchemy',
+    'flask_migrate',
+    # Werkzeug
     'werkzeug',
     'werkzeug.security',
     'werkzeug.utils',
+    'werkzeug.datastructures',
+    'werkzeug.debug',
+    'werkzeug.exceptions',
+    'werkzeug.formparser',
+    'werkzeug.http',
+    'werkzeug.local',
+    'werkzeug.middleware',
+    'werkzeug.middleware.proxy_fix',
+    'werkzeug.routing',
+    'werkzeug.serving',
+    'werkzeug.test',
+    'werkzeug.urls',
+    'werkzeug.user_agent',
+    'werkzeug.wsgi',
+    # Jinja2
     'jinja2',
     'jinja2.ext',
+    'jinja2.filters',
+    'jinja2.loaders',
+    'jinja2.runtime',
+    'jinja2.nodes',
+    'jinja2.parser',
+    'jinja2.compiler',
+    'jinja2.environment',
+    'jinja2.meta',
+    'jinja2.optimizer',
+    'jinja2.sandbox',
+    'jinja2.tests',
+    'jinja2.visitor',
+    # 基础依赖
     'markupsafe',
     'itsdangerous',
     'click',
-    'blinker',
-
-    # 数据库驱动
-    'psycopg2',
-    'psycopg2.extras',
-    'psycopg2.pool',
-    'sqlite3',
-
-    # WSGI服务器
-    'waitress',
-    'waitress.server',
-
-    # HTTP请求
-    'requests',
-    'requests.adapters',
-    'requests.auth',
-    'urllib3',
-
-    # 文档处理
-    'openpyxl',
-    'openpyxl.workbook',
-    'openpyxl.worksheet',
-    'reportlab',
-    'reportlab.pdfgen',
-    'reportlab.lib',
-
-    # 图像处理
-    'pillow',
-    'PIL',
-    'PIL.Image',
-    'PIL.ImageDraw',
-    'PIL.ImageFont',
-    'PIL.ImageFilter',
-
-    # 通知系统
-    'notification',
-    'notification.notification_manager',
-    'notification.cleanup_manager',
-    'notification.simple_notifier',
-    'notification.flow_rules',
-    'notification.channels',
-    'notification.channels.email_channel',
-    'notification.channels.gotify_channel',
-    'notification.channels.inapp_channel',
-
-    # 邮件
     'email',
     'email.mime',
     'email.mime.text',
     'email.mime.multipart',
-    'email.mime.base',
-    'smtplib',
-
-    # 系统模块
-    'threading',
-    'schedule',
+    'sqlite3',
+    'waitress',
+    # 项目特定模块
+    'notification',
+    'notification.channels',
+    'notification.cleanup_manager',
+    'notification.flow_rules',
+    'notification.notification_manager',
+    'notification.simple_notifier',
+    # 其他必要依赖
+    'sqlalchemy',
     'datetime',
     'json',
-    'uuid',
-    'hashlib',
-    'base64',
-    'urllib.parse',
-    'functools',
-    'traceback',
-    'pathlib',
-    'webbrowser',
-    'socket',
-    'time',
-    'os',
-    'sys',
-    'configparser',
-    'logging',
-    'logging.handlers',
-
-
-    # 加密和安全
-    'secrets',
-    'hmac',
-
-    # 数据处理
-    'csv',
-    'io',
-    'tempfile',
-    'shutil',
+    'logging'
 ]
 
 # 排除的模块（减少打包大小）
