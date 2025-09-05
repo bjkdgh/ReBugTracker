@@ -1754,87 +1754,115 @@ def get_my_teams():
 @login_required
 @role_required('pm')
 def get_product_manager_bugs():
-    """获取产品经理负责团队的所有bugs"""
+    """获取产品经理的bug列表"""
+    conn = None
+    c = None
     try:
         user = get_current_user()
+        if not user:
+            return jsonify({'success': False, 'message': '用户未登录'})
+        
+        # 获取用户的团队信息并处理
+        teams = [team.strip() for team in user.get('team', '').split(',') if team.strip()]
+        if not teams:
+            return jsonify({'success': False, 'message': '用户没有关联的团队'})
 
-        # 获取用户的团队信息
-        user_teams = user.get('team', '')
-        if not user_teams:
-            return jsonify({'success': True, 'data': []})
-
-        # 解析团队列表
-        team_names = [team.strip() for team in user_teams.split(',') if team.strip()]
-
+        # 获取数据库连接
         conn = get_db_connection()
         if DB_TYPE == 'postgres':
             c = conn.cursor(cursor_factory=DictCursor)
         else:
             c = conn.cursor()
 
-        # 构建IN查询的占位符
-        placeholders = ','.join(['%s'] * len(team_names))
-
-        query, params = adapt_sql(f'''
-            SELECT b.*, u2.team as product_line_name,
-                   COALESCE(u1.chinese_name, u1.username) as creator_name,
-                   COALESCE(u2.chinese_name, u2.username) as assignee_name
+        # 构建查询
+        placeholders = ','.join(['%s'] * len(teams))
+        base_query = """
+            SELECT 
+                b.id, b.title, b.description, b.status, b.created_at, b.resolved_at,
+                b.created_by, b.assigned_to, b.resolution, b.project, b.image_path,
+                b.type, b.product_line_id,
+                u2.team as assignee_team,
+                COALESCE(u1.chinese_name, u1.username) as creator_name,
+                COALESCE(u2.chinese_name, u2.username) as assignee_name
             FROM bugs b
             LEFT JOIN users u1 ON b.created_by = u1.id
             LEFT JOIN users u2 ON b.assigned_to = u2.id
-            WHERE u2.team IN ({placeholders}) OR b.created_by = %s
-            ORDER BY u2.team, b.created_at DESC
-        ''', tuple(team_names) + (user['id'],))
-
+            WHERE (u2.team IN ({}) OR b.created_by = %s)
+            ORDER BY b.created_at DESC
+        """.format(placeholders)
+            
+        # 适配不同数据库的SQL语法和参数
+        query, params = adapt_sql(base_query, tuple(teams) + (user['id'],))
+        
+        # 执行查询
         c.execute(query, params)
         bugs = c.fetchall()
-        conn.close()
-
-        # 转换为字典列表并格式化时间
+            
+        # 处理结果
         result = []
+        columns = [column[0] for column in c.description]  # 获取列名
+        
         for bug in bugs:
-            if isinstance(bug, dict):
+            # 根据数据库类型处理结果
+            if DB_TYPE == 'postgres':
                 bug_dict = dict(bug)
             else:
-                bug_dict = {
-                    'id': bug[0],
-                    'title': bug[1],
-                    'description': bug[2],
-                    'status': bug[3],
-                    'type': bug[4],
-                    'assigned_to': bug[5],
-                    'created_by': bug[6],
-                    'project': bug[7],
-                    'created_at': bug[8],
-                    'resolved_at': bug[9],
-                    'resolution': bug[10],
-                    'image_path': bug[11],
-                    'product_line_id': bug[12],
-                    'product_line_name': bug[13],
-                    'creator_name': bug[14],
-                    'assignee_name': bug[15]
-                }
-
-            # 格式化时间
-            if bug_dict.get('created_at'):
-                if isinstance(bug_dict['created_at'], str):
-                    bug_dict['created_at'] = bug_dict['created_at']
+                bug_dict = dict(zip(columns, bug))
+            
+            # 处理时间字段
+            for field in ['created_at', 'resolved_at']:
+                value = bug_dict.get(field)
+                if value is not None:
+                    if isinstance(value, str):
+                        # 如果已经是字符串格式，保持不变
+                        bug_dict[field] = value
+                    else:
+                        try:
+                            # 转换为统一的时间字符串格式
+                            bug_dict[field] = value.strftime('%Y-%m-%d %H:%M:%S')
+                        except Exception as e:
+                            app.logger.warning(f"时间格式化失败 {field}: {str(e)}")
+                            bug_dict[field] = str(value)
                 else:
-                    bug_dict['created_at'] = bug_dict['created_at'].strftime('%Y-%m-%d %H:%M:%S')
+                    bug_dict[field] = None
 
-            if bug_dict.get('resolved_at'):
-                if isinstance(bug_dict['resolved_at'], str):
-                    bug_dict['resolved_at'] = bug_dict['resolved_at']
-                else:
-                    bug_dict['resolved_at'] = bug_dict['resolved_at'].strftime('%Y-%m-%d %H:%M:%S')
-
+            # 统一状态名称
+            status_map = {
+                'new': '待处理',
+                'assigned': '已分配',
+                'processing': '处理中',
+                'resolved': '已解决',
+                'closed': '已完成'
+            }
+            current_status = bug_dict.get('status', '')
+            bug_dict['status'] = status_map.get(current_status, current_status if current_status else '未知')
+            
+            # 确保所有必要的字段都存在
             result.append(bug_dict)
 
-        return jsonify({'success': True, 'data': result})
+        return jsonify({
+            'success': True,
+            'data': result
+        })
 
     except Exception as e:
-        app.logger.error(f"获取产品经理bugs失败: {e}")
-        return jsonify({'success': False, 'message': str(e)})
+        app.logger.error(f"获取产品经理bugs失败: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        })
+    finally:
+        # 确保资源被正确释放
+        try:
+            if c:
+                c.close()
+        except Exception as e:
+            app.logger.error(f"关闭游标失败: {str(e)}")
+        try:
+            if conn:
+                conn.close()
+        except Exception as e:
+            app.logger.error(f"关闭数据库连接失败: {str(e)}")
 
 @app.route('/api/product-manager/statistics')
 @login_required

@@ -1019,31 +1019,42 @@ document.addEventListener('DOMContentLoaded', function() {
             allProjects.forEach(p => projectSelect.add(new Option(p.text, p.value)));
         }
 
+        // 首先尝试从API获取项目列表
         fetch('/api/projects/list')
             .then(response => response.json())
             .then(data => {
-                if (data.success && data.data.length > 0) {
+                console.log('API项目数据:', data);
+                if (data.success && data.data && data.data.length > 0) {
                     loadProjects(data.data);
                 } else {
+                    // 如果API失败，尝试从页面中的JSON数据获取
                     const projectsDataElement = document.getElementById('projects-data');
                     if(projectsDataElement) {
                         try {
                             const projects = JSON.parse(projectsDataElement.textContent);
-                            loadProjects(projects);
+                            console.log('本地项目数据:', projects);
+                            if (projects && projects.length > 0) {
+                                loadProjects(projects);
+                            }
                         } catch(e) {
-                            console.error('Error parsing local projects data:', e);
+                            console.error('解析本地项目数据错误:', e);
                         }
                     }
                 }
             })
-            .catch(() => {
+            .catch(error => {
+                console.error('获取项目列表失败:', error);
+                // 如果API调用失败，尝试从页面中的JSON数据获取
                 const projectsDataElement = document.getElementById('projects-data');
                 if(projectsDataElement) {
                     try {
                         const projects = JSON.parse(projectsDataElement.textContent);
-                        loadProjects(projects);
+                        console.log('使用本地项目数据:', projects);
+                        if (projects && projects.length > 0) {
+                            loadProjects(projects);
+                        }
                     } catch(e) {
-                        console.error('Error parsing local projects data:', e);
+                        console.error('解析本地项目数据错误:', e);
                     }
                 }
             });
@@ -1098,6 +1109,41 @@ document.addEventListener('DOMContentLoaded', function() {
             showResults(results, searchTerm);
         });
 
+        // 添加键盘导航支持
+        searchInput.addEventListener('keydown', function(e) {
+            const options = dropdown.querySelectorAll('.project-option');
+            if (options.length === 0) return;
+
+            let currentIndex = Array.from(options).findIndex(option => option.classList.contains('highlighted'));
+            
+            switch(e.key) {
+                case 'ArrowDown':
+                    e.preventDefault();
+                    currentIndex = currentIndex < options.length - 1 ? currentIndex + 1 : 0;
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    currentIndex = currentIndex > 0 ? currentIndex - 1 : options.length - 1;
+                    break;
+                case 'Enter':
+                    e.preventDefault();
+                    if (currentIndex >= 0) {
+                        options[currentIndex].click();
+                    }
+                    break;
+                case 'Escape':
+                    dropdown.style.display = 'none';
+                    break;
+            }
+
+            // 移除所有高亮
+            options.forEach(option => option.classList.remove('highlighted'));
+            // 高亮当前选项
+            if (currentIndex >= 0) {
+                options[currentIndex].classList.add('highlighted');
+            }
+        });
+
         document.addEventListener('click', (e) => {
             if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
                 dropdown.style.display = 'none';
@@ -1105,14 +1151,24 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         searchInput.addEventListener('focus', function() {
-            if (this.value.trim() !== '') {
-                const results = allProjects.filter(project => matchProject(project, this.value.trim()));
-                showResults(results, this.value.trim());
+            if (allProjects.length > 0) {
+                if (this.value.trim() !== '') {
+                    const results = allProjects.filter(project => matchProject(project, this.value.trim()));
+                    showResults(results, this.value.trim());
+                } else {
+                    // 如果搜索框为空，显示所有项目
+                    showResults(allProjects, '');
+                }
             }
         });
     }
 
-    initializeProjectSearch();
+    // 确保DOM加载完成后初始化项目搜索
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeProjectSearch);
+    } else {
+        initializeProjectSearch();
+    }
 
 });
 </script>

@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
+</script>
 <style>
     .dashboard-container {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
@@ -1309,6 +1310,8 @@
 
         <!-- 主要内容区域 -->
         <div class="main-dashboard">
+            <!-- 隐藏的产品线统计容器 -->
+            <div id="productLineStats" style="display: none;"></div>
             <!-- 图表和团队统计 -->
             <div class="dashboard-row">
                 <!-- 状态分布图表 -->
@@ -1359,7 +1362,7 @@
                         <tr>
                             <th>ID</th>
                             <th>标题</th>
-                            <th>团队</th>
+                            <th>负责人团队</th>
                             <th>状态</th>
                             <th>创建人</th>
                             <th>负责人</th>
@@ -1431,12 +1434,54 @@ function getGreeting(hour) {
 // 加载统计数据
 async function loadStatistics() {
     try {
-        // 加载团队数据来生成产品线统计
-        const teamsResponse = await fetch('/api/product-manager/my-teams');
-        const teamsResult = await teamsResponse.json();
+        // 加载团队数据和bug数据
+        const [teamsResponse, bugsResponse] = await Promise.all([
+            fetch('/api/product-manager/my-teams'),
+            fetch('/api/product-manager/bugs')
+        ]);
+        
+        const [teamsResult, bugsResult] = await Promise.all([
+            teamsResponse.json(),
+            bugsResponse.json()
+        ]);
+
+        console.log('Teams data:', teamsResult);
+        console.log('Bugs data:', bugsResult);
 
         if (teamsResult.success && teamsResult.data.length > 0) {
-            generateProductLineStats(teamsResult.data);
+            // 确保bugs数据正确
+            if (!bugsResult.success || !Array.isArray(bugsResult.data)) {
+                console.error('Invalid bugs data:', bugsResult);
+                bugsResult.data = [];
+            }
+            
+            const processedTeams = teamsResult.data.map(team => {
+                // 过滤出该团队的bugs
+                const teamBugs = bugsResult.success ? bugsResult.data.filter(bug => 
+                    bug.assignee_team === team.name
+                ) : [];
+
+                console.log(`Processing team ${team.name}:`, teamBugs);
+                
+                return {
+                    ...team,
+                    bug_stats: {
+                        total: teamBugs.length,
+                        pending: teamBugs.filter(b => b.status === '待处理').length,
+                        assigned: teamBugs.filter(b => b.status === '已分配').length,
+                        processing: teamBugs.filter(b => b.status === '处理中').length,
+                        resolved: teamBugs.filter(b => b.status === '已解决').length,
+                        closed: teamBugs.filter(b => b.status === '已完成').length
+                    }
+                };
+            });
+
+            // 更新全局bugs数组
+            bugs = bugsResult.success ? bugsResult.data : [];
+            
+            // 生成统计数据
+            generateProductLineStats(processedTeams);
+            updateOverviewStats();
         } else {
             document.getElementById('productLineStats').innerHTML =
                 '<p style="color: #666; text-align: center; grid-column: 1 / -1;">暂无分配的产品线</p>';
@@ -1664,7 +1709,7 @@ function renderBugsTable(filteredBugs = null) {
             onmouseout="this.style.transform='translateX(0)'; this.style.boxShadow='none';">
             <td style="font-weight: 600; color: #667eea;">#${bug.id}</td>
             <td style="font-weight: 500; color: #333;">${bug.title}</td>
-            <td style="color: #666;">${bug.product_line_name || '未分配'}</td>
+            <td style="color: #666;">${bug.assignee_team || '未分配'}</td>
             <td><span class="status-badge status-${getStatusClass(bug.status)}">${bug.status}</span></td>
             <td style="color: #666;">${bug.creator_name || '未知'}</td>
             <td style="color: #666;">${bug.assignee_name || '未分配'}</td>
@@ -1772,13 +1817,17 @@ function getStatusClass(status) {
 
 // 按团队筛选Bug
 function filterByTeam(teamName) {
-    const filteredBugs = bugs.filter(bug => bug.product_line_name === teamName);
+    const filteredBugs = bugs.filter(bug => bug.assignee_team === teamName);
+    console.log('Filtering by team:', teamName);
+    console.log('Filtered bugs:', filteredBugs);
+    
     renderBugsTable(filteredBugs);
+    renderStatusChart(filteredBugs); // 也更新图表
 
     // 更新页面标题显示当前筛选的团队
     const title = document.querySelector('.card-title');
     if (title) {
-        title.innerHTML = `<i class="fas fa-list"></i> ${teamName} 团队问题列表`;
+        title.innerHTML = `<i class="fas fa-list"></i> ${teamName} 团队问题列表 (${filteredBugs.length})`;
     }
 }
 
@@ -1820,7 +1869,10 @@ function filterByProductLine(productLineName) {
     }
 
     // 筛选问题列表
-    const filteredBugs = bugs.filter(bug => bug.product_line_name === productLineName);
+    const filteredBugs = bugs.filter(bug => bug.assignee_team === productLineName);
+    console.log('Filtering bugs for team:', productLineName);
+    console.log('Filtered bugs:', filteredBugs);
+    
     renderBugsTable(filteredBugs);
     renderStatusChart(filteredBugs); // 更新图表显示筛选后的数据
 
